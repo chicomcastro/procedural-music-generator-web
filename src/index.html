@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Piano de uma oitava</title>
+    <style>
+        body {
+            background-color: #333;
+            font-family: Arial, sans-serif;
+        }
+
+        #piano {
+            position: relative;
+            display: flex;
+            justify-content: center;
+        }
+
+        .key-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .key-group.black-keys {
+            position: absolute;
+            top: 0;
+            gap: 72px;
+        }
+
+        .key-subgroup {
+            display: flex;
+            gap: 20px;
+        }
+
+        .key {
+            width: 50px;
+            height: 200px;
+            margin: 5px 0;
+            background-color: white;
+            border: 1px solid black;
+            box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+        }
+
+        .key.black {
+            width: 30px;
+            height: 130px;
+            background-color: black;
+            z-index: 1;
+        }
+
+        .key:hover.playing {
+            background-color: yellow;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="piano">
+        <div class="key-group white-keys">
+            <div class="key" data-note="C"></div>
+            <div class="key" data-note="D"></div>
+            <div class="key" data-note="E"></div>
+            <div class="key" data-note="F"></div>
+            <div class="key" data-note="G"></div>
+            <div class="key" data-note="A"></div>
+            <div class="key" data-note="B"></div>
+        </div>
+        <div class="key-group black-keys">
+            <div class="key-subgroup ">
+                <div class="key black" data-note="C#"></div>
+                <div class="key black" data-note="D#"></div>
+            </div>
+            <div class="key-subgroup">
+                <div class="key black" data-note="F#"></div>
+                <div class="key black" data-note="G#"></div>
+                <div class="key black" data-note="A#"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cria os objetos Audio para cada nota
+        const notes = {
+            'C': new Audio('sounds/C3.mp3'),
+            'C#': new Audio('sounds/Db3.mp3'),
+            'D': new Audio('sounds/D3.mp3'),
+            'D#': new Audio('sounds/Eb3.mp3'),
+            'E': new Audio('sounds/E3.mp3'),
+            'F': new Audio('sounds/F3.mp3'),
+            'F#': new Audio('sounds/Gb3.mp3'),
+            'G': new Audio('sounds/G3.mp3'),
+            'G#': new Audio('sounds/Ab3.mp3'),
+            'A': new Audio('sounds/A3.mp3'),
+            'A#': new Audio('sounds/Bb3.mp3'),
+            'B': new Audio('sounds/B3.mp3'),
+        };
+
+        // Adiciona um evento de clique em cada tecla
+        const keys = document.querySelectorAll('.key');
+        keys.forEach(key => {
+            key.addEventListener('mousedown', () => {
+                // Adiciona a classe "playing" para estilizar a tecla
+                key.classList.add('playing');
+
+                // Toca o som correspondente à tecla
+                const note = notes[key.dataset.note];
+                note.currentTime = 10;
+                note.volume = 1;
+                note.play();
+
+                const decreaseVolume = () => {
+                    if (note.volume >= 0) {
+                        note.volume -= 0.1;
+                        return setTimeout(() => {
+                            decreaseVolume();
+                        }, 100);
+                    }
+                    note.pause();
+                }
+                decreaseVolume();
+            });
+
+            key.addEventListener('mouseup', () => {
+                // Remove a classe "playing" após o clique
+                key.classList.remove('playing');
+            });
+        });
+    </script>
+</body>
+
+</html>
