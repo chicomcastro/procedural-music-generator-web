@@ -1,0 +1,71 @@
+body {
+  background-color: #333;
+  color: #eee;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+#status {
+  min-height: 1.2em;
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+#piano {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  touch-action: none;
+  user-select: none;
+}
+
+.key-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.key-group.black-keys {
+  position: absolute;
+  top: 0;
+  gap: 72px;
+  pointer-events: none;
+}
+
+.key-subgroup {
+  display: flex;
+  gap: 20px;
+}
+
+.key {
+  width: 50px;
+  height: 200px;
+  margin: 5px 0;
+  background-color: white;
+  border: 1px solid black;
+  box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 40ms ease-out, background-color 40ms ease-out;
+}
+
+.key.black {
+  width: 30px;
+  height: 130px;
+  background-color: black;
+  z-index: 1;
+}
+
+.key.playing {
+  background-color: #ffd54a;
+  transform: translateY(2px);
+}
+
+.key.black.playing {
+  background-color: #b8860b;
+}
