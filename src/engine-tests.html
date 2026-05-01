@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Engine &amp; export tests</title>
+    <style>
+        body { font-family: monospace; background: #111; color: #eee; padding: 24px; }
+        .pass { color: #6f6; }
+        .fail { color: #f66; font-weight: bold; }
+        .summary { margin-bottom: 16px; font-size: 16px; }
+        ol { padding-left: 20px; }
+        li { margin: 2px 0; }
+    </style>
+</head>
+
+<body>
+    <h1>Engine &amp; export tests</h1>
+    <div class="summary" id="summary">running…</div>
+    <ol id="results"></ol>
+
+    <script type="module">
+        import { createTransport } from './js/scheduler/Transport.js';
+        import { mulberry32, pick, weighted } from './js/generate/rng.js';
+        import { generateSong } from './js/generate/song.js';
+        import { songToMidi } from './js/export/midi.js';
+        import { audioBufferToWav } from './js/export/wav.js';
+
+        const results = document.getElementById('results');
+        let pass = 0, fail = 0;
+
+        function eq(a, b) {
+            if (Array.isArray(a) && Array.isArray(b))
+                return a.length === b.length && a.every((x, i) => eq(x, b[i]));
+            return Object.is(a, b);
+        }
+
+        function approx(a, b, eps = 0.001) {
+            return Math.abs(a - b) < eps;
+        }
+
+        function check(name, ok) {
+            const li = document.createElement('li');
+            li.className = ok ? 'pass' : 'fail';
+            li.textContent = `${ok ? 'PASS' : 'FAIL'} — ${name}`;
+            results.appendChild(li);
+            ok ? pass++ : fail++;
+        }
+
+        // --- Transport ---
+        const t = createTransport({ bpm: 120, beatsPerBar: 4 });
+        check('transport bpm getter', t.bpm === 120);
+        check('transport beatsPerBar getter', t.beatsPerBar === 4);
+        check('transport beatDuration at 120 bpm = 0.5s', approx(t.beatDuration, 0.5));
+        t.setBpm(60);
+        check('transport setBpm updates bpm', t.bpm === 60);
+        check('transport beatDuration at 60 bpm = 1.0s', approx(t.beatDuration, 1.0));
+        t.setBeatsPerBar(3);
+        check('transport setBeatsPerBar updates', t.beatsPerBar === 3);
+
+        let threw = false;
+        try { t.setBpm(-10); } catch { threw = true; }
+        check('transport rejects negative bpm', threw);
+
+        threw = false;
+        try { t.setBpm(NaN); } catch { threw = true; }
+        check('transport rejects NaN bpm', threw);
+
+        threw = false;
+        try { t.setBeatsPerBar(0); } catch { threw = true; }
+        check('transport rejects 0 beatsPerBar', threw);
+
+        threw = false;
+        try { t.setBeatsPerBar(3.5); } catch { threw = true; }
+        check('transport rejects non-integer beatsPerBar', threw);
+
+        // --- RNG determinism ---
+        const rng1 = mulberry32(42);
+        const rng2 = mulberry32(42);
+        const seq1 = Array.from({ length: 20 }, () => rng1());
+        const seq2 = Array.from({ length: 20 }, () => rng2());
+        check('mulberry32 same seed = same sequence', eq(seq1, seq2));
+
+        const rng3 = mulberry32(999);
+        const seq3 = Array.from({ length: 20 }, () => rng3());
+        check('mulberry32 different seed = different sequence', !eq(seq1, seq3));
+
+        check('mulberry32 output in [0, 1)', seq1.every(v => v >= 0 && v < 1));
+
+        // --- pick / weighted ---
+        check('pick from empty returns undefined', pick(mulberry32(0), []) === undefined);
+        check('pick from single returns it', pick(mulberry32(0), [42]) === 42);
+
+        const wRng = mulberry32(7);
+        const w = weighted(wRng, ['a', 'b'], [0, 1]);
+        check('weighted with 0-weight always picks second', w === 'b');
+
+        // --- Song generation reproducibility ---
+        const song1 = generateSong({ seed: 12345, tonic: 60, scale: 'major', bars: 4, beatsPerBar: 4 });
+        const song2 = generateSong({ seed: 12345, tonic: 60, scale: 'major', bars: 4, beatsPerBar: 4 });
+        check('same seed produces same event count', song1.events.length === song2.events.length);
+        check('same seed produces identical midi values',
+            song1.events.every((e, i) => e.midi === song2.events[i].midi));
+        check('same seed produces identical timing',
+            song1.events.every((e, i) => e.atBeat === song2.events[i].atBeat));
+        check('song has events', song1.events.length > 0);
+        check('song lengthBeats = bars * beatsPerBar', song1.lengthBeats === 16);
+        check('song preserves seed', song1.seed === 12345);
+
+        const song3 = generateSong({ seed: 99999, tonic: 60, scale: 'major', bars: 4, beatsPerBar: 4 });
+        check('different seed produces different melody',
+            !song1.events.every((e, i) => e.midi === song3.events[i]?.midi));
+
+        // --- MIDI export ---
+        const midi = songToMidi(song1, { bpm: 120 });
+        check('MIDI output is Uint8Array', midi instanceof Uint8Array);
+        check('MIDI starts with MThd', String.fromCharCode(...midi.slice(0, 4)) === 'MThd');
+        check('MIDI header length = 6', midi[7] === 6);
+        check('MIDI format 0', midi[8] === 0 && midi[9] === 0);
+        check('MIDI 1 track', midi[10] === 0 && midi[11] === 1);
+        check('MIDI PPQ high byte', midi[12] === 1);  // 480 >> 8 = 1
+        check('MIDI PPQ low byte', midi[13] === 224);  // 480 & 0xFF = 224
+
+        const trkOffset = 14;
+        check('MIDI has MTrk chunk',
+            String.fromCharCode(...midi.slice(trkOffset, trkOffset + 4)) === 'MTrk');
+
+        const trkLen = (midi[trkOffset + 4] << 24) | (midi[trkOffset + 5] << 16)
+            | (midi[trkOffset + 6] << 8) | midi[trkOffset + 7];
+        check('MIDI track length + headers = file size', trkOffset + 8 + trkLen === midi.length);
+
+        const lastThree = midi.slice(-3);
+        check('MIDI ends with end-of-track (FF 2F 00)',
+            lastThree[0] === 0xFF && lastThree[1] === 0x2F && lastThree[2] === 0x00);
+
+        check('MIDI has tempo event (FF 51 03)',
+            midi.slice(trkOffset + 8, trkOffset + 8 + 20).includes(0x51));
+
+        // --- WAV encoder (header only, using a tiny mock AudioBuffer) ---
+        const mockBuffer = {
+            numberOfChannels: 2,
+            sampleRate: 44100,
+            length: 100,
+            getChannelData(ch) { return new Float32Array(100); },
+        };
+        const wav = audioBufferToWav(mockBuffer);
+        check('WAV output is Uint8Array', wav instanceof Uint8Array);
+        check('WAV starts with RIFF', String.fromCharCode(...wav.slice(0, 4)) === 'RIFF');
+        check('WAV contains WAVE', String.fromCharCode(...wav.slice(8, 12)) === 'WAVE');
+        check('WAV contains fmt ', String.fromCharCode(...wav.slice(12, 16)) === 'fmt ');
+        check('WAV contains data', String.fromCharCode(...wav.slice(36, 40)) === 'data');
+
+        const wavView = new DataView(wav.buffer);
+        check('WAV file size field correct', wavView.getUint32(4, true) === wav.length - 8);
+        check('WAV format PCM = 1', wavView.getUint16(20, true) === 1);
+        check('WAV channels = 2', wavView.getUint16(22, true) === 2);
+        check('WAV sample rate = 44100', wavView.getUint32(24, true) === 44100);
+        check('WAV bits per sample = 16', wavView.getUint16(34, true) === 16);
+
+        const dataSize = wavView.getUint32(40, true);
+        check('WAV data size = length * channels * 2', dataSize === 100 * 2 * 2);
+        check('WAV total size = 44 + data', wav.length === 44 + dataSize);
+
+        // --- Summary ---
+        const summary = document.getElementById('summary');
+        summary.textContent = `${pass} passed, ${fail} failed`;
+        summary.className = fail === 0 ? 'pass' : 'fail';
+    </script>
+</body>
+
+</html>
