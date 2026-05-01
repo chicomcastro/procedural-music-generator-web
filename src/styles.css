@@ -176,6 +176,12 @@ kbd {
   display: block;
 }
 
+.score-hint {
+  margin-top: 4px;
+  font-size: 11px;
+  opacity: 0.4;
+}
+
 #metronome h2,
 #generator h2,
 #export h2,

@@ -42,7 +42,30 @@ const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
 
-const scoreCanvas = createScoreCanvas(document.getElementById('score-canvas'));
+const lockedBars = new Set();
+const lockedBarEvents = new Map();
+
+const scoreCanvas = createScoreCanvas(document.getElementById('score-canvas'), {
+  onBarClick(barIndex) {
+    if (lockedBars.has(barIndex)) {
+      lockedBars.delete(barIndex);
+      lockedBarEvents.delete(barIndex);
+    } else if (currentSong) {
+      lockedBars.add(barIndex);
+      lockedBarEvents.set(barIndex, getEventsForBar(currentSong, barIndex));
+    }
+    scoreCanvas.setLockedBars(lockedBars);
+    if (currentSong) scoreCanvas.render(currentSong);
+  },
+});
+
+function getEventsForBar(song, barIndex) {
+  const start = barIndex * song.beatsPerBar;
+  const end = start + song.beatsPerBar;
+  return song.events
+    .filter(ev => ev.atBeat >= start && ev.atBeat < end)
+    .map(ev => ({ ...ev }));
+}
 
 const activeVoices = new Map();
 let ready = false;
@@ -137,6 +160,7 @@ bpmInput.addEventListener('input', (e) => {
 
 beatsPerBarSelect.addEventListener('change', (e) => {
   transport.setBeatsPerBar(Number(e.target.value));
+  clearLockedBars();
   regenerateSong({ keepSeed: true });
 });
 
@@ -227,6 +251,27 @@ function pushUrlState() {
   history.replaceState(null, '', url);
 }
 
+function applyLockedBars(song) {
+  if (lockedBars.size === 0) return song;
+  const bpb = song.beatsPerBar;
+  const unlocked = song.events.filter(ev => {
+    const bar = Math.floor(ev.atBeat / bpb);
+    return !lockedBars.has(bar);
+  });
+  const frozen = [];
+  for (const [bar, events] of lockedBarEvents) {
+    if (bar < song.bars) frozen.push(...events);
+  }
+  const merged = [...unlocked, ...frozen].sort((a, b) => a.atBeat - b.atBeat);
+  return { ...song, events: merged };
+}
+
+function clearLockedBars() {
+  lockedBars.clear();
+  lockedBarEvents.clear();
+  scoreCanvas.setLockedBars(lockedBars);
+}
+
 function regenerateSong({ keepSeed = false } = {}) {
   const seed = keepSeed && seedInput.value !== '' ? Number(seedInput.value) >>> 0 : randomSeed();
   const tonicPc = Number(tonicSelect.value);
@@ -234,10 +279,12 @@ function regenerateSong({ keepSeed = false } = {}) {
   const scale = scaleSelect.value;
   const bars = Number(barsSelect.value);
 
-  currentSong = generateSong({ seed, tonic, scale, bars, beatsPerBar: transport.beatsPerBar });
+  const raw = generateSong({ seed, tonic, scale, bars, beatsPerBar: transport.beatsPerBar });
+  currentSong = applyLockedBars(raw);
 
   seedInput.value = String(seed);
-  songInfo.textContent = `seed ${seed} · ${currentSong.preset} · ${currentSong.events.length} notes`;
+  const lockInfo = lockedBars.size > 0 ? ` · ${lockedBars.size} locked` : '';
+  songInfo.textContent = `seed ${seed} · ${currentSong.preset} · ${currentSong.events.length} notes${lockInfo}`;
   pushUrlState();
   scoreCanvas.render(currentSong);
 
@@ -255,12 +302,18 @@ generateBtn.addEventListener('click', () => regenerateSong({ keepSeed: false }))
 
 seedInput.addEventListener('change', () => regenerateSong({ keepSeed: true }));
 
-[tonicSelect, scaleSelect, barsSelect].forEach(sel =>
+[tonicSelect, scaleSelect].forEach(sel =>
   sel.addEventListener('change', () => {
     clearActivePreset();
     regenerateSong({ keepSeed: true });
   })
 );
+
+barsSelect.addEventListener('change', () => {
+  clearActivePreset();
+  clearLockedBars();
+  regenerateSong({ keepSeed: true });
+});
 
 voiceSelect.addEventListener('change', () => {
   pushUrlState();
@@ -284,6 +337,7 @@ for (const btn of presetBtns) {
     scaleSelect.value = btn.dataset.scale;
     barsSelect.value = btn.dataset.bars;
     clearActivePreset();
+    clearLockedBars();
     btn.classList.add('active');
     regenerateSong({ keepSeed: false });
   });
