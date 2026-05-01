@@ -19,7 +19,11 @@ const pianoEl = document.getElementById('piano');
 const bpmInput = document.getElementById('bpm');
 const bpmDisplay = document.getElementById('bpm-display');
 const beatsPerBarSelect = document.getElementById('beats-per-bar');
-const metroBtn = document.getElementById('metronome-toggle');
+const playPauseBtn = document.getElementById('play-pause');
+const stopBtn = document.getElementById('stop-btn');
+const progressBar = document.getElementById('progress-bar');
+const progressFill = document.getElementById('progress-fill');
+const timeDisplay = document.getElementById('time-display');
 const beatIndicator = document.getElementById('beat-indicator');
 const clickEnabledInput = document.getElementById('click-enabled');
 const songEnabledInput = document.getElementById('song-enabled');
@@ -178,7 +182,7 @@ function getSelectedVoice() {
   return voiceSelect.value;
 }
 
-function scheduleNote(midi, when, durationSec, velocity) {
+function scheduleNote(midi, when, durationSec, velocity, evType = 'melody') {
   const ctx = getContext();
   const dest = getMasterGain();
   const voice = getSelectedVoice();
@@ -205,7 +209,7 @@ function scheduleNote(midi, when, durationSec, velocity) {
 
   const onMs = Math.max(0, (when - ctx.currentTime) * 1000);
   const offMs = onMs + durationSec * 1000;
-  setTimeout(() => piano.setVisual(midi, true), onMs);
+  setTimeout(() => piano.setVisual(midi, true, evType), onMs);
   setTimeout(() => piano.setVisual(midi, false), offMs);
 }
 
@@ -215,9 +219,25 @@ function scheduleSongAtBeat(beatInSong, when) {
   for (const ev of currentSong.events) {
     if (ev.atBeat >= beatInSong && ev.atBeat < beatInSong + 1) {
       const offset = (ev.atBeat - beatInSong) * beatDur;
-      scheduleNote(ev.midi, when + offset, ev.durationBeats * beatDur, ev.velocity);
+      scheduleNote(ev.midi, when + offset, ev.durationBeats * beatDur, ev.velocity, ev.type);
     }
   }
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function updateProgress(beatInSong) {
+  if (!currentSong) return;
+  const total = currentSong.lengthBeats;
+  const pct = (beatInSong / total) * 100;
+  progressFill.style.width = `${pct}%`;
+  const elapsed = beatInSong * transport.beatDuration;
+  const totalSec = total * transport.beatDuration;
+  timeDisplay.textContent = `${formatTime(elapsed)} / ${formatTime(totalSec)}`;
 }
 
 function onBeat(beat, when) {
@@ -231,6 +251,7 @@ function onBeat(beat, when) {
     scheduleSongAtBeat(beatInSong, when);
     scoreCanvas.setPlayhead(beatInSong);
     scoreCanvas.render(currentSong);
+    updateProgress(beatInSong);
   }
 }
 
@@ -287,6 +308,9 @@ function regenerateSong({ keepSeed = false } = {}) {
   songInfo.textContent = `seed ${seed} · ${currentSong.preset} · ${currentSong.events.length} notes${lockInfo}`;
   pushUrlState();
   scoreCanvas.render(currentSong);
+  const totalSec = currentSong.lengthBeats * transport.beatDuration;
+  timeDisplay.textContent = `0:00 / ${formatTime(totalSec)}`;
+  progressFill.style.width = '0%';
 
   generateBtn.classList.add('flash');
   songInfo.classList.add('flash');
@@ -346,36 +370,74 @@ for (const btn of presetBtns) {
 const hasUrlSeed = new URLSearchParams(window.location.search).has('seed');
 regenerateSong({ keepSeed: hasUrlSeed });
 
+function updatePlayerUI() {
+  const playing = scheduler && scheduler.isPlaying;
+  playPauseBtn.innerHTML = playing ? '&#9646;&#9646;' : '&#9654;';
+  playPauseBtn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+}
+
 function startPlayback() {
   if (!scheduler) {
     scheduler = createScheduler(getContext(), transport, onBeat);
   }
   if (!scheduler.isPlaying) {
     scheduler.start();
-    metroBtn.textContent = 'Stop';
-    metroBtn.classList.add('playing');
+    updatePlayerUI();
+  }
+}
+
+function pausePlayback() {
+  if (scheduler && scheduler.isPlaying) {
+    scheduler.stop();
+    updatePlayerUI();
   }
 }
 
 function stopPlayback() {
-  if (scheduler && scheduler.isPlaying) {
+  if (scheduler) {
     scheduler.stop();
-    metroBtn.textContent = 'Play';
-    metroBtn.classList.remove('playing');
-    setTimeout(() => piano.clearAllVisual(), 200);
-    scoreCanvas.setPlayhead(-1);
-    if (currentSong) scoreCanvas.render(currentSong);
   }
+  updatePlayerUI();
+  progressFill.style.width = '0%';
+  if (currentSong) {
+    const totalSec = currentSong.lengthBeats * transport.beatDuration;
+    timeDisplay.textContent = `0:00 / ${formatTime(totalSec)}`;
+  }
+  setTimeout(() => piano.clearAllVisual(), 200);
+  scoreCanvas.setPlayhead(-1);
+  if (currentSong) scoreCanvas.render(currentSong);
 }
 
-metroBtn.addEventListener('click', async () => {
+playPauseBtn.addEventListener('click', async () => {
   await bootstrap();
   if (!ready) return;
   if (scheduler && scheduler.isPlaying) {
-    stopPlayback();
+    pausePlayback();
   } else {
     startPlayback();
   }
+});
+
+stopBtn.addEventListener('click', async () => {
+  await bootstrap();
+  if (!ready) return;
+  stopPlayback();
+});
+
+progressBar.addEventListener('click', (e) => {
+  if (!currentSong || !scheduler) return;
+  const rect = progressBar.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const targetBeat = Math.floor(pct * currentSong.lengthBeats);
+  const wasPlaying = scheduler.isPlaying;
+  if (wasPlaying) scheduler.stop();
+  scheduler = createScheduler(getContext(), transport, onBeat);
+  scheduler.startFrom(targetBeat);
+  if (!wasPlaying) {
+    scheduler.stop();
+  }
+  updateProgress(targetBeat);
+  updatePlayerUI();
 });
 
 exportMidiBtn.addEventListener('click', () => {

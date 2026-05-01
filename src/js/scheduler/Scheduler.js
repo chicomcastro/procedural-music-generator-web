@@ -26,6 +26,13 @@ export function createScheduler(ctx, transport, onBeat) {
       intervalId = setInterval(tick, LOOKAHEAD_MS);
     },
 
+    startFrom(beat) {
+      if (intervalId !== null) clearInterval(intervalId);
+      currentBeat = beat;
+      nextNoteTime = ctx.currentTime + 0.05;
+      intervalId = setInterval(tick, LOOKAHEAD_MS);
+    },
+
     stop() {
       if (intervalId === null) return;
       clearInterval(intervalId);

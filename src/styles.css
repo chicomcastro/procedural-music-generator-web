@@ -123,8 +123,16 @@ body {
   background-color: #fff7c2;
 }
 
+.key.glow.glow-chord {
+  background-color: #c2f5e2;
+}
+
 .key.black.glow {
   background-color: #6a5818;
+}
+
+.key.black.glow.glow-chord {
+  background-color: #1a5c3a;
 }
 
 .key.playing {
@@ -180,6 +188,69 @@ kbd {
   margin-top: 4px;
   font-size: 11px;
   opacity: 0.4;
+}
+
+.player-transport {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+#play-pause,
+#stop-btn {
+  background: #4a8;
+  color: #fff;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 150ms;
+}
+
+#stop-btn {
+  background: #555;
+}
+
+#play-pause:hover { background: #3b9; }
+#stop-btn:hover { background: #777; }
+
+.progress-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #444;
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #4a8;
+  border-radius: 4px;
+  transition: width 100ms linear;
+}
+
+.time-display {
+  font-family: monospace;
+  font-size: 12px;
+  opacity: 0.7;
+  white-space: nowrap;
+  min-width: 90px;
+  text-align: right;
 }
 
 #metronome h2,
@@ -340,20 +411,6 @@ kbd {
   text-align: right;
 }
 
-#metronome-toggle {
-  background: #4a8;
-  color: #fff;
-  border: none;
-  padding: 6px 14px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  min-width: 60px;
-}
-
-#metronome-toggle.playing {
-  background: #c66;
-}
 
 #beats-per-bar {
   background: #333;

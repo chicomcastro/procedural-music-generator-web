@@ -45,8 +45,17 @@
 
     <section id="metronome" aria-label="Playback controls">
         <h2>Player</h2>
+        <div class="player-transport">
+            <button id="play-pause" type="button" title="Play / Pause" aria-label="Play">&#9654;</button>
+            <button id="stop-btn" type="button" title="Stop and rewind" aria-label="Stop">&#9632;</button>
+            <div class="progress-wrap">
+                <div class="progress-bar" id="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+            <span id="time-display" class="time-display">0:00 / 0:00</span>
+        </div>
         <div class="metronome-row">
-            <button id="metronome-toggle" type="button" title="Start or stop playback">Play</button>
             <label for="bpm" title="Beats per minute — how fast the music plays">BPM</label>
             <input id="bpm" type="range" min="40" max="240" value="110" title="Tempo: 40–240 BPM" aria-label="Tempo in BPM">
             <span id="bpm-display">110</span>

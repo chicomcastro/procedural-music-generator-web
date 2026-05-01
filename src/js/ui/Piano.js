@@ -131,6 +131,8 @@ export function createPiano(rootEl, { startOctave = 3, octaves = 2, onAttack, on
 
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const tag = document.activeElement?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     if (e.code === 'KeyZ' && !e.repeat) {
       if (kbdOctave > minKbdOctave) {
         kbdOctave -= 1;
@@ -171,15 +173,20 @@ export function createPiano(rootEl, { startOctave = 3, octaves = 2, onAttack, on
 
   updateKbdHints();
 
-  function setVisual(midi, on) {
+  function setVisual(midi, on, type = 'melody') {
     const el = keyByMidi.get(midi);
     if (!el) return;
-    if (on) el.classList.add('glow');
-    else el.classList.remove('glow');
+    if (on) {
+      el.classList.add('glow');
+      if (type === 'chord') el.classList.add('glow-chord');
+      else el.classList.remove('glow-chord');
+    } else {
+      el.classList.remove('glow', 'glow-chord');
+    }
   }
 
   function clearAllVisual() {
-    rootEl.querySelectorAll('.key.glow').forEach(el => el.classList.remove('glow'));
+    rootEl.querySelectorAll('.key.glow').forEach(el => el.classList.remove('glow', 'glow-chord'));
   }
 
   return {
