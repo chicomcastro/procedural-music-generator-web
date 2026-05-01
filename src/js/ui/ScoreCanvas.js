@@ -30,6 +30,7 @@ export function createScoreCanvas(canvas, options = {}) {
     return {
       melody: s.getPropertyValue('--melody-color').trim(),
       chord: s.getPropertyValue('--chord-color').trim(),
+      bass: s.getPropertyValue('--bass-color').trim(),
       locked: s.getPropertyValue('--locked-bg').trim(),
       accent: s.getPropertyValue('--accent').trim(),
       textPrimary: s.getPropertyValue('--text-primary').trim(),
@@ -59,7 +60,8 @@ export function createScoreCanvas(canvas, options = {}) {
     const w = cssW - pad.left - pad.right;
     const h = cssH - pad.top - pad.bottom;
 
-    const midiValues = song.events.map(e => e.midi);
+    const pitchEvents = song.events.filter(e => e.type !== 'drum');
+    const midiValues = pitchEvents.map(e => e.midi);
     const minMidi = Math.min(...midiValues) - 1;
     const maxMidi = Math.max(...midiValues) + 1;
     const midiRange = maxMidi - minMidi || 1;
@@ -100,11 +102,11 @@ export function createScoreCanvas(canvas, options = {}) {
       ctx.stroke();
     }
 
-    for (const ev of song.events) {
+    for (const ev of pitchEvents) {
       const nx = x(ev.atBeat);
       const ny = y(ev.midi);
       const nw = Math.max(beatW * ev.durationBeats - 1, 2);
-      ctx.fillStyle = ev.type === 'chord' ? colors.chord : colors.melody;
+      ctx.fillStyle = ev.type === 'chord' ? colors.chord : ev.type === 'bass' ? colors.bass : colors.melody;
       ctx.beginPath();
       ctx.roundRect(nx, ny, nw, noteH, 2);
       ctx.fill();

@@ -15,6 +15,7 @@
   --melody-color: rgba(255, 213, 74, 0.85);
   --chord-color: rgba(74, 170, 136, 0.35);
   --locked-bg: rgba(74, 170, 136, 0.08);
+  --bass-color: rgba(100, 149, 237, 0.5);
   --key-white: #f0f0f0;
   --key-black: #1a1a1a;
   --danger: #f85149;
@@ -39,6 +40,7 @@
   --melody-color: rgba(200, 160, 30, 0.85);
   --chord-color: rgba(45, 166, 114, 0.3);
   --locked-bg: rgba(45, 166, 114, 0.08);
+  --bass-color: rgba(70, 120, 200, 0.5);
   --key-white: #ffffff;
   --key-black: #2d2d2d;
   --danger: #cf222e;

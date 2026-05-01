@@ -12,6 +12,7 @@ import { songToMidi } from './export/midi.js';
 import { renderSongToBuffer, audioBufferToWav } from './export/wav.js';
 import { downloadBlob } from './export/download.js';
 import { createScoreCanvas } from './ui/ScoreCanvas.js';
+import { playDrumHit } from './audio/DrumSynth.js';
 import { initTheme } from './ui/Theme.js';
 import { initShortcuts } from './ui/Shortcuts.js';
 import { initHistory, checkUnsaved, setLastSaved } from './ui/History.js';
@@ -190,18 +191,28 @@ window.addEventListener('keydown', firstGestureBootstrap, { once: true });
 pianoEl.addEventListener('pointerdown', firstGestureBootstrap, { once: true });
 
 /* ---- Scheduling ---- */
-function scheduleNote(midi, when, durationSec, velocity, evType = 'melody') {
+function scheduleNote(midi, when, durationSec, velocity, evType = 'melody', ev = null) {
   const ctx = getContext();
   const dest = getMasterGain();
-  const voice = getSelectedVoice();
+
+  if (evType === 'drum' && ev) {
+    playDrumHit(ctx, dest, { drum: ev.drum, when, velocity: velocity * Number(velocityInput.value) });
+    return;
+  }
+
   const trackVol = evType === 'chord' ? Number(chordVolInput.value) : Number(melodyVolInput.value);
   const vel = velocity * Number(velocityInput.value) * trackVol;
 
-  if (voice === 'piano') {
-    const { buffer, playbackRate } = getPlaybackFor(midi);
-    createVoice(ctx, dest, { buffer, playbackRate, velocity: vel, when, duration: durationSec, releaseTime: 0.25 });
+  if (evType === 'bass') {
+    createSynthVoice(ctx, dest, { midi, velocity: vel, when, duration: durationSec, preset: 'bass' });
   } else {
-    createSynthVoice(ctx, dest, { midi, velocity: vel, when, duration: durationSec, preset: voice });
+    const voice = getSelectedVoice();
+    if (voice === 'piano') {
+      const { buffer, playbackRate } = getPlaybackFor(midi);
+      createVoice(ctx, dest, { buffer, playbackRate, velocity: vel, when, duration: durationSec, releaseTime: 0.25 });
+    } else {
+      createSynthVoice(ctx, dest, { midi, velocity: vel, when, duration: durationSec, preset: voice });
+    }
   }
 
   const onMs = Math.max(0, (when - ctx.currentTime) * 1000);
@@ -216,7 +227,7 @@ function scheduleSongAtBeat(beatInSong, when) {
   for (const ev of currentSong.events) {
     if (ev.atBeat >= beatInSong && ev.atBeat < beatInSong + 1) {
       const offset = (ev.atBeat - beatInSong) * beatDur;
-      scheduleNote(ev.midi, when + offset, ev.durationBeats * beatDur, ev.velocity, ev.type);
+      scheduleNote(ev.midi, when + offset, ev.durationBeats * beatDur, ev.velocity, ev.type, ev);
     }
   }
 }

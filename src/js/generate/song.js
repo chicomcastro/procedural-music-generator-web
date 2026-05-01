@@ -48,6 +48,46 @@ export function generateSong({
     });
   }
 
+  for (const c of chords) {
+    const root = Math.min(...c.notes) % 12;
+    const bassMidi = 36 + root;
+    events.push({
+      type: 'bass',
+      midi: bassMidi,
+      atBeat: c.startBeat,
+      durationBeats: c.durationBeats * 0.8,
+      velocity: 0.55,
+    });
+    if (c.durationBeats >= 2 && rng() > 0.4) {
+      events.push({
+        type: 'bass',
+        midi: bassMidi,
+        atBeat: c.startBeat + c.durationBeats / 2,
+        durationBeats: c.durationBeats * 0.3,
+        velocity: 0.4,
+      });
+    }
+  }
+
+  const totalBeats = bars * beatsPerBar;
+  for (let beat = 0; beat < totalBeats; beat++) {
+    const posInBar = beat % beatsPerBar;
+    if (posInBar === 0) {
+      events.push({ type: 'drum', drum: 'kick', atBeat: beat, durationBeats: 0.25, velocity: 0.7, midi: 36 });
+    }
+    if (beatsPerBar === 4 && posInBar === 2) {
+      events.push({ type: 'drum', drum: 'snare', atBeat: beat, durationBeats: 0.25, velocity: 0.55, midi: 38 });
+    } else if (beatsPerBar === 3 && posInBar === 1) {
+      events.push({ type: 'drum', drum: 'snare', atBeat: beat, durationBeats: 0.25, velocity: 0.5, midi: 38 });
+    }
+    if (rng() > 0.35) {
+      events.push({ type: 'drum', drum: 'hat', atBeat: beat, durationBeats: 0.15, velocity: 0.3, midi: 42 });
+    }
+    if (rng() > 0.6) {
+      events.push({ type: 'drum', drum: 'hat', atBeat: beat + 0.5, durationBeats: 0.1, velocity: 0.2, midi: 42 });
+    }
+  }
+
   events.sort((a, b) => a.atBeat - b.atBeat);
 
   return {
