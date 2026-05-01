@@ -1,8 +1,9 @@
-const CACHE_NAME = 'seedsong-v1';
+const CACHE_NAME = 'seedsong-v2';
 
 const ASSETS = [
   './',
   './index.html',
+  './app.html',
   './styles.css',
   './favicon.svg',
   './manifest.json',

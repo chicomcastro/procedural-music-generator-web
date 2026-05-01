@@ -14,144 +14,292 @@
     <meta name="twitter:title" content="SeedSong — Procedural Music Generator">
     <meta name="twitter:description" content="Generate infinite piano melodies from a single seed. Play, tweak, share, and export.">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#44aa88">
-    <link rel="stylesheet" href="styles.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #1a1a2e;
+            color: #eee;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 80px 24px 60px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            color: #4a8;
+            letter-spacing: 0.03em;
+            margin-bottom: 12px;
+        }
+
+        .hero .tagline {
+            font-size: 22px;
+            opacity: 0.9;
+            max-width: 500px;
+            margin: 0 auto 8px;
+        }
+
+        .hero .subtitle {
+            font-size: 15px;
+            opacity: 0.5;
+            margin-bottom: 32px;
+        }
+
+        .cta {
+            display: inline-block;
+            background: #4a8;
+            color: #fff;
+            text-decoration: none;
+            padding: 14px 36px;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: 600;
+            transition: transform 100ms, background 150ms;
+        }
+
+        .cta:hover {
+            background: #3b9;
+            transform: translateY(-2px);
+        }
+
+        .cta-hint {
+            display: block;
+            margin-top: 10px;
+            font-size: 13px;
+            opacity: 0.4;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 24px;
+        }
+
+        .feature {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .feature h3 {
+            color: #4a8;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .feature p {
+            font-size: 14px;
+            opacity: 0.7;
+            line-height: 1.5;
+        }
+
+        .how-it-works {
+            background: rgba(0,0,0,0.2);
+            padding: 60px 24px;
+            text-align: center;
+        }
+
+        .how-it-works h2 {
+            font-size: 24px;
+            margin-bottom: 32px;
+            opacity: 0.9;
+        }
+
+        .steps {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .step {
+            flex: 1;
+            min-width: 180px;
+            max-width: 220px;
+        }
+
+        .step-number {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            line-height: 36px;
+            background: #4a8;
+            color: #fff;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+
+        .step h4 {
+            font-size: 15px;
+            margin-bottom: 6px;
+        }
+
+        .step p {
+            font-size: 13px;
+            opacity: 0.6;
+        }
+
+        .use-cases {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 60px 24px;
+            text-align: center;
+        }
+
+        .use-cases h2 {
+            font-size: 24px;
+            margin-bottom: 24px;
+            opacity: 0.9;
+        }
+
+        .use-case-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            text-align: left;
+        }
+
+        .use-case {
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            padding: 16px;
+        }
+
+        .use-case strong {
+            color: #4a8;
+            font-size: 14px;
+        }
+
+        .use-case p {
+            font-size: 13px;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+
+        .bottom-cta {
+            text-align: center;
+            padding: 48px 24px 80px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            font-size: 13px;
+            opacity: 0.3;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        footer a { color: #4a8; text-decoration: none; }
+
+        @media (max-width: 600px) {
+            .hero { padding: 48px 16px 40px; }
+            .hero h1 { font-size: 32px; }
+            .hero .tagline { font-size: 18px; }
+            .use-case-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 
 <body>
-    <header id="hero">
+    <section class="hero">
         <h1>SeedSong</h1>
         <p class="tagline">Infinite piano melodies from a single seed number.</p>
-        <p class="subtitle">Generate, play, tweak, and export — right in your browser.</p>
-    </header>
-
-    <button id="start" type="button">Start audio</button>
-    <div id="status" role="status" aria-live="polite">Click "Start audio" to load samples.</div>
-
-    <div id="piano-scroll" role="region" aria-label="Piano keyboard">
-        <div id="piano"></div>
-    </div>
-
-    <p class="hint">
-        Mouse, touch, or keyboard (<kbd>A</kbd>–<kbd>J</kbd> white keys, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> black keys).
-        Octave <span id="kbd-octave">3</span> &mdash; <kbd>Z</kbd>/<kbd>X</kbd> to shift.
-    </p>
-
-    <section id="score-section" aria-label="Score visualization">
-        <canvas id="score-canvas"></canvas>
+        <p class="subtitle">Generate, play, tweak, share, and export — right in your browser.</p>
+        <a href="app.html" class="cta">Open the app</a>
+        <span class="cta-hint">No install. No sign-up. Works offline.</span>
     </section>
 
-    <section id="metronome" aria-label="Playback controls">
-        <h2>Player</h2>
-        <div class="metronome-row">
-            <button id="metronome-toggle" type="button" title="Start or stop playback">Play</button>
-            <label for="bpm" title="Beats per minute — how fast the music plays">BPM</label>
-            <input id="bpm" type="range" min="40" max="240" value="110" title="Tempo: 40–240 BPM" aria-label="Tempo in BPM">
-            <span id="bpm-display">110</span>
-            <label for="beats-per-bar" title="Time signature — beats per bar">Time</label>
-            <select id="beats-per-bar">
-                <option value="2">2/4</option>
-                <option value="3">3/4</option>
-                <option value="4" selected>4/4</option>
-                <option value="6">6/8</option>
-            </select>
-            <span class="beat-indicator" id="beat-indicator" aria-hidden="true"></span>
+    <section class="features">
+        <div class="feature">
+            <h3>Seed-based generation</h3>
+            <p>Every melody is determined by a single number. Same seed, same song — always. Share a seed and anyone hears your exact piece.</p>
         </div>
-        <div class="metronome-row">
-            <label title="Audible metronome tick on each beat"><input type="checkbox" id="click-enabled"> Click track</label>
-            <label title="Play the generated melody and chords"><input type="checkbox" id="song-enabled" checked> Procedural music</label>
+        <div class="feature">
+            <h3>Playable piano</h3>
+            <p>Click, touch, or use your keyboard to play along. Two octaves with real piano samples via the Web Audio API.</p>
+        </div>
+        <div class="feature">
+            <h3>Genre presets</h3>
+            <p>One-click presets for Lo-fi, Jazz, Classical, Blues, Dark, and Funk — instantly set the right tonic, scale, tempo, and feel.</p>
+        </div>
+        <div class="feature">
+            <h3>MIDI + WAV export</h3>
+            <p>Download your melody as a MIDI file to import into any DAW, or render to a WAV audio file — all client-side.</p>
+        </div>
+        <div class="feature">
+            <h3>Live visualizer</h3>
+            <p>Piano keys glow as notes play, and a piano-roll score shows melody and chord structure in real time.</p>
+        </div>
+        <div class="feature">
+            <h3>Zero dependencies</h3>
+            <p>Pure vanilla JavaScript. No frameworks, no bundlers, no npm. Open source and easy to understand, fork, or extend.</p>
         </div>
     </section>
 
-    <section id="generator" aria-label="Song generator controls">
-        <h2>Generator</h2>
-        <div class="metronome-row" id="presets-row">
-            <span class="preset-label">Presets</span>
-            <button class="preset-btn" type="button" data-bpm="72" data-scale="pentatonic_minor" data-tonic="9" data-bars="4" data-time="4">Lo-fi</button>
-            <button class="preset-btn" type="button" data-bpm="130" data-scale="mixolydian" data-tonic="7" data-bars="4" data-time="4">Jazz</button>
-            <button class="preset-btn" type="button" data-bpm="108" data-scale="major" data-tonic="0" data-bars="8" data-time="4">Classical</button>
-            <button class="preset-btn" type="button" data-bpm="90" data-scale="blues" data-tonic="4" data-bars="4" data-time="4">Blues</button>
-            <button class="preset-btn" type="button" data-bpm="140" data-scale="natural_minor" data-tonic="9" data-bars="4" data-time="4">Dark</button>
-            <button class="preset-btn" type="button" data-bpm="150" data-scale="dorian" data-tonic="2" data-bars="4" data-time="4">Funk</button>
-        </div>
-        <div class="metronome-row">
-            <label for="tonic" title="Root note of the scale">Tonic</label>
-            <select id="tonic">
-                <option value="0" selected>C</option>
-                <option value="1">C#</option>
-                <option value="2">D</option>
-                <option value="3">D#</option>
-                <option value="4">E</option>
-                <option value="5">F</option>
-                <option value="6">F#</option>
-                <option value="7">G</option>
-                <option value="8">G#</option>
-                <option value="9">A</option>
-                <option value="10">A#</option>
-                <option value="11">B</option>
-            </select>
-            <label for="scale" title="Musical scale — determines the mood and available notes">Scale</label>
-            <select id="scale">
-                <option value="major" selected>Major</option>
-                <option value="natural_minor">Natural Minor</option>
-                <option value="harmonic_minor">Harmonic Minor</option>
-                <option value="dorian">Dorian</option>
-                <option value="phrygian">Phrygian</option>
-                <option value="lydian">Lydian</option>
-                <option value="mixolydian">Mixolydian</option>
-                <option value="pentatonic_major">Pentatonic Major</option>
-                <option value="pentatonic_minor">Pentatonic Minor</option>
-                <option value="blues">Blues</option>
-            </select>
-            <label for="bars" title="Length of the loop in bars">Bars</label>
-            <select id="bars">
-                <option value="2">2</option>
-                <option value="4" selected>4</option>
-                <option value="8">8</option>
-            </select>
-        </div>
-        <div class="metronome-row">
-            <label for="seed" title="A number that uniquely determines the melody — same seed = same song">Seed</label>
-            <input id="seed" type="number" min="0" max="4294967295" step="1" title="Enter a seed to reproduce a specific melody">
-            <button id="generate-btn" type="button" title="Roll a new random seed">&#127922; Randomize</button>
-            <button id="share-btn" type="button" title="Copy a shareable link with all current settings">Share</button>
-            <span id="song-info" class="hint" aria-live="polite"></span>
+    <section class="how-it-works">
+        <h2>How it works</h2>
+        <div class="steps">
+            <div class="step">
+                <span class="step-number">1</span>
+                <h4>Pick a vibe</h4>
+                <p>Choose a preset or set tonic, scale, and tempo manually.</p>
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                <h4>Generate</h4>
+                <p>The algorithm composes a melody with chord progressions using a seedable PRNG.</p>
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                <h4>Share or export</h4>
+                <p>Copy the URL to share your song, or export as MIDI/WAV.</p>
+            </div>
         </div>
     </section>
 
-    <section id="save-section" aria-label="Save current song">
-        <div class="metronome-row">
-            <input id="song-name" type="text" placeholder="Name this melody…" title="Give your melody a name before saving">
-            <button id="save-btn" type="button" title="Save current melody to browser storage">Save</button>
-            <span id="save-hint" class="hint" aria-live="polite"></span>
+    <section class="use-cases">
+        <h2>Use cases</h2>
+        <div class="use-case-grid">
+            <div class="use-case">
+                <strong>Game dev</strong>
+                <p>Generate background music from a seed — deterministic and lightweight.</p>
+            </div>
+            <div class="use-case">
+                <strong>Music education</strong>
+                <p>Explore scales, modes, and chord progressions interactively.</p>
+            </div>
+            <div class="use-case">
+                <strong>Inspiration</strong>
+                <p>Quickly sketch melodic ideas and export to your DAW for further work.</p>
+            </div>
+            <div class="use-case">
+                <strong>Creative coding</strong>
+                <p>Study a clean Web Audio + procedural generation codebase with zero dependencies.</p>
+            </div>
         </div>
     </section>
 
-    <section id="history" aria-label="Saved melodies">
-        <div class="history-header">
-            <h2>History <span class="history-badge">saved locally in your browser</span></h2>
-            <button id="clear-history" type="button" title="Delete all saved melodies">Clear all</button>
-        </div>
-        <div id="history-list"></div>
-        <p id="history-empty" class="hint">No saved melodies yet.</p>
+    <section class="bottom-cta">
+        <a href="app.html" class="cta">Try SeedSong now</a>
     </section>
 
-    <section id="export" aria-label="Export options">
-        <h2>Export</h2>
-        <div class="metronome-row">
-            <button id="export-midi" type="button" title="Download as MIDI file — import into any DAW">Export MIDI</button>
-            <button id="export-wav" type="button" title="Render to audio file (16-bit PCM WAV)">Export WAV</button>
-            <span id="export-status" class="hint" aria-live="polite"></span>
-        </div>
-    </section>
-
-    <script type="module" src="js/main.js"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
-    </script>
+    <footer>
+        <a href="https://github.com/chicomcastro/procedural-music-generator-web">GitHub</a>
+        &nbsp;·&nbsp; Built with vanilla JS + Web Audio API
+    </footer>
 </body>
 
 </html>
