@@ -10,6 +10,39 @@ body {
   gap: 24px;
 }
 
+#hero {
+  text-align: center;
+  max-width: 480px;
+  transition: opacity 400ms, max-height 400ms;
+  overflow: hidden;
+}
+
+#hero.collapsed {
+  opacity: 0;
+  max-height: 0 !important;
+  margin: 0;
+  padding: 0;
+}
+
+#hero h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 0.04em;
+  color: #4a8;
+}
+
+#hero .tagline {
+  margin: 6px 0 0;
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+#hero .subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
 #status {
   min-height: 1.2em;
   font-size: 14px;

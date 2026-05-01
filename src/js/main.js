@@ -66,6 +66,7 @@ async function bootstrap() {
     await loadAll(ctx);
     ready = true;
     startBtn.style.display = 'none';
+    document.getElementById('hero').classList.add('collapsed');
     setStatus('Ready. Click the keys or press Play.');
   } catch (err) {
     console.error(err);
