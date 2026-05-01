@@ -13,8 +13,6 @@ import { renderSongToBuffer, audioBufferToWav } from './export/wav.js';
 import { downloadBlob } from './export/download.js';
 import { createScoreCanvas } from './ui/ScoreCanvas.js';
 
-const statusEl = document.getElementById('status');
-const startBtn = document.getElementById('start');
 const pianoEl = document.getElementById('piano');
 const bpmInput = document.getElementById('bpm');
 const bpmDisplay = document.getElementById('bpm-display');
@@ -93,25 +91,20 @@ const transport = createTransport({ bpm: Number(bpmInput.value), beatsPerBar: Nu
 let scheduler = null;
 let currentSong = null;
 
-function setStatus(msg) {
-  statusEl.textContent = msg;
-}
-
 async function bootstrap() {
   if (ready) return;
-  setStatus('Loading samples…');
-  startBtn.disabled = true;
+  playPauseBtn.classList.add('loading');
+  playPauseBtn.disabled = true;
   try {
     const ctx = await init();
     await loadAll(ctx);
     ready = true;
-    startBtn.style.display = 'none';
     document.getElementById('hero').classList.add('collapsed');
-    setStatus('Ready. Click the keys or press Play.');
   } catch (err) {
     console.error(err);
-    setStatus(`Error: ${err.message}`);
-    startBtn.disabled = false;
+  } finally {
+    playPauseBtn.classList.remove('loading');
+    playPauseBtn.disabled = false;
   }
 }
 
@@ -145,8 +138,6 @@ const piano = createPiano(pianoEl, {
     kbdOctaveDisplay.textContent = String(oct);
   },
 });
-
-startBtn.addEventListener('click', async () => { await bootstrap(); if (ready) startPlayback(); });
 
 async function firstGestureBootstrap() { await bootstrap(); if (ready) startPlayback(); }
 window.addEventListener('keydown', firstGestureBootstrap, { once: true });
