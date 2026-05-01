@@ -37,6 +37,24 @@
 
     <p class="hint">Use o mouse, toque ou o teclado (<kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> e <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd>).</p>
 
+    <section id="metronome">
+        <h2>Metrônomo</h2>
+        <div class="metronome-row">
+            <button id="metronome-toggle" type="button">Play</button>
+            <label for="bpm">BPM</label>
+            <input id="bpm" type="range" min="40" max="240" value="120">
+            <span id="bpm-display">120</span>
+            <label for="beats-per-bar">Compasso</label>
+            <select id="beats-per-bar">
+                <option value="2">2/4</option>
+                <option value="3">3/4</option>
+                <option value="4" selected>4/4</option>
+                <option value="6">6/8</option>
+            </select>
+            <span class="beat-indicator" id="beat-indicator" aria-hidden="true"></span>
+        </div>
+    </section>
+
     <script type="module" src="js/main.js"></script>
 </body>
 
