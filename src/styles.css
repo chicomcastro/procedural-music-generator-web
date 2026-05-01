@@ -104,3 +104,101 @@ kbd {
   border-radius: 3px;
   color: #fff;
 }
+
+#metronome {
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 12px 16px;
+  min-width: 320px;
+}
+
+#metronome h2 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: normal;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.metronome-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.metronome-row label {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+#bpm {
+  width: 140px;
+}
+
+#bpm-display {
+  font-family: monospace;
+  font-size: 14px;
+  min-width: 30px;
+  text-align: right;
+}
+
+#metronome-toggle {
+  background: #4a8;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  min-width: 60px;
+}
+
+#metronome-toggle.playing {
+  background: #c66;
+}
+
+#beats-per-bar {
+  background: #333;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 3px 6px;
+}
+
+.beat-indicator {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #444;
+  display: inline-block;
+  transition: background-color 60ms ease-out;
+}
+
+.beat-indicator.tick {
+  background: #ffd54a;
+}
+
+.beat-indicator.tick.accent {
+  background: #ff7043;
+}
+
+button {
+  font-family: inherit;
+}
+
+#start {
+  background: #4a8;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#start:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
