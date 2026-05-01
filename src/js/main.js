@@ -108,7 +108,6 @@ async function bootstrap() {
     startBtn.style.display = 'none';
     document.getElementById('hero').classList.add('collapsed');
     setStatus('Ready. Click the keys or press Play.');
-    startPlayback();
   } catch (err) {
     console.error(err);
     setStatus(`Error: ${err.message}`);
@@ -147,9 +146,9 @@ const piano = createPiano(pianoEl, {
   },
 });
 
-startBtn.addEventListener('click', bootstrap);
+startBtn.addEventListener('click', async () => { await bootstrap(); if (ready) startPlayback(); });
 
-function firstGestureBootstrap() { bootstrap(); }
+async function firstGestureBootstrap() { await bootstrap(); if (ready) startPlayback(); }
 window.addEventListener('keydown', firstGestureBootstrap, { once: true });
 pianoEl.addEventListener('pointerdown', firstGestureBootstrap, { once: true });
 
