@@ -422,6 +422,37 @@ input[type="text"]:focus {
   color: var(--text-secondary);
 }
 
+/* ---- Transpose ---- */
+
+.transpose-btn {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 150ms, background-color 150ms;
+}
+
+.transpose-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+#transpose-display {
+  font-family: monospace;
+  font-size: 13px;
+  min-width: 30px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
 /* ---- Buttons ---- */
 
 .btn-primary {

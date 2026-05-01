@@ -130,6 +130,12 @@
             </select>
         </div>
         <div class="metronome-row">
+            <label for="transpose" title="Shift all notes up or down by semitones">Transpose</label>
+            <button id="transpose-down" type="button" title="Transpose down 1 semitone" class="transpose-btn">−</button>
+            <span id="transpose-display">0</span>
+            <button id="transpose-up" type="button" title="Transpose up 1 semitone" class="transpose-btn">+</button>
+        </div>
+        <div class="metronome-row">
             <label for="density" title="How many notes per bar — lower is sparser, higher is busier">Density</label>
             <input id="density" type="range" min="0.2" max="1.0" step="0.05" value="0.65" aria-label="Note density">
             <span id="density-display">65%</span>

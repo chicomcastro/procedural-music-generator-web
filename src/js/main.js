@@ -44,6 +44,9 @@ const densityInput = document.getElementById('density');
 const densityDisplay = document.getElementById('density-display');
 const swingInput = document.getElementById('swing');
 const swingDisplay = document.getElementById('swing-display');
+const transposeUpBtn = document.getElementById('transpose-up');
+const transposeDownBtn = document.getElementById('transpose-down');
+const transposeDisplay = document.getElementById('transpose-display');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
@@ -66,6 +69,7 @@ themeToggle.addEventListener('click', () => {
   if (currentSong) scoreCanvas.render(currentSong);
 });
 
+let transposeSemitones = 0;
 const lockedBars = new Set();
 const lockedBarEvents = new Map();
 
@@ -105,6 +109,10 @@ function applyUrlParams() {
   if (p.has('voice')) voiceSelect.value = p.get('voice');
   if (p.has('density')) densityInput.value = p.get('density');
   if (p.has('swing')) swingInput.value = p.get('swing');
+  if (p.has('transpose')) {
+    transposeSemitones = Number(p.get('transpose')) || 0;
+    transposeDisplay.textContent = transposeSemitones > 0 ? `+${transposeSemitones}` : String(transposeSemitones);
+  }
   if (p.has('seed')) seedInput.value = p.get('seed');
   bpmDisplay.textContent = bpmInput.value;
   densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
@@ -282,6 +290,7 @@ function buildShareUrl() {
   if (voiceSelect.value !== 'piano') url.searchParams.set('voice', voiceSelect.value);
   if (densityInput.value !== '0.65') url.searchParams.set('density', densityInput.value);
   if (swingInput.value !== '0') url.searchParams.set('swing', swingInput.value);
+  if (transposeSemitones !== 0) url.searchParams.set('transpose', transposeSemitones);
   return url.toString();
 }
 
@@ -322,6 +331,9 @@ function regenerateSong({ keepSeed = false } = {}) {
   const swing = Number(swingInput.value);
   const raw = generateSong({ seed, tonic, scale, bars, beatsPerBar: transport.beatsPerBar, density, swing });
   currentSong = applyLockedBars(raw);
+  if (transposeSemitones !== 0) {
+    currentSong.events.forEach(ev => { ev.midi += transposeSemitones; });
+  }
 
   seedInput.value = String(seed);
   const lockInfo = lockedBars.size > 0 ? ` · ${lockedBars.size} locked` : '';
@@ -341,6 +353,20 @@ function regenerateSong({ keepSeed = false } = {}) {
 
   checkUnsaved();
 }
+
+function applyTranspose(delta) {
+  transposeSemitones += delta;
+  transposeSemitones = Math.max(-24, Math.min(24, transposeSemitones));
+  transposeDisplay.textContent = transposeSemitones > 0 ? `+${transposeSemitones}` : String(transposeSemitones);
+  if (currentSong) {
+    currentSong.events.forEach(ev => { ev.midi += delta; });
+    scoreCanvas.render(currentSong);
+  }
+  checkUnsaved();
+}
+
+transposeUpBtn.addEventListener('click', () => applyTranspose(1));
+transposeDownBtn.addEventListener('click', () => applyTranspose(-1));
 
 generateBtn.addEventListener('click', () => regenerateSong({ keepSeed: false }));
 
