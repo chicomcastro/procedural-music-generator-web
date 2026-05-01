@@ -25,9 +25,9 @@
     </header>
 
     <button id="start" type="button">Start audio</button>
-    <div id="status">Click "Start audio" to load samples.</div>
+    <div id="status" role="status" aria-live="polite">Click "Start audio" to load samples.</div>
 
-    <div id="piano-scroll">
+    <div id="piano-scroll" role="region" aria-label="Piano keyboard">
         <div id="piano"></div>
     </div>
 
@@ -36,12 +36,12 @@
         Octave <span id="kbd-octave">3</span> &mdash; <kbd>Z</kbd>/<kbd>X</kbd> to shift.
     </p>
 
-    <section id="metronome">
+    <section id="metronome" aria-label="Playback controls">
         <h2>Player</h2>
         <div class="metronome-row">
             <button id="metronome-toggle" type="button" title="Start or stop playback">Play</button>
             <label for="bpm" title="Beats per minute — how fast the music plays">BPM</label>
-            <input id="bpm" type="range" min="40" max="240" value="110" title="Tempo: 40–240 BPM">
+            <input id="bpm" type="range" min="40" max="240" value="110" title="Tempo: 40–240 BPM" aria-label="Tempo in BPM">
             <span id="bpm-display">110</span>
             <label for="beats-per-bar" title="Time signature — beats per bar">Time</label>
             <select id="beats-per-bar">
@@ -58,7 +58,7 @@
         </div>
     </section>
 
-    <section id="generator">
+    <section id="generator" aria-label="Song generator controls">
         <h2>Generator</h2>
         <div class="metronome-row">
             <button id="generate-btn" type="button" title="Create a new random melody">Generate new</button>
@@ -101,16 +101,16 @@
             <label for="seed" title="A number that uniquely determines the melody — same seed = same song">Seed</label>
             <input id="seed" type="number" min="0" max="4294967295" step="1" title="Enter a seed to reproduce a specific melody">
             <button id="share-btn" type="button" title="Copy a shareable link with all current settings">Share</button>
-            <span id="song-info" class="hint"></span>
+            <span id="song-info" class="hint" aria-live="polite"></span>
         </div>
     </section>
 
-    <section id="export">
+    <section id="export" aria-label="Export options">
         <h2>Export</h2>
         <div class="metronome-row">
             <button id="export-midi" type="button" title="Download as MIDI file — import into any DAW">Export MIDI</button>
             <button id="export-wav" type="button" title="Render to audio file (16-bit PCM WAV)">Export WAV</button>
-            <span id="export-status" class="hint"></span>
+            <span id="export-status" class="hint" aria-live="polite"></span>
         </div>
     </section>
 
