@@ -47,6 +47,24 @@ const swingDisplay = document.getElementById('swing-display');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
+const themeToggle = document.getElementById('theme-toggle');
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  themeToggle.textContent = theme === 'light' ? '☀' : '☾';
+  document.querySelector('meta[name="theme-color"]').content =
+    theme === 'light' ? '#f6f8fa' : '#0f1117';
+  localStorage.setItem('seedsong-theme', theme);
+}
+
+const savedTheme = localStorage.getItem('seedsong-theme') || 'dark';
+applyTheme(savedTheme);
+
+themeToggle.addEventListener('click', () => {
+  const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  applyTheme(next);
+  if (currentSong) scoreCanvas.render(currentSong);
+});
 
 const lockedBars = new Set();
 const lockedBarEvents = new Map();

@@ -25,6 +25,17 @@ export function createScoreCanvas(canvas, options = {}) {
     lockedBars = set;
   }
 
+  function getThemeColors() {
+    const s = getComputedStyle(document.documentElement);
+    return {
+      melody: s.getPropertyValue('--melody-color').trim(),
+      chord: s.getPropertyValue('--chord-color').trim(),
+      locked: s.getPropertyValue('--locked-bg').trim(),
+      accent: s.getPropertyValue('--accent').trim(),
+      textPrimary: s.getPropertyValue('--text-primary').trim(),
+    };
+  }
+
   function render(song) {
     if (!song || !song.events.length) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -32,6 +43,8 @@ export function createScoreCanvas(canvas, options = {}) {
     }
 
     lastSong = song;
+    const colors = getThemeColors();
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
 
     const dpr = window.devicePixelRatio || 1;
     const cssW = canvas.clientWidth;
@@ -58,17 +71,17 @@ export function createScoreCanvas(canvas, options = {}) {
     function x(beat) { return pad.left + (beat / totalBeats) * w; }
     function y(midi) { return pad.top + h - ((midi - minMidi) / midiRange) * h - noteH / 2; }
 
-    // locked bar backgrounds
+    const gridBase = isLight ? '0,0,0' : '255,255,255';
+
     for (let bar = 0; bar < song.bars; bar++) {
       if (!lockedBars.has(bar)) continue;
       const bx = x(bar * song.beatsPerBar);
       const bw = beatW * song.beatsPerBar;
-      ctx.fillStyle = 'rgba(74, 170, 136, 0.08)';
+      ctx.fillStyle = colors.locked;
       ctx.fillRect(bx, pad.top, bw, h);
     }
 
-    // beat grid
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.strokeStyle = `rgba(${gridBase},0.06)`;
     ctx.lineWidth = 1;
     for (let b = 0; b <= totalBeats; b++) {
       const bx = x(b);
@@ -78,8 +91,7 @@ export function createScoreCanvas(canvas, options = {}) {
       ctx.stroke();
     }
 
-    // bar lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.strokeStyle = `rgba(${gridBase},0.15)`;
     for (let b = 0; b <= totalBeats; b += song.beatsPerBar) {
       const bx = x(b);
       ctx.beginPath();
@@ -88,35 +100,27 @@ export function createScoreCanvas(canvas, options = {}) {
       ctx.stroke();
     }
 
-    // notes
     for (const ev of song.events) {
       const nx = x(ev.atBeat);
       const ny = y(ev.midi);
       const nw = Math.max(beatW * ev.durationBeats - 1, 2);
-
-      if (ev.type === 'chord') {
-        ctx.fillStyle = 'rgba(74, 170, 136, 0.35)';
-      } else {
-        ctx.fillStyle = 'rgba(255, 213, 74, 0.85)';
-      }
+      ctx.fillStyle = ev.type === 'chord' ? colors.chord : colors.melody;
       ctx.beginPath();
       ctx.roundRect(nx, ny, nw, noteH, 2);
       ctx.fill();
     }
 
-    // lock icons
     for (let bar = 0; bar < song.bars; bar++) {
       if (!lockedBars.has(bar)) continue;
       const barStart = bar * song.beatsPerBar;
       const cx = x(barStart + song.beatsPerBar / 2);
       const cy = pad.top + 12;
-      drawLockIcon(ctx, cx, cy, 10);
+      drawLockIcon(ctx, cx, cy, 10, colors.accent);
     }
 
-    // playhead
     if (playheadBeat >= 0 && playheadBeat < totalBeats) {
       const px = x(playheadBeat);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.strokeStyle = `rgba(${gridBase},0.6)`;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(px, pad.top);
@@ -132,22 +136,24 @@ export function createScoreCanvas(canvas, options = {}) {
   return { render, setPlayhead, setLockedBars };
 }
 
-function drawLockIcon(ctx, cx, cy, size) {
+function drawLockIcon(ctx, cx, cy, size, color) {
   const s = size;
   const bodyW = s * 0.7;
   const bodyH = s * 0.5;
   const bodyX = cx - bodyW / 2;
   const bodyY = cy;
 
-  ctx.fillStyle = 'rgba(74, 170, 136, 0.6)';
+  ctx.globalAlpha = 0.6;
+  ctx.fillStyle = color;
   ctx.beginPath();
   ctx.roundRect(bodyX, bodyY, bodyW, bodyH, 1.5);
   ctx.fill();
 
-  ctx.strokeStyle = 'rgba(74, 170, 136, 0.6)';
+  ctx.strokeStyle = color;
   ctx.lineWidth = 1.5;
   const shackleW = s * 0.4;
   ctx.beginPath();
   ctx.arc(cx, bodyY, shackleW / 2, Math.PI, 0);
   ctx.stroke();
+  ctx.globalAlpha = 1;
 }
