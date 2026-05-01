@@ -1,4 +1,4 @@
-const CACHE_NAME = 'seedsong-v2';
+const CACHE_NAME = 'seedsong-v3';
 
 const ASSETS = [
   './',
@@ -11,6 +11,7 @@ const ASSETS = [
   './js/audio/AudioEngine.js',
   './js/audio/Click.js',
   './js/audio/SampleLibrary.js',
+  './js/audio/SynthVoice.js',
   './js/audio/Voice.js',
   './js/export/download.js',
   './js/export/midi.js',

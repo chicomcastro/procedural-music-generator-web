@@ -217,7 +217,7 @@ kbd {
   opacity: 0.7;
 }
 
-#tonic, #scale, #bars {
+#tonic, #scale, #bars, #voice {
   background: #333;
   color: #eee;
   border: 1px solid #555;

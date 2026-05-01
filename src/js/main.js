@@ -1,6 +1,7 @@
 import { init, getContext, getMasterGain } from './audio/AudioEngine.js';
 import { loadAll, getPlaybackFor } from './audio/SampleLibrary.js';
 import { createVoice } from './audio/Voice.js';
+import { createSynthVoice } from './audio/SynthVoice.js';
 import { playClick } from './audio/Click.js';
 import { createPiano } from './ui/Piano.js';
 import { createTransport } from './scheduler/Transport.js';
@@ -36,6 +37,7 @@ const saveHint = document.getElementById('save-hint');
 const historyList = document.getElementById('history-list');
 const historyEmpty = document.getElementById('history-empty');
 const clearHistoryBtn = document.getElementById('clear-history');
+const voiceSelect = document.getElementById('voice');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
@@ -53,6 +55,7 @@ function applyUrlParams() {
   if (p.has('tonic')) tonicSelect.value = p.get('tonic');
   if (p.has('scale')) scaleSelect.value = p.get('scale');
   if (p.has('bars')) barsSelect.value = p.get('bars');
+  if (p.has('voice')) voiceSelect.value = p.get('voice');
   if (p.has('seed')) seedInput.value = p.get('seed');
   bpmDisplay.textContent = bpmInput.value;
 }
@@ -93,10 +96,16 @@ const piano = createPiano(pianoEl, {
     if (!ready) return;
     const ctx = getContext();
     const dest = getMasterGain();
-    const { buffer, playbackRate } = getPlaybackFor(midi);
-    const voice = createVoice(ctx, dest, { buffer, playbackRate, velocity: 0.9 });
     const prev = activeVoices.get(midi);
     if (prev) prev.release(0.05);
+    const v = getSelectedVoice();
+    let voice;
+    if (v === 'piano') {
+      const { buffer, playbackRate } = getPlaybackFor(midi);
+      voice = createVoice(ctx, dest, { buffer, playbackRate, velocity: 0.9 });
+    } else {
+      voice = createSynthVoice(ctx, dest, { midi, velocity: 0.9, preset: v });
+    }
     activeVoices.set(midi, voice);
   },
   onRelease(midi) {
@@ -141,18 +150,34 @@ function flashBeat(when, accent) {
   }, ms);
 }
 
+function getSelectedVoice() {
+  return voiceSelect.value;
+}
+
 function scheduleNote(midi, when, durationSec, velocity) {
   const ctx = getContext();
   const dest = getMasterGain();
-  const { buffer, playbackRate } = getPlaybackFor(midi);
-  createVoice(ctx, dest, {
-    buffer,
-    playbackRate,
-    velocity,
-    when,
-    duration: durationSec,
-    releaseTime: 0.25,
-  });
+  const voice = getSelectedVoice();
+
+  if (voice === 'piano') {
+    const { buffer, playbackRate } = getPlaybackFor(midi);
+    createVoice(ctx, dest, {
+      buffer,
+      playbackRate,
+      velocity,
+      when,
+      duration: durationSec,
+      releaseTime: 0.25,
+    });
+  } else {
+    createSynthVoice(ctx, dest, {
+      midi,
+      velocity,
+      when,
+      duration: durationSec,
+      preset: voice,
+    });
+  }
 
   const onMs = Math.max(0, (when - ctx.currentTime) * 1000);
   const offMs = onMs + durationSec * 1000;
@@ -193,6 +218,7 @@ function buildShareUrl() {
   url.searchParams.set('tonic', tonicSelect.value);
   url.searchParams.set('scale', scaleSelect.value);
   url.searchParams.set('bars', barsSelect.value);
+  if (voiceSelect.value !== 'piano') url.searchParams.set('voice', voiceSelect.value);
   return url.toString();
 }
 
@@ -235,6 +261,11 @@ seedInput.addEventListener('change', () => regenerateSong({ keepSeed: true }));
     regenerateSong({ keepSeed: true });
   })
 );
+
+voiceSelect.addEventListener('change', () => {
+  pushUrlState();
+  checkUnsaved();
+});
 
 const presetBtns = document.querySelectorAll('.preset-btn');
 
@@ -308,7 +339,7 @@ exportWavBtn.addEventListener('click', async () => {
   exportWavBtn.disabled = true;
   exportMidiBtn.disabled = true;
   try {
-    const buf = await renderSongToBuffer(currentSong, transport);
+    const buf = await renderSongToBuffer(currentSong, transport, { voice: getSelectedVoice() });
     const wav = audioBufferToWav(buf);
     downloadBlob(wav, `song-${currentSong.seed}.wav`, 'audio/wav');
     exportStatus.textContent = `WAV: ${(wav.length / 1024 / 1024).toFixed(2)} MB`;
@@ -357,13 +388,15 @@ function currentSnapshot() {
     tonic: tonicSelect.value,
     scale: scaleSelect.value,
     bars: barsSelect.value,
+    voice: voiceSelect.value,
   };
 }
 
 function snapshotsMatch(a, b) {
   if (!a || !b) return false;
   return a.seed === b.seed && a.bpm === b.bpm && a.time === b.time
-    && a.tonic === b.tonic && a.scale === b.scale && a.bars === b.bars;
+    && a.tonic === b.tonic && a.scale === b.scale && a.bars === b.bars
+    && (a.voice || 'piano') === (b.voice || 'piano');
 }
 
 function checkUnsaved() {
@@ -411,7 +444,8 @@ function renderHistory() {
     name.textContent = e.name || 'Untitled';
     const meta = document.createElement('div');
     meta.className = 'history-item-meta';
-    meta.textContent = `${formatDate(e.savedAt)} · ${tonicLabel(e.tonic)} ${scaleLabel(e.scale)} · ${e.bpm} bpm · seed ${e.seed} · ${e.noteCount || '?'} notes`;
+    const voiceLabel = e.voice && e.voice !== 'piano' ? ` · ${e.voice}` : '';
+    meta.textContent = `${formatDate(e.savedAt)} · ${tonicLabel(e.tonic)} ${scaleLabel(e.scale)} · ${e.bpm} bpm${voiceLabel} · seed ${e.seed} · ${e.noteCount || '?'} notes`;
     info.appendChild(name);
     info.appendChild(meta);
 
@@ -448,6 +482,7 @@ function loadEntry(e) {
   tonicSelect.value = e.tonic;
   scaleSelect.value = e.scale;
   barsSelect.value = e.bars;
+  voiceSelect.value = e.voice || 'piano';
   seedInput.value = e.seed;
   songNameInput.value = e.name || '';
   clearActivePreset();

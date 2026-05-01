@@ -1,8 +1,9 @@
 import { createVoice } from '../audio/Voice.js';
+import { createSynthVoice } from '../audio/SynthVoice.js';
 import { getPlaybackFor } from '../audio/SampleLibrary.js';
 
-/** @param {Object} song @param {Object} transport @returns {Promise<AudioBuffer>} */
-export async function renderSongToBuffer(song, transport, { sampleRate = 44100, tailSeconds = 1.5 } = {}) {
+/** @param {Object} song @param {Object} transport @param {Object} [options] @returns {Promise<AudioBuffer>} */
+export async function renderSongToBuffer(song, transport, { sampleRate = 44100, tailSeconds = 1.5, voice = 'piano' } = {}) {
   const beatDuration = 60 / transport.bpm;
   const lengthSec = song.lengthBeats * beatDuration + tailSeconds;
   const offline = new OfflineAudioContext(2, Math.ceil(sampleRate * lengthSec), sampleRate);
@@ -14,17 +15,27 @@ export async function renderSongToBuffer(song, transport, { sampleRate = 44100, 
   compressor.connect(offline.destination);
 
   for (const ev of song.events) {
-    const { buffer, playbackRate } = getPlaybackFor(ev.midi);
     const when = ev.atBeat * beatDuration;
     const dur = ev.durationBeats * beatDuration;
-    createVoice(offline, masterGain, {
-      buffer,
-      playbackRate,
-      velocity: ev.velocity,
-      when,
-      duration: dur,
-      releaseTime: 0.25,
-    });
+    if (voice === 'piano') {
+      const { buffer, playbackRate } = getPlaybackFor(ev.midi);
+      createVoice(offline, masterGain, {
+        buffer,
+        playbackRate,
+        velocity: ev.velocity,
+        when,
+        duration: dur,
+        releaseTime: 0.25,
+      });
+    } else {
+      createSynthVoice(offline, masterGain, {
+        midi: ev.midi,
+        velocity: ev.velocity,
+        when,
+        duration: dur,
+        preset: voice,
+      });
+    }
   }
 
   return offline.startRendering();
