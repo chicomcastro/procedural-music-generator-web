@@ -2,7 +2,9 @@
 
 Live: https://chicomcastro.github.io/procedural-music-generator-web/
 
-A vanilla-JS web app that plays sampled piano notes via the Web Audio API and (in upcoming phases) generates music procedurally — scales, chord progressions, and melodies driven by a sample-accurate scheduler.
+A vanilla-JS web app that plays sampled piano notes via the Web Audio API and generates music procedurally — scales, chord progressions, and melodies driven by a sample-accurate scheduler.
+
+For the load-bearing architectural calls, see [`docs/decisions.md`](docs/decisions.md).
 
 ## Run locally
 
