@@ -47,6 +47,8 @@ const swingDisplay = document.getElementById('swing-display');
 const transposeUpBtn = document.getElementById('transpose-up');
 const transposeDownBtn = document.getElementById('transpose-down');
 const transposeDisplay = document.getElementById('transpose-display');
+const velocityInput = document.getElementById('velocity');
+const velocityDisplay = document.getElementById('velocity-display');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
@@ -110,6 +112,7 @@ function applyUrlParams() {
   if (p.has('voice')) voiceSelect.value = p.get('voice');
   if (p.has('density')) densityInput.value = p.get('density');
   if (p.has('swing')) swingInput.value = p.get('swing');
+  if (p.has('velocity')) velocityInput.value = p.get('velocity');
   if (p.has('transpose')) {
     transposeSemitones = Number(p.get('transpose')) || 0;
     transposeDisplay.textContent = transposeSemitones > 0 ? `+${transposeSemitones}` : String(transposeSemitones);
@@ -121,6 +124,7 @@ function applyUrlParams() {
   bpmDisplay.textContent = bpmInput.value;
   densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
   swingDisplay.textContent = `${Math.round(swingInput.value * 100)}%`;
+  velocityDisplay.textContent = `${Math.round(velocityInput.value * 100)}%`;
 }
 
 applyUrlParams();
@@ -214,13 +218,14 @@ function scheduleNote(midi, when, durationSec, velocity, evType = 'melody') {
   const ctx = getContext();
   const dest = getMasterGain();
   const voice = getSelectedVoice();
+  const vel = velocity * Number(velocityInput.value);
 
   if (voice === 'piano') {
     const { buffer, playbackRate } = getPlaybackFor(midi);
     createVoice(ctx, dest, {
       buffer,
       playbackRate,
-      velocity,
+      velocity: vel,
       when,
       duration: durationSec,
       releaseTime: 0.25,
@@ -228,7 +233,7 @@ function scheduleNote(midi, when, durationSec, velocity, evType = 'melody') {
   } else {
     createSynthVoice(ctx, dest, {
       midi,
-      velocity,
+      velocity: vel,
       when,
       duration: durationSec,
       preset: voice,
@@ -294,6 +299,7 @@ function buildShareUrl() {
   if (voiceSelect.value !== 'piano') url.searchParams.set('voice', voiceSelect.value);
   if (densityInput.value !== '0.65') url.searchParams.set('density', densityInput.value);
   if (swingInput.value !== '0') url.searchParams.set('swing', swingInput.value);
+  if (velocityInput.value !== '0.8') url.searchParams.set('velocity', velocityInput.value);
   if (transposeSemitones !== 0) url.searchParams.set('transpose', transposeSemitones);
   if (lockedBars.size > 0) url.searchParams.set('locked', [...lockedBars].sort((a, b) => a - b).join(','));
   return url.toString();
@@ -416,6 +422,12 @@ swingInput.addEventListener('input', (e) => {
   swingDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
   clearActivePreset();
   regenerateSong({ keepSeed: true });
+});
+
+velocityInput.addEventListener('input', (e) => {
+  velocityDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
+  pushUrlState();
+  checkUnsaved();
 });
 
 const presetBtns = document.querySelectorAll('.preset-btn');
@@ -585,6 +597,7 @@ function currentSnapshot() {
     voice: voiceSelect.value,
     density: densityInput.value,
     swing: swingInput.value,
+    velocity: velocityInput.value,
   };
 }
 
@@ -594,7 +607,8 @@ function snapshotsMatch(a, b) {
     && a.tonic === b.tonic && a.scale === b.scale && a.bars === b.bars
     && (a.voice || 'piano') === (b.voice || 'piano')
     && (a.density || '0.65') === (b.density || '0.65')
-    && (a.swing || '0') === (b.swing || '0');
+    && (a.swing || '0') === (b.swing || '0')
+    && (a.velocity || '0.8') === (b.velocity || '0.8');
 }
 
 function checkUnsaved() {
@@ -710,6 +724,8 @@ function loadEntry(e) {
   densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
   swingInput.value = e.swing || '0';
   swingDisplay.textContent = `${Math.round(swingInput.value * 100)}%`;
+  velocityInput.value = e.velocity || '0.8';
+  velocityDisplay.textContent = `${Math.round(velocityInput.value * 100)}%`;
   seedInput.value = e.seed;
   songNameInput.value = e.name || '';
   clearActivePreset();
