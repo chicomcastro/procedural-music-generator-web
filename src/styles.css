@@ -600,7 +600,8 @@ input[type="text"]:focus {
 /* ---- Export ---- */
 
 #export-midi,
-#export-wav {
+#export-wav,
+#export-preview {
   background: var(--accent);
   color: #fff;
   border: none;
@@ -613,14 +614,16 @@ input[type="text"]:focus {
 }
 
 #export-midi:hover,
-#export-wav:hover {
+#export-wav:hover,
+#export-preview:hover {
   background: var(--accent-hover);
   transform: translateY(-1px);
   box-shadow: 0 2px 8px var(--accent-shadow);
 }
 
 #export-midi:disabled,
-#export-wav:disabled {
+#export-wav:disabled,
+#export-preview:disabled {
   opacity: 0.5;
   cursor: default;
   transform: none;

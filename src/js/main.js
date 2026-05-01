@@ -64,6 +64,7 @@ const reverbDisplay = document.getElementById('reverb-display');
 const delayInput = document.getElementById('delay');
 const delayDisplay = document.getElementById('delay-display');
 const recordBtn = document.getElementById('record-btn');
+const exportPreviewBtn = document.getElementById('export-preview');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
@@ -589,6 +590,35 @@ exportWavBtn.addEventListener('click', async () => {
   } finally {
     exportWavBtn.disabled = false;
     exportMidiBtn.disabled = false;
+  }
+});
+
+exportPreviewBtn.addEventListener('click', async () => {
+  if (!currentSong) return;
+  await bootstrap();
+  if (!ready) return;
+  exportStatus.textContent = 'Rendering preview…';
+  exportPreviewBtn.disabled = true;
+  try {
+    const previewSong = {
+      ...currentSong,
+      events: currentSong.events.filter(ev => ev.atBeat < currentSong.beatsPerBar * 2),
+      bars: Math.min(2, currentSong.bars),
+      lengthBeats: currentSong.beatsPerBar * Math.min(2, currentSong.bars),
+    };
+    const buf = await renderSongToBuffer(previewSong, transport, { voice: getSelectedVoice() });
+    const wav = audioBufferToWav(buf);
+    const blob = new Blob([wav], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.play();
+    audio.onended = () => URL.revokeObjectURL(url);
+    exportStatus.textContent = 'Playing preview…';
+  } catch (err) {
+    console.error(err);
+    exportStatus.textContent = `Error: ${err.message}`;
+  } finally {
+    exportPreviewBtn.disabled = false;
   }
 });
 
