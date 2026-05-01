@@ -202,6 +202,27 @@ kbd {
   font-size: 13px;
 }
 
+#share-btn {
+  background: transparent;
+  color: #4a8;
+  border: 1px solid #4a8;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 150ms, color 150ms;
+}
+
+#share-btn:hover {
+  background: #4a8;
+  color: #fff;
+}
+
+#share-btn.copied {
+  background: #4a8;
+  color: #fff;
+}
+
 #song-info {
   font-family: monospace;
   font-size: 12px;

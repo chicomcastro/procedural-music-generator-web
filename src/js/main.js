@@ -28,6 +28,7 @@ const barsSelect = document.getElementById('bars');
 const seedInput = document.getElementById('seed');
 const songInfo = document.getElementById('song-info');
 const kbdOctaveDisplay = document.getElementById('kbd-octave');
+const shareBtn = document.getElementById('share-btn');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
@@ -35,7 +36,20 @@ const exportStatus = document.getElementById('export-status');
 const activeVoices = new Map();
 let ready = false;
 
-const transport = createTransport({ bpm: Number(bpmInput.value), beatsPerBar: 4 });
+function applyUrlParams() {
+  const p = new URLSearchParams(window.location.search);
+  if (p.has('bpm')) bpmInput.value = p.get('bpm');
+  if (p.has('time')) beatsPerBarSelect.value = p.get('time');
+  if (p.has('tonic')) tonicSelect.value = p.get('tonic');
+  if (p.has('scale')) scaleSelect.value = p.get('scale');
+  if (p.has('bars')) barsSelect.value = p.get('bars');
+  if (p.has('seed')) seedInput.value = p.get('seed');
+  bpmDisplay.textContent = bpmInput.value;
+}
+
+applyUrlParams();
+
+const transport = createTransport({ bpm: Number(bpmInput.value), beatsPerBar: Number(beatsPerBarSelect.value) });
 let scheduler = null;
 let currentSong = null;
 
@@ -95,6 +109,7 @@ bpmInput.addEventListener('input', (e) => {
   const v = Number(e.target.value);
   transport.setBpm(v);
   bpmDisplay.textContent = String(v);
+  pushUrlState();
 });
 
 beatsPerBarSelect.addEventListener('change', (e) => {
@@ -154,6 +169,22 @@ function onBeat(beat, when) {
   }
 }
 
+function buildShareUrl() {
+  const url = new URL(window.location.pathname, window.location.origin);
+  url.searchParams.set('seed', seedInput.value);
+  url.searchParams.set('bpm', bpmInput.value);
+  url.searchParams.set('time', beatsPerBarSelect.value);
+  url.searchParams.set('tonic', tonicSelect.value);
+  url.searchParams.set('scale', scaleSelect.value);
+  url.searchParams.set('bars', barsSelect.value);
+  return url.toString();
+}
+
+function pushUrlState() {
+  const url = buildShareUrl();
+  history.replaceState(null, '', url);
+}
+
 function regenerateSong({ keepSeed = false } = {}) {
   const seed = keepSeed && seedInput.value !== '' ? Number(seedInput.value) >>> 0 : randomSeed();
   const tonicPc = Number(tonicSelect.value);
@@ -165,6 +196,7 @@ function regenerateSong({ keepSeed = false } = {}) {
 
   seedInput.value = String(seed);
   songInfo.textContent = `seed ${seed} · ${currentSong.preset} · ${currentSong.events.length} notes`;
+  pushUrlState();
 }
 
 generateBtn.addEventListener('click', () => regenerateSong({ keepSeed: false }));
@@ -175,7 +207,8 @@ seedInput.addEventListener('change', () => regenerateSong({ keepSeed: true }));
   sel.addEventListener('change', () => regenerateSong({ keepSeed: true }))
 );
 
-regenerateSong({ keepSeed: false });
+const hasUrlSeed = new URLSearchParams(window.location.search).has('seed');
+regenerateSong({ keepSeed: hasUrlSeed });
 
 metroBtn.addEventListener('click', async () => {
   await bootstrap();
@@ -220,6 +253,22 @@ exportWavBtn.addEventListener('click', async () => {
   } finally {
     exportWavBtn.disabled = false;
     exportMidiBtn.disabled = false;
+  }
+});
+
+shareBtn.addEventListener('click', async () => {
+  const url = buildShareUrl();
+  try {
+    await navigator.clipboard.writeText(url);
+    shareBtn.textContent = 'Copied!';
+    shareBtn.classList.add('copied');
+    setTimeout(() => {
+      shareBtn.textContent = 'Share';
+      shareBtn.classList.remove('copied');
+    }, 1500);
+  } catch {
+    shareBtn.textContent = 'Copy failed';
+    setTimeout(() => { shareBtn.textContent = 'Share'; }, 1500);
   }
 });
 
