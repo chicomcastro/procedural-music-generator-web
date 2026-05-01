@@ -33,11 +33,11 @@
     <section id="metronome">
         <h2>Player</h2>
         <div class="metronome-row">
-            <button id="metronome-toggle" type="button">Play</button>
-            <label for="bpm">BPM</label>
-            <input id="bpm" type="range" min="40" max="240" value="110">
+            <button id="metronome-toggle" type="button" title="Start or stop playback">Play</button>
+            <label for="bpm" title="Beats per minute — how fast the music plays">BPM</label>
+            <input id="bpm" type="range" min="40" max="240" value="110" title="Tempo: 40–240 BPM">
             <span id="bpm-display">110</span>
-            <label for="beats-per-bar">Time</label>
+            <label for="beats-per-bar" title="Time signature — beats per bar">Time</label>
             <select id="beats-per-bar">
                 <option value="2">2/4</option>
                 <option value="3">3/4</option>
@@ -47,16 +47,16 @@
             <span class="beat-indicator" id="beat-indicator" aria-hidden="true"></span>
         </div>
         <div class="metronome-row">
-            <label><input type="checkbox" id="click-enabled"> Click track</label>
-            <label><input type="checkbox" id="song-enabled" checked> Procedural music</label>
+            <label title="Audible metronome tick on each beat"><input type="checkbox" id="click-enabled"> Click track</label>
+            <label title="Play the generated melody and chords"><input type="checkbox" id="song-enabled" checked> Procedural music</label>
         </div>
     </section>
 
     <section id="generator">
         <h2>Generator</h2>
         <div class="metronome-row">
-            <button id="generate-btn" type="button">Generate new</button>
-            <label for="tonic">Tonic</label>
+            <button id="generate-btn" type="button" title="Create a new random melody">Generate new</button>
+            <label for="tonic" title="Root note of the scale">Tonic</label>
             <select id="tonic">
                 <option value="0" selected>C</option>
                 <option value="1">C#</option>
@@ -71,7 +71,7 @@
                 <option value="10">A#</option>
                 <option value="11">B</option>
             </select>
-            <label for="scale">Scale</label>
+            <label for="scale" title="Musical scale — determines the mood and available notes">Scale</label>
             <select id="scale">
                 <option value="major" selected>major</option>
                 <option value="natural_minor">natural minor</option>
@@ -84,7 +84,7 @@
                 <option value="pentatonic_minor">pentatonic minor</option>
                 <option value="blues">blues</option>
             </select>
-            <label for="bars">Bars</label>
+            <label for="bars" title="Length of the loop in bars">Bars</label>
             <select id="bars">
                 <option value="2">2</option>
                 <option value="4" selected>4</option>
@@ -92,9 +92,9 @@
             </select>
         </div>
         <div class="metronome-row">
-            <label for="seed">Seed</label>
-            <input id="seed" type="number" min="0" max="4294967295" step="1">
-            <button id="share-btn" type="button">Share</button>
+            <label for="seed" title="A number that uniquely determines the melody — same seed = same song">Seed</label>
+            <input id="seed" type="number" min="0" max="4294967295" step="1" title="Enter a seed to reproduce a specific melody">
+            <button id="share-btn" type="button" title="Copy a shareable link with all current settings">Share</button>
             <span id="song-info" class="hint"></span>
         </div>
     </section>
@@ -102,8 +102,8 @@
     <section id="export">
         <h2>Export</h2>
         <div class="metronome-row">
-            <button id="export-midi" type="button">Download MIDI</button>
-            <button id="export-wav" type="button">Render WAV</button>
+            <button id="export-midi" type="button" title="Download as MIDI file — import into any DAW">Download MIDI</button>
+            <button id="export-wav" type="button" title="Render to audio file (16-bit PCM WAV)">Render WAV</button>
             <span id="export-status" class="hint"></span>
         </div>
     </section>
