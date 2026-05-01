@@ -12,7 +12,11 @@ import { songToMidi } from './export/midi.js';
 import { renderSongToBuffer, audioBufferToWav } from './export/wav.js';
 import { downloadBlob } from './export/download.js';
 import { createScoreCanvas } from './ui/ScoreCanvas.js';
+import { initTheme } from './ui/Theme.js';
+import { initShortcuts } from './ui/Shortcuts.js';
+import { initHistory, checkUnsaved, setLastSaved } from './ui/History.js';
 
+/* ---- DOM refs ---- */
 const pianoEl = document.getElementById('piano');
 const bpmInput = document.getElementById('bpm');
 const bpmDisplay = document.getElementById('bpm-display');
@@ -34,11 +38,6 @@ const songInfo = document.getElementById('song-info');
 const kbdOctaveDisplay = document.getElementById('kbd-octave');
 const shareBtn = document.getElementById('share-btn');
 const songNameInput = document.getElementById('song-name');
-const saveBtn = document.getElementById('save-btn');
-const saveHint = document.getElementById('save-hint');
-const historyList = document.getElementById('history-list');
-const historyEmpty = document.getElementById('history-empty');
-const clearHistoryBtn = document.getElementById('clear-history');
 const voiceSelect = document.getElementById('voice');
 const densityInput = document.getElementById('density');
 const densityDisplay = document.getElementById('density-display');
@@ -52,30 +51,18 @@ const velocityDisplay = document.getElementById('velocity-display');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
-const themeToggle = document.getElementById('theme-toggle');
 
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  themeToggle.textContent = theme === 'light' ? '☀' : '☾';
-  document.querySelector('meta[name="theme-color"]').content =
-    theme === 'light' ? '#f6f8fa' : '#0f1117';
-  localStorage.setItem('seedsong-theme', theme);
-}
-
-const savedTheme = localStorage.getItem('seedsong-theme') || 'dark';
-applyTheme(savedTheme);
-
-themeToggle.addEventListener('click', () => {
-  const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-  applyTheme(next);
-  if (currentSong) scoreCanvas.render(currentSong);
-});
-
+/* ---- State ---- */
 let transposeSemitones = 0;
 let pendingLockedBars = null;
 const lockedBars = new Set();
 const lockedBarEvents = new Map();
+const activeVoices = new Map();
+let ready = false;
+let scheduler = null;
+let currentSong = null;
 
+/* ---- Score canvas ---- */
 const scoreCanvas = createScoreCanvas(document.getElementById('score-canvas'), {
   onBarClick(barIndex) {
     if (lockedBars.has(barIndex)) {
@@ -98,10 +85,10 @@ function getEventsForBar(song, barIndex) {
     .map(ev => ({ ...ev }));
 }
 
-const activeVoices = new Map();
-let ready = false;
-let lastSavedSnapshot = null;
+/* ---- Theme ---- */
+initTheme(() => { if (currentSong) scoreCanvas.render(currentSong); });
 
+/* ---- URL params ---- */
 function applyUrlParams() {
   const p = new URLSearchParams(window.location.search);
   if (p.has('bpm')) bpmInput.value = p.get('bpm');
@@ -129,10 +116,10 @@ function applyUrlParams() {
 
 applyUrlParams();
 
+/* ---- Transport ---- */
 const transport = createTransport({ bpm: Number(bpmInput.value), beatsPerBar: Number(beatsPerBarSelect.value) });
-let scheduler = null;
-let currentSong = null;
 
+/* ---- Audio bootstrap ---- */
 async function bootstrap() {
   if (ready) return;
   playPauseBtn.classList.add('loading');
@@ -149,6 +136,9 @@ async function bootstrap() {
     playPauseBtn.disabled = false;
   }
 }
+
+/* ---- Piano ---- */
+function getSelectedVoice() { return voiceSelect.value; }
 
 const piano = createPiano(pianoEl, {
   startOctave: 2,
@@ -185,35 +175,7 @@ async function firstGestureBootstrap() { await bootstrap(); if (ready) startPlay
 window.addEventListener('keydown', firstGestureBootstrap, { once: true });
 pianoEl.addEventListener('pointerdown', firstGestureBootstrap, { once: true });
 
-bpmInput.addEventListener('input', (e) => {
-  const v = Number(e.target.value);
-  transport.setBpm(v);
-  bpmDisplay.textContent = String(v);
-  pushUrlState();
-  document.querySelectorAll('.preset-btn.active').forEach(b => b.classList.remove('active'));
-  checkUnsaved();
-});
-
-beatsPerBarSelect.addEventListener('change', (e) => {
-  transport.setBeatsPerBar(Number(e.target.value));
-  clearLockedBars();
-  regenerateSong({ keepSeed: true });
-});
-
-function flashBeat(when, accent) {
-  const ctx = getContext();
-  const ms = Math.max(0, (when - ctx.currentTime) * 1000);
-  setTimeout(() => {
-    beatIndicator.classList.add('tick');
-    if (accent) beatIndicator.classList.add('accent');
-    setTimeout(() => beatIndicator.classList.remove('tick', 'accent'), 80);
-  }, ms);
-}
-
-function getSelectedVoice() {
-  return voiceSelect.value;
-}
-
+/* ---- Scheduling ---- */
 function scheduleNote(midi, when, durationSec, velocity, evType = 'melody') {
   const ctx = getContext();
   const dest = getMasterGain();
@@ -222,22 +184,9 @@ function scheduleNote(midi, when, durationSec, velocity, evType = 'melody') {
 
   if (voice === 'piano') {
     const { buffer, playbackRate } = getPlaybackFor(midi);
-    createVoice(ctx, dest, {
-      buffer,
-      playbackRate,
-      velocity: vel,
-      when,
-      duration: durationSec,
-      releaseTime: 0.25,
-    });
+    createVoice(ctx, dest, { buffer, playbackRate, velocity: vel, when, duration: durationSec, releaseTime: 0.25 });
   } else {
-    createSynthVoice(ctx, dest, {
-      midi,
-      velocity: vel,
-      when,
-      duration: durationSec,
-      preset: voice,
-    });
+    createSynthVoice(ctx, dest, { midi, velocity: vel, when, duration: durationSec, preset: voice });
   }
 
   const onMs = Math.max(0, (when - ctx.currentTime) * 1000);
@@ -257,6 +206,16 @@ function scheduleSongAtBeat(beatInSong, when) {
   }
 }
 
+function flashBeat(when, accent) {
+  const ctx = getContext();
+  const ms = Math.max(0, (when - ctx.currentTime) * 1000);
+  setTimeout(() => {
+    beatIndicator.classList.add('tick');
+    if (accent) beatIndicator.classList.add('accent');
+    setTimeout(() => beatIndicator.classList.remove('tick', 'accent'), 80);
+  }, ms);
+}
+
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
@@ -266,8 +225,7 @@ function formatTime(sec) {
 function updateProgress(beatInSong) {
   if (!currentSong) return;
   const total = currentSong.lengthBeats;
-  const pct = (beatInSong / total) * 100;
-  progressFill.style.width = `${pct}%`;
+  progressFill.style.width = `${(beatInSong / total) * 100}%`;
   const elapsed = beatInSong * transport.beatDuration;
   const totalSec = total * transport.beatDuration;
   timeDisplay.textContent = `${formatTime(elapsed)} / ${formatTime(totalSec)}`;
@@ -275,9 +233,7 @@ function updateProgress(beatInSong) {
 
 function onBeat(beat, when) {
   const accent = beat % transport.beatsPerBar === 0;
-  if (clickEnabledInput.checked) {
-    playClick(getContext(), getMasterGain(), when, { accent });
-  }
+  if (clickEnabledInput.checked) playClick(getContext(), getMasterGain(), when, { accent });
   flashBeat(when, accent);
   if (songEnabledInput.checked && currentSong) {
     const beatInSong = beat % currentSong.lengthBeats;
@@ -288,6 +244,7 @@ function onBeat(beat, when) {
   }
 }
 
+/* ---- URL state ---- */
 function buildShareUrl() {
   const url = new URL(window.location.pathname, window.location.origin);
   url.searchParams.set('seed', seedInput.value);
@@ -305,24 +262,18 @@ function buildShareUrl() {
   return url.toString();
 }
 
-function pushUrlState() {
-  const url = buildShareUrl();
-  history.replaceState(null, '', url);
-}
+function pushUrlState() { history.replaceState(null, '', buildShareUrl()); }
 
+/* ---- Song generation ---- */
 function applyLockedBars(song) {
   if (lockedBars.size === 0) return song;
   const bpb = song.beatsPerBar;
-  const unlocked = song.events.filter(ev => {
-    const bar = Math.floor(ev.atBeat / bpb);
-    return !lockedBars.has(bar);
-  });
+  const unlocked = song.events.filter(ev => !lockedBars.has(Math.floor(ev.atBeat / bpb)));
   const frozen = [];
   for (const [bar, events] of lockedBarEvents) {
     if (bar < song.bars) frozen.push(...events);
   }
-  const merged = [...unlocked, ...frozen].sort((a, b) => a.atBeat - b.atBeat);
-  return { ...song, events: merged };
+  return { ...song, events: [...unlocked, ...frozen].sort((a, b) => a.atBeat - b.atBeat) };
 }
 
 function clearLockedBars() {
@@ -333,23 +284,23 @@ function clearLockedBars() {
 
 function regenerateSong({ keepSeed = false } = {}) {
   const seed = keepSeed && seedInput.value !== '' ? Number(seedInput.value) >>> 0 : randomSeed();
-  const tonicPc = Number(tonicSelect.value);
-  const tonic = 60 + tonicPc;
-  const scale = scaleSelect.value;
-  const bars = Number(barsSelect.value);
-
-  const density = Number(densityInput.value);
-  const swing = Number(swingInput.value);
-  const raw = generateSong({ seed, tonic, scale, bars, beatsPerBar: transport.beatsPerBar, density, swing });
+  const raw = generateSong({
+    seed,
+    tonic: 60 + Number(tonicSelect.value),
+    scale: scaleSelect.value,
+    bars: Number(barsSelect.value),
+    beatsPerBar: transport.beatsPerBar,
+    density: Number(densityInput.value),
+    swing: Number(swingInput.value),
+  });
   currentSong = applyLockedBars(raw);
-  if (transposeSemitones !== 0) {
-    currentSong.events.forEach(ev => { ev.midi += transposeSemitones; });
-  }
+  if (transposeSemitones !== 0) currentSong.events.forEach(ev => { ev.midi += transposeSemitones; });
 
   seedInput.value = String(seed);
   const lockInfo = lockedBars.size > 0 ? ` · ${lockedBars.size} locked` : '';
   songInfo.textContent = `seed ${seed} · ${currentSong.preset} · ${currentSong.events.length} notes${lockInfo}`;
   pushUrlState();
+
   if (pendingLockedBars) {
     for (const bar of pendingLockedBars) {
       if (bar >= 0 && bar < currentSong.bars) {
@@ -362,23 +313,19 @@ function regenerateSong({ keepSeed = false } = {}) {
   }
 
   scoreCanvas.render(currentSong);
-  const totalSec = currentSong.lengthBeats * transport.beatDuration;
-  timeDisplay.textContent = `0:00 / ${formatTime(totalSec)}`;
+  timeDisplay.textContent = `0:00 / ${formatTime(currentSong.lengthBeats * transport.beatDuration)}`;
   progressFill.style.width = '0%';
 
   generateBtn.classList.add('flash');
   songInfo.classList.add('flash');
-  setTimeout(() => {
-    generateBtn.classList.remove('flash');
-    songInfo.classList.remove('flash');
-  }, 200);
+  setTimeout(() => { generateBtn.classList.remove('flash'); songInfo.classList.remove('flash'); }, 200);
 
   checkUnsaved();
 }
 
+/* ---- Transpose ---- */
 function applyTranspose(delta) {
-  transposeSemitones += delta;
-  transposeSemitones = Math.max(-24, Math.min(24, transposeSemitones));
+  transposeSemitones = Math.max(-24, Math.min(24, transposeSemitones + delta));
   transposeDisplay.textContent = transposeSemitones > 0 ? `+${transposeSemitones}` : String(transposeSemitones);
   if (currentSong) {
     currentSong.events.forEach(ev => { ev.midi += delta; });
@@ -390,27 +337,31 @@ function applyTranspose(delta) {
 transposeUpBtn.addEventListener('click', () => applyTranspose(1));
 transposeDownBtn.addEventListener('click', () => applyTranspose(-1));
 
+/* ---- Generator controls ---- */
 generateBtn.addEventListener('click', () => regenerateSong({ keepSeed: false }));
-
 seedInput.addEventListener('change', () => regenerateSong({ keepSeed: true }));
 
-[tonicSelect, scaleSelect].forEach(sel =>
-  sel.addEventListener('change', () => {
-    clearActivePreset();
-    regenerateSong({ keepSeed: true });
-  })
-);
-
-barsSelect.addEventListener('change', () => {
+bpmInput.addEventListener('input', (e) => {
+  const v = Number(e.target.value);
+  transport.setBpm(v);
+  bpmDisplay.textContent = String(v);
+  pushUrlState();
   clearActivePreset();
+  checkUnsaved();
+});
+
+beatsPerBarSelect.addEventListener('change', () => {
+  transport.setBeatsPerBar(Number(beatsPerBarSelect.value));
   clearLockedBars();
   regenerateSong({ keepSeed: true });
 });
 
-voiceSelect.addEventListener('change', () => {
-  pushUrlState();
-  checkUnsaved();
-});
+[tonicSelect, scaleSelect].forEach(sel =>
+  sel.addEventListener('change', () => { clearActivePreset(); regenerateSong({ keepSeed: true }); })
+);
+
+barsSelect.addEventListener('change', () => { clearActivePreset(); clearLockedBars(); regenerateSong({ keepSeed: true }); });
+voiceSelect.addEventListener('change', () => { pushUrlState(); checkUnsaved(); });
 
 densityInput.addEventListener('input', (e) => {
   densityDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
@@ -430,11 +381,9 @@ velocityInput.addEventListener('input', (e) => {
   checkUnsaved();
 });
 
+/* ---- Presets ---- */
 const presetBtns = document.querySelectorAll('.preset-btn');
-
-function clearActivePreset() {
-  presetBtns.forEach(b => b.classList.remove('active'));
-}
+function clearActivePreset() { presetBtns.forEach(b => b.classList.remove('active')); }
 
 for (const btn of presetBtns) {
   btn.addEventListener('click', () => {
@@ -457,9 +406,10 @@ for (const btn of presetBtns) {
   });
 }
 
-const hasUrlSeed = new URLSearchParams(window.location.search).has('seed');
-regenerateSong({ keepSeed: hasUrlSeed });
+/* ---- Initial song ---- */
+regenerateSong({ keepSeed: new URLSearchParams(window.location.search).has('seed') });
 
+/* ---- Player ---- */
 function updatePlayerUI() {
   const playing = scheduler && scheduler.isPlaying;
   playPauseBtn.innerHTML = playing ? '&#9646;&#9646;' : '&#9654;';
@@ -467,32 +417,19 @@ function updatePlayerUI() {
 }
 
 function startPlayback() {
-  if (!scheduler) {
-    scheduler = createScheduler(getContext(), transport, onBeat);
-  }
-  if (!scheduler.isPlaying) {
-    scheduler.start();
-    updatePlayerUI();
-  }
+  if (!scheduler) scheduler = createScheduler(getContext(), transport, onBeat);
+  if (!scheduler.isPlaying) { scheduler.start(); updatePlayerUI(); }
 }
 
 function pausePlayback() {
-  if (scheduler && scheduler.isPlaying) {
-    scheduler.stop();
-    updatePlayerUI();
-  }
+  if (scheduler && scheduler.isPlaying) { scheduler.stop(); updatePlayerUI(); }
 }
 
 function stopPlayback() {
-  if (scheduler) {
-    scheduler.stop();
-  }
+  if (scheduler) scheduler.stop();
   updatePlayerUI();
   progressFill.style.width = '0%';
-  if (currentSong) {
-    const totalSec = currentSong.lengthBeats * transport.beatDuration;
-    timeDisplay.textContent = `0:00 / ${formatTime(totalSec)}`;
-  }
+  if (currentSong) timeDisplay.textContent = `0:00 / ${formatTime(currentSong.lengthBeats * transport.beatDuration)}`;
   setTimeout(() => piano.clearAllVisual(), 200);
   scoreCanvas.setPlayhead(-1);
   if (currentSong) scoreCanvas.render(currentSong);
@@ -501,35 +438,25 @@ function stopPlayback() {
 playPauseBtn.addEventListener('click', async () => {
   await bootstrap();
   if (!ready) return;
-  if (scheduler && scheduler.isPlaying) {
-    pausePlayback();
-  } else {
-    startPlayback();
-  }
+  if (scheduler && scheduler.isPlaying) pausePlayback(); else startPlayback();
 });
 
-stopBtn.addEventListener('click', async () => {
-  await bootstrap();
-  if (!ready) return;
-  stopPlayback();
-});
+stopBtn.addEventListener('click', async () => { await bootstrap(); if (!ready) return; stopPlayback(); });
 
 progressBar.addEventListener('click', (e) => {
   if (!currentSong || !scheduler) return;
   const rect = progressBar.getBoundingClientRect();
-  const pct = (e.clientX - rect.left) / rect.width;
-  const targetBeat = Math.floor(pct * currentSong.lengthBeats);
+  const targetBeat = Math.floor(((e.clientX - rect.left) / rect.width) * currentSong.lengthBeats);
   const wasPlaying = scheduler.isPlaying;
   if (wasPlaying) scheduler.stop();
   scheduler = createScheduler(getContext(), transport, onBeat);
   scheduler.startFrom(targetBeat);
-  if (!wasPlaying) {
-    scheduler.stop();
-  }
+  if (!wasPlaying) scheduler.stop();
   updateProgress(targetBeat);
   updatePlayerUI();
 });
 
+/* ---- Export ---- */
 exportMidiBtn.addEventListener('click', () => {
   if (!currentSong) return;
   const bytes = songToMidi(currentSong, { bpm: transport.bpm });
@@ -558,35 +485,23 @@ exportWavBtn.addEventListener('click', async () => {
   }
 });
 
+/* ---- Share ---- */
 shareBtn.addEventListener('click', async () => {
   const url = buildShareUrl();
   try {
     await navigator.clipboard.writeText(url);
     shareBtn.textContent = 'Copied!';
     shareBtn.classList.add('copied');
-    setTimeout(() => {
-      shareBtn.textContent = 'Share';
-      shareBtn.classList.remove('copied');
-    }, 1500);
+    setTimeout(() => { shareBtn.textContent = 'Share'; shareBtn.classList.remove('copied'); }, 1500);
   } catch {
     shareBtn.textContent = 'Copy failed';
     setTimeout(() => { shareBtn.textContent = 'Share'; }, 1500);
   }
 });
 
-const STORAGE_KEY = 'seedsong-history';
-
-function getHistory() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch { return []; }
-}
-
-function saveHistory(entries) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-}
-
+/* ---- Snapshot helpers for History ---- */
 function currentSnapshot() {
+  if (!currentSong) return null;
   return {
     seed: seedInput.value,
     bpm: bpmInput.value,
@@ -598,116 +513,9 @@ function currentSnapshot() {
     density: densityInput.value,
     swing: swingInput.value,
     velocity: velocityInput.value,
+    noteCount: currentSong.events.length,
+    preset: currentSong.preset,
   };
-}
-
-function snapshotsMatch(a, b) {
-  if (!a || !b) return false;
-  return a.seed === b.seed && a.bpm === b.bpm && a.time === b.time
-    && a.tonic === b.tonic && a.scale === b.scale && a.bars === b.bars
-    && (a.voice || 'piano') === (b.voice || 'piano')
-    && (a.density || '0.65') === (b.density || '0.65')
-    && (a.swing || '0') === (b.swing || '0')
-    && (a.velocity || '0.8') === (b.velocity || '0.8');
-}
-
-function checkUnsaved() {
-  const snap = currentSnapshot();
-  if (snapshotsMatch(snap, lastSavedSnapshot)) {
-    saveHint.textContent = '';
-    saveHint.classList.remove('unsaved');
-  } else {
-    saveHint.textContent = 'Unsaved changes';
-    saveHint.classList.add('unsaved');
-  }
-}
-
-function formatDate(ts) {
-  const d = new Date(ts);
-  const pad = n => String(n).padStart(2, '0');
-  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function scaleLabel(val) {
-  const opt = scaleSelect.querySelector(`option[value="${val}"]`);
-  return opt ? opt.textContent : val;
-}
-
-function tonicLabel(val) {
-  const opt = tonicSelect.querySelector(`option[value="${val}"]`);
-  return opt ? opt.textContent : val;
-}
-
-function renderHistory() {
-  const entries = getHistory();
-  historyList.innerHTML = '';
-  historyEmpty.style.display = entries.length ? 'none' : 'block';
-  clearHistoryBtn.style.display = entries.length ? '' : 'none';
-
-  for (let i = entries.length - 1; i >= 0; i--) {
-    const e = entries[i];
-    const item = document.createElement('div');
-    item.className = 'history-item';
-
-    const info = document.createElement('div');
-    info.className = 'history-item-info';
-    const name = document.createElement('div');
-    name.className = 'history-item-name';
-    name.textContent = e.name || 'Untitled';
-    const meta = document.createElement('div');
-    meta.className = 'history-item-meta';
-    const voiceLabel = e.voice && e.voice !== 'piano' ? ` · ${e.voice}` : '';
-    meta.textContent = `${formatDate(e.savedAt)} · ${tonicLabel(e.tonic)} ${scaleLabel(e.scale)} · ${e.bpm} bpm${voiceLabel} · seed ${e.seed} · ${e.noteCount || '?'} notes`;
-    info.appendChild(name);
-    info.appendChild(meta);
-
-    const actions = document.createElement('div');
-    actions.className = 'history-item-actions';
-
-    const loadBtn = document.createElement('button');
-    loadBtn.textContent = 'Load';
-    loadBtn.addEventListener('click', () => loadEntry(e));
-
-    const renameBtn = document.createElement('button');
-    renameBtn.textContent = 'Rename';
-    renameBtn.addEventListener('click', () => {
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'history-rename-input';
-      input.value = e.name || '';
-      name.replaceWith(input);
-      input.focus();
-      input.select();
-
-      function commitRename() {
-        const h = getHistory();
-        h[i].name = input.value.trim();
-        saveHistory(h);
-        renderHistory();
-      }
-      input.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter') commitRename();
-        if (ev.key === 'Escape') renderHistory();
-      });
-      input.addEventListener('blur', commitRename);
-    });
-
-    const delBtn = document.createElement('button');
-    delBtn.textContent = 'Delete';
-    delBtn.addEventListener('click', () => {
-      const h = getHistory();
-      h.splice(i, 1);
-      saveHistory(h);
-      renderHistory();
-    });
-
-    actions.appendChild(loadBtn);
-    actions.appendChild(renameBtn);
-    actions.appendChild(delBtn);
-    item.appendChild(info);
-    item.appendChild(actions);
-    historyList.appendChild(item);
-  }
 }
 
 function loadEntry(e) {
@@ -730,87 +538,27 @@ function loadEntry(e) {
   songNameInput.value = e.name || '';
   clearActivePreset();
   regenerateSong({ keepSeed: true });
-  lastSavedSnapshot = currentSnapshot();
-  checkUnsaved();
 }
 
-songNameInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') saveBtn.click();
+/* ---- History init ---- */
+initHistory({
+  onLoadEntry: loadEntry,
+  snapshotFn: currentSnapshot,
+  labelsFn: () => ({
+    scaleLabel: (val) => { const o = scaleSelect.querySelector(`option[value="${val}"]`); return o ? o.textContent : val; },
+    tonicLabel: (val) => { const o = tonicSelect.querySelector(`option[value="${val}"]`); return o ? o.textContent : val; },
+  }),
 });
 
-saveBtn.addEventListener('click', () => {
-  if (!currentSong) return;
-  const snap = currentSnapshot();
-  const entry = {
-    ...snap,
-    name: songNameInput.value.trim(),
-    savedAt: Date.now(),
-    noteCount: currentSong.events.length,
-    preset: currentSong.preset,
-  };
-  const h = getHistory();
-  h.push(entry);
-  saveHistory(h);
-  lastSavedSnapshot = { ...snap };
-  songNameInput.value = '';
-  checkUnsaved();
-  renderHistory();
-  saveHint.textContent = 'Saved!';
-  saveHint.classList.remove('unsaved');
-  setTimeout(() => checkUnsaved(), 1500);
+/* ---- Shortcuts init ---- */
+initShortcuts({
+  onPlay: () => playPauseBtn.click(),
+  onStop: () => stopBtn.click(),
+  onRandomize: () => generateBtn.click(),
 });
 
-clearHistoryBtn.addEventListener('click', () => {
-  saveHistory([]);
-  renderHistory();
-});
-
-renderHistory();
-
-const shortcutsOverlay = document.getElementById('shortcuts-overlay');
-const closeShortcutsBtn = document.getElementById('close-shortcuts');
-
-function toggleShortcuts() {
-  shortcutsOverlay.classList.toggle('hidden');
-}
-
-document.getElementById('shortcuts-btn').addEventListener('click', toggleShortcuts);
-closeShortcutsBtn.addEventListener('click', toggleShortcuts);
-shortcutsOverlay.addEventListener('click', (e) => {
-  if (e.target === shortcutsOverlay) toggleShortcuts();
-});
-
-document.addEventListener('keydown', (e) => {
-  const tag = document.activeElement?.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-
-  if (e.key === '?') {
-    e.preventDefault();
-    toggleShortcuts();
-    return;
-  }
-  if (e.key === 'Escape' && !shortcutsOverlay.classList.contains('hidden')) {
-    toggleShortcuts();
-    return;
-  }
-  if (e.key === ' ') {
-    e.preventDefault();
-    playPauseBtn.click();
-    return;
-  }
-  if (e.key === 'Escape') {
-    stopBtn.click();
-    return;
-  }
-  if (e.key === 'r' || e.key === 'R') {
-    generateBtn.click();
-    return;
-  }
-});
-
+/* ---- Visibility resume ---- */
 document.addEventListener('visibilitychange', () => {
   const ctx = getContext();
-  if (ctx && !document.hidden && ctx.state === 'suspended') {
-    ctx.resume();
-  }
+  if (ctx && !document.hidden && ctx.state === 'suspended') ctx.resume();
 });
