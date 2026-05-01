@@ -159,6 +159,41 @@ For MIDI: `@tonejs/midi` is excellent and well-tested. Adding it forces a bundle
 
 ---
 
+## ADR-009 · Shareable URLs with full state in query params
+
+**Status:** Accepted (Phase 9)
+
+**Context.** The seed-based PRNG (ADR-007) already makes songs reproducible, but sharing requires the user to communicate seed + BPM + scale + tonic + bars + time signature out-of-band. This is the app's strongest differentiator — and it was invisible.
+
+**Decision.** Encode all generation parameters (`seed`, `bpm`, `time`, `tonic`, `scale`, `bars`) in URL query params. `history.replaceState` updates the URL on every parameter change; a "Share" button copies the full URL to clipboard. On load, `applyUrlParams()` reads the search string and populates controls before the first `regenerateSong` call.
+
+**Consequences.**
+- A shared URL reproduces the exact song + tempo + feel. No side-channel needed.
+- URL stays stable — same seed + params = same URL = same bookmark.
+- Browser back/forward doesn't cycle through parameter changes (replaceState, not pushState). Acceptable — music parameters aren't navigation.
+- Clipboard API requires secure context (HTTPS or localhost); GitHub Pages satisfies this.
+
+**Alternatives.** `pushState` per change — pollutes browser history. Fragment (`#`) encoding — less readable and not sent to server if we ever add analytics.
+
+---
+
+## ADR-010 · Genre presets as data attributes on buttons
+
+**Status:** Accepted (Phase 9)
+
+**Context.** New users face a cold-start problem: 5+ dropdowns, no intuition about which combinations sound good. Presets solve this by offering curated starting points.
+
+**Decision.** HTML buttons with `data-bpm`, `data-scale`, `data-tonic`, `data-bars`, `data-time` attributes. JS reads the dataset and sets all controls + transport in one handler. Active preset is highlighted; any manual parameter change clears it.
+
+**Consequences.**
+- Adding a preset is one HTML line — no JS changes needed.
+- Presets are opinionated but not locked — user can tweak any parameter after clicking.
+- No runtime cost; data attributes are parsed on click, not at load.
+
+**Alternatives.** JSON config file — extra fetch for a flat list. JS object map — works but duplicates what HTML data attributes do natively.
+
+---
+
 ## Decisions explicitly *not* made
 
 These came up during planning but were postponed; recording them so the next contributor doesn't redo the analysis.
