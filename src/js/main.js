@@ -10,6 +10,7 @@ import { randomSeed } from './generate/rng.js';
 import { songToMidi } from './export/midi.js';
 import { renderSongToBuffer, audioBufferToWav } from './export/wav.js';
 import { downloadBlob } from './export/download.js';
+import { createScoreCanvas } from './ui/ScoreCanvas.js';
 
 const statusEl = document.getElementById('status');
 const startBtn = document.getElementById('start');
@@ -38,6 +39,8 @@ const clearHistoryBtn = document.getElementById('clear-history');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
+
+const scoreCanvas = createScoreCanvas(document.getElementById('score-canvas'));
 
 const activeVoices = new Map();
 let ready = false;
@@ -177,6 +180,8 @@ function onBeat(beat, when) {
   if (songEnabledInput.checked && currentSong) {
     const beatInSong = beat % currentSong.lengthBeats;
     scheduleSongAtBeat(beatInSong, when);
+    scoreCanvas.setPlayhead(beatInSong);
+    scoreCanvas.render(currentSong);
   }
 }
 
@@ -208,6 +213,7 @@ function regenerateSong({ keepSeed = false } = {}) {
   seedInput.value = String(seed);
   songInfo.textContent = `seed ${seed} · ${currentSong.preset} · ${currentSong.events.length} notes`;
   pushUrlState();
+  scoreCanvas.render(currentSong);
 
   generateBtn.classList.add('flash');
   songInfo.classList.add('flash');
@@ -272,6 +278,8 @@ function stopPlayback() {
     metroBtn.textContent = 'Play';
     metroBtn.classList.remove('playing');
     setTimeout(() => piano.clearAllVisual(), 200);
+    scoreCanvas.setPlayhead(-1);
+    if (currentSong) scoreCanvas.render(currentSong);
   }
 }
 

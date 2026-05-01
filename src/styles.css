@@ -158,7 +158,8 @@ kbd {
 #generator,
 #export,
 #save-section,
-#history {
+#history,
+#score-section {
   background: #222;
   border: 1px solid #444;
   border-radius: 6px;
@@ -167,6 +168,12 @@ kbd {
   max-width: 640px;
   width: 100%;
   box-sizing: border-box;
+}
+
+#score-canvas {
+  width: 100%;
+  height: 120px;
+  display: block;
 }
 
 #metronome h2,
@@ -540,9 +547,14 @@ button {
   #generator,
   #export,
   #save-section,
-  #history {
+  #history,
+  #score-section {
     min-width: 0;
     padding: 10px 12px;
+  }
+
+  #score-canvas {
+    height: 90px;
   }
 
   .metronome-row {
