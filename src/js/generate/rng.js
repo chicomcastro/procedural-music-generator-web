@@ -13,6 +13,7 @@ export function randomSeed() {
 }
 
 export function pick(rng, arr) {
+  if (arr.length === 0) return undefined;
   return arr[Math.floor(rng() * arr.length)];
 }
 
