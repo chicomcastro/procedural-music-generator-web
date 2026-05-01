@@ -14,11 +14,17 @@ export function createVoice(ctx, destination, opts) {
   source.buffer = buffer;
   source.playbackRate.value = playbackRate;
 
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 800 + velocity * 14000;
+  filter.Q.value = 0.7;
+
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0, when);
   gain.gain.linearRampToValueAtTime(velocity, when + attack);
 
-  source.connect(gain);
+  source.connect(filter);
+  filter.connect(gain);
   gain.connect(destination);
   source.start(when);
 
@@ -26,6 +32,7 @@ export function createVoice(ctx, destination, opts) {
 
   function disconnect() {
     try { source.disconnect(); } catch {}
+    try { filter.disconnect(); } catch {}
     try { gain.disconnect(); } catch {}
   }
 
