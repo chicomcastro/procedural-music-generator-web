@@ -75,6 +75,7 @@ async function bootstrap() {
     startBtn.style.display = 'none';
     document.getElementById('hero').classList.add('collapsed');
     setStatus('Ready. Click the keys or press Play.');
+    startPlayback();
   } catch (err) {
     console.error(err);
     setStatus(`Error: ${err.message}`);
@@ -254,21 +255,33 @@ for (const btn of presetBtns) {
 const hasUrlSeed = new URLSearchParams(window.location.search).has('seed');
 regenerateSong({ keepSeed: hasUrlSeed });
 
-metroBtn.addEventListener('click', async () => {
-  await bootstrap();
-  if (!ready) return;
+function startPlayback() {
   if (!scheduler) {
     scheduler = createScheduler(getContext(), transport, onBeat);
   }
-  if (scheduler.isPlaying) {
+  if (!scheduler.isPlaying) {
+    scheduler.start();
+    metroBtn.textContent = 'Stop';
+    metroBtn.classList.add('playing');
+  }
+}
+
+function stopPlayback() {
+  if (scheduler && scheduler.isPlaying) {
     scheduler.stop();
     metroBtn.textContent = 'Play';
     metroBtn.classList.remove('playing');
     setTimeout(() => piano.clearAllVisual(), 200);
+  }
+}
+
+metroBtn.addEventListener('click', async () => {
+  await bootstrap();
+  if (!ready) return;
+  if (scheduler && scheduler.isPlaying) {
+    stopPlayback();
   } else {
-    scheduler.start();
-    metroBtn.textContent = 'Stop';
-    metroBtn.classList.add('playing');
+    startPlayback();
   }
 });
 
