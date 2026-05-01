@@ -63,6 +63,7 @@ const reverbInput = document.getElementById('reverb');
 const reverbDisplay = document.getElementById('reverb-display');
 const delayInput = document.getElementById('delay');
 const delayDisplay = document.getElementById('delay-display');
+const recordBtn = document.getElementById('record-btn');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
@@ -76,6 +77,10 @@ const activeVoices = new Map();
 let ready = false;
 let scheduler = null;
 let currentSong = null;
+let recording = false;
+let recordStartTime = 0;
+const recordedNotes = new Map();
+const recordedEvents = [];
 
 /* ---- Score canvas ---- */
 const scoreCanvas = createScoreCanvas(document.getElementById('score-canvas'), {
@@ -173,12 +178,31 @@ const piano = createPiano(pianoEl, {
       voice = createSynthVoice(ctx, dest, { midi, velocity: 0.9, preset: v });
     }
     activeVoices.set(midi, voice);
+    if (recording) {
+      const elapsed = (ctx.currentTime - recordStartTime);
+      const atBeat = elapsed / transport.beatDuration;
+      recordedNotes.set(midi, atBeat);
+    }
   },
   onRelease(midi) {
     const voice = activeVoices.get(midi);
     if (voice) {
       voice.release(0.4);
       activeVoices.delete(midi);
+    }
+    if (recording && recordedNotes.has(midi)) {
+      const startBeat = recordedNotes.get(midi);
+      const ctx = getContext();
+      const elapsed = (ctx.currentTime - recordStartTime);
+      const endBeat = elapsed / transport.beatDuration;
+      recordedEvents.push({
+        type: 'melody',
+        midi,
+        atBeat: startBeat,
+        durationBeats: Math.max(endBeat - startBeat, 0.1),
+        velocity: 0.8,
+      });
+      recordedNotes.delete(midi);
     }
   },
   onOctaveChange(oct) {
@@ -508,6 +532,35 @@ progressBar.addEventListener('click', (e) => {
   if (!wasPlaying) scheduler.stop();
   updateProgress(targetBeat);
   updatePlayerUI();
+});
+
+/* ---- Recording ---- */
+recordBtn.addEventListener('click', async () => {
+  await bootstrap();
+  if (!ready) return;
+  if (recording) {
+    recording = false;
+    recordBtn.classList.remove('recording');
+    recordBtn.textContent = '● Rec';
+    if (recordedEvents.length > 0 && currentSong) {
+      const totalBeats = currentSong.lengthBeats;
+      const looped = recordedEvents.map(ev => ({
+        ...ev,
+        atBeat: ev.atBeat % totalBeats,
+      }));
+      currentSong.events = [...currentSong.events.filter(e => e.type !== 'melody'), ...looped]
+        .sort((a, b) => a.atBeat - b.atBeat);
+      scoreCanvas.render(currentSong);
+    }
+  } else {
+    recording = true;
+    recordedEvents.length = 0;
+    recordedNotes.clear();
+    recordStartTime = getContext().currentTime;
+    recordBtn.classList.add('recording');
+    recordBtn.textContent = '■ Stop';
+    if (!scheduler || !scheduler.isPlaying) startPlayback();
+  }
 });
 
 /* ---- Export ---- */
