@@ -7,6 +7,9 @@ import { createTransport } from './scheduler/Transport.js';
 import { createScheduler } from './scheduler/Scheduler.js';
 import { generateSong } from './generate/song.js';
 import { randomSeed } from './generate/rng.js';
+import { songToMidi } from './export/midi.js';
+import { renderSongToBuffer, audioBufferToWav } from './export/wav.js';
+import { downloadBlob } from './export/download.js';
 
 const statusEl = document.getElementById('status');
 const startBtn = document.getElementById('start');
@@ -25,6 +28,9 @@ const barsSelect = document.getElementById('bars');
 const seedInput = document.getElementById('seed');
 const songInfo = document.getElementById('song-info');
 const kbdOctaveDisplay = document.getElementById('kbd-octave');
+const exportMidiBtn = document.getElementById('export-midi');
+const exportWavBtn = document.getElementById('export-wav');
+const exportStatus = document.getElementById('export-status');
 
 const activeVoices = new Map();
 let ready = false;
@@ -186,6 +192,34 @@ metroBtn.addEventListener('click', async () => {
     scheduler.start();
     metroBtn.textContent = 'Stop';
     metroBtn.classList.add('playing');
+  }
+});
+
+exportMidiBtn.addEventListener('click', () => {
+  if (!currentSong) return;
+  const bytes = songToMidi(currentSong, { bpm: transport.bpm });
+  downloadBlob(bytes, `song-${currentSong.seed}.mid`, 'audio/midi');
+  exportStatus.textContent = `MIDI: ${(bytes.length / 1024).toFixed(1)} KB`;
+});
+
+exportWavBtn.addEventListener('click', async () => {
+  if (!currentSong) return;
+  await bootstrap();
+  if (!ready) return;
+  exportStatus.textContent = 'Renderizando…';
+  exportWavBtn.disabled = true;
+  exportMidiBtn.disabled = true;
+  try {
+    const buf = await renderSongToBuffer(currentSong, transport);
+    const wav = audioBufferToWav(buf);
+    downloadBlob(wav, `song-${currentSong.seed}.wav`, 'audio/wav');
+    exportStatus.textContent = `WAV: ${(wav.length / 1024 / 1024).toFixed(2)} MB`;
+  } catch (err) {
+    console.error(err);
+    exportStatus.textContent = `Erro: ${err.message}`;
+  } finally {
+    exportWavBtn.disabled = false;
+    exportMidiBtn.disabled = false;
   }
 });
 
