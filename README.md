@@ -25,7 +25,7 @@ Then open <http://localhost:8000>.
 - [x] Phase 2 — QWERTY keyboard input, first-gesture bootstrap
 - [x] Phase 3 — Music theory modules (notes, scales, chords) — [tests](https://chicomcastro.github.io/procedural-music-generator-web/theory-tests.html)
 - [x] Phase 4 — Lookahead scheduler + transport (metronome)
-- [ ] Phase 5 — Procedural generators (progression, rhythm, melody)
+- [x] Phase 5 — Procedural generators (progression, rhythm, melody)
 - [ ] Phase 6 — Multi-octave playback
 - [ ] Phase 7 — Visualizer + UI controls
 - [ ] Phase 8 — MIDI / WAV export

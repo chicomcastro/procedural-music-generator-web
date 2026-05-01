@@ -38,12 +38,12 @@
     <p class="hint">Use o mouse, toque ou o teclado (<kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> e <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd>).</p>
 
     <section id="metronome">
-        <h2>Metrônomo</h2>
+        <h2>Player</h2>
         <div class="metronome-row">
             <button id="metronome-toggle" type="button">Play</button>
             <label for="bpm">BPM</label>
-            <input id="bpm" type="range" min="40" max="240" value="120">
-            <span id="bpm-display">120</span>
+            <input id="bpm" type="range" min="40" max="240" value="110">
+            <span id="bpm-display">110</span>
             <label for="beats-per-bar">Compasso</label>
             <select id="beats-per-bar">
                 <option value="2">2/4</option>
@@ -52,6 +52,56 @@
                 <option value="6">6/8</option>
             </select>
             <span class="beat-indicator" id="beat-indicator" aria-hidden="true"></span>
+        </div>
+        <div class="metronome-row">
+            <label><input type="checkbox" id="click-enabled"> Click track</label>
+            <label><input type="checkbox" id="song-enabled" checked> Música procedural</label>
+        </div>
+    </section>
+
+    <section id="generator">
+        <h2>Gerador</h2>
+        <div class="metronome-row">
+            <button id="generate-btn" type="button">Gerar nova</button>
+            <label for="tonic">Tônica</label>
+            <select id="tonic">
+                <option value="0" selected>C</option>
+                <option value="1">C#</option>
+                <option value="2">D</option>
+                <option value="3">D#</option>
+                <option value="4">E</option>
+                <option value="5">F</option>
+                <option value="6">F#</option>
+                <option value="7">G</option>
+                <option value="8">G#</option>
+                <option value="9">A</option>
+                <option value="10">A#</option>
+                <option value="11">B</option>
+            </select>
+            <label for="scale">Escala</label>
+            <select id="scale">
+                <option value="major" selected>major</option>
+                <option value="natural_minor">natural minor</option>
+                <option value="harmonic_minor">harmonic minor</option>
+                <option value="dorian">dorian</option>
+                <option value="phrygian">phrygian</option>
+                <option value="lydian">lydian</option>
+                <option value="mixolydian">mixolydian</option>
+                <option value="pentatonic_major">pentatonic major</option>
+                <option value="pentatonic_minor">pentatonic minor</option>
+                <option value="blues">blues</option>
+            </select>
+            <label for="bars">Compassos</label>
+            <select id="bars">
+                <option value="2">2</option>
+                <option value="4" selected>4</option>
+                <option value="8">8</option>
+            </select>
+        </div>
+        <div class="metronome-row">
+            <label for="seed">Seed</label>
+            <input id="seed" type="number" min="0" max="4294967295" step="1">
+            <span id="song-info" class="hint"></span>
         </div>
     </section>
 
