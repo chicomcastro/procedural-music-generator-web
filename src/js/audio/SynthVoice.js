@@ -7,6 +7,8 @@ const PRESETS = {
     filterQ: 1,
     attack: 0.15,
     release: 0.6,
+    vibratoRate: 4.5,
+    vibratoDepth: 8,
   },
   pluck: {
     oscTypes: ['triangle'],
@@ -18,6 +20,8 @@ const PRESETS = {
     release: 0.15,
     filterDecay: 0.2,
     filterSustainFreq: 600,
+    vibratoRate: 0,
+    vibratoDepth: 0,
   },
   bass: {
     oscTypes: ['sawtooth', 'square'],
@@ -27,6 +31,8 @@ const PRESETS = {
     filterQ: 3,
     attack: 0.01,
     release: 0.2,
+    vibratoRate: 0,
+    vibratoDepth: 0,
   },
   organ: {
     oscTypes: ['sine', 'sine', 'sine'],
@@ -36,6 +42,8 @@ const PRESETS = {
     filterQ: 0.5,
     attack: 0.01,
     release: 0.08,
+    vibratoRate: 5.5,
+    vibratoDepth: 6,
   },
   strings: {
     oscTypes: ['sawtooth', 'sawtooth'],
@@ -45,6 +53,8 @@ const PRESETS = {
     filterQ: 0.7,
     attack: 0.12,
     release: 0.5,
+    vibratoRate: 5,
+    vibratoDepth: 10,
   },
 };
 
@@ -100,10 +110,28 @@ export function createSynthVoice(ctx, destination, opts) {
     return osc;
   });
 
+  let lfo = null;
+  let lfoGain = null;
+  if (p.vibratoRate > 0 && p.vibratoDepth > 0) {
+    lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.setValueAtTime(p.vibratoRate, when);
+    lfoGain = ctx.createGain();
+    lfoGain.gain.setValueAtTime(0, when);
+    lfoGain.gain.linearRampToValueAtTime(p.vibratoDepth, when + attack * 2);
+    lfo.connect(lfoGain);
+    for (const osc of oscs) {
+      lfoGain.connect(osc.detune);
+    }
+    lfo.start(when);
+  }
+
   let stopped = false;
 
   function disconnect() {
     oscs.forEach(o => { try { o.disconnect(); } catch {} });
+    if (lfo) { try { lfo.disconnect(); } catch {} }
+    if (lfoGain) { try { lfoGain.disconnect(); } catch {} }
     try { filter.disconnect(); } catch {}
     try { gain.disconnect(); } catch {}
   }
@@ -115,6 +143,7 @@ export function createSynthVoice(ctx, destination, opts) {
     gain.gain.linearRampToValueAtTime(0, releaseStart + releaseTime);
     const stopTime = releaseStart + releaseTime + 0.05;
     oscs.forEach(o => o.stop(stopTime));
+    if (lfo) lfo.stop(stopTime);
     oscs[0].onended = disconnect;
     stopped = true;
   }
@@ -128,6 +157,7 @@ export function createSynthVoice(ctx, destination, opts) {
     gain.gain.linearRampToValueAtTime(0, t + rt);
     const stopTime = t + rt + 0.05;
     oscs.forEach(o => o.stop(stopTime));
+    if (lfo) lfo.stop(stopTime);
     oscs[0].onended = disconnect;
   }
 
