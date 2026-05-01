@@ -245,6 +245,35 @@ kbd {
   opacity: 1;
 }
 
+.preset-label {
+  font-size: 12px;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.preset-btn {
+  background: transparent;
+  color: #aaa;
+  border: 1px solid #555;
+  padding: 3px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: border-color 120ms, color 120ms, background-color 120ms;
+}
+
+.preset-btn:hover {
+  border-color: #4a8;
+  color: #4a8;
+}
+
+.preset-btn.active {
+  background: #4a8;
+  border-color: #4a8;
+  color: #fff;
+}
+
 #share-btn {
   background: transparent;
   color: #4a8;

@@ -111,6 +111,7 @@ bpmInput.addEventListener('input', (e) => {
   transport.setBpm(v);
   bpmDisplay.textContent = String(v);
   pushUrlState();
+  document.querySelectorAll('.preset-btn.active').forEach(b => b.classList.remove('active'));
 });
 
 beatsPerBarSelect.addEventListener('change', (e) => {
@@ -212,8 +213,33 @@ generateBtn.addEventListener('click', () => regenerateSong({ keepSeed: false }))
 seedInput.addEventListener('change', () => regenerateSong({ keepSeed: true }));
 
 [tonicSelect, scaleSelect, barsSelect].forEach(sel =>
-  sel.addEventListener('change', () => regenerateSong({ keepSeed: true }))
+  sel.addEventListener('change', () => {
+    clearActivePreset();
+    regenerateSong({ keepSeed: true });
+  })
 );
+
+const presetBtns = document.querySelectorAll('.preset-btn');
+
+function clearActivePreset() {
+  presetBtns.forEach(b => b.classList.remove('active'));
+}
+
+for (const btn of presetBtns) {
+  btn.addEventListener('click', () => {
+    bpmInput.value = btn.dataset.bpm;
+    bpmDisplay.textContent = btn.dataset.bpm;
+    transport.setBpm(Number(btn.dataset.bpm));
+    beatsPerBarSelect.value = btn.dataset.time;
+    transport.setBeatsPerBar(Number(btn.dataset.time));
+    tonicSelect.value = btn.dataset.tonic;
+    scaleSelect.value = btn.dataset.scale;
+    barsSelect.value = btn.dataset.bars;
+    clearActivePreset();
+    btn.classList.add('active');
+    regenerateSong({ keepSeed: false });
+  });
+}
 
 const hasUrlSeed = new URLSearchParams(window.location.search).has('seed');
 regenerateSong({ keepSeed: hasUrlSeed });

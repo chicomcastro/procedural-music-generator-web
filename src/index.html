@@ -60,6 +60,15 @@
 
     <section id="generator" aria-label="Song generator controls">
         <h2>Generator</h2>
+        <div class="metronome-row" id="presets-row">
+            <span class="preset-label">Presets</span>
+            <button class="preset-btn" type="button" data-bpm="72" data-scale="pentatonic_minor" data-tonic="9" data-bars="4" data-time="4">Lo-fi</button>
+            <button class="preset-btn" type="button" data-bpm="130" data-scale="mixolydian" data-tonic="7" data-bars="4" data-time="4">Jazz</button>
+            <button class="preset-btn" type="button" data-bpm="108" data-scale="major" data-tonic="0" data-bars="8" data-time="4">Classical</button>
+            <button class="preset-btn" type="button" data-bpm="90" data-scale="blues" data-tonic="4" data-bars="4" data-time="4">Blues</button>
+            <button class="preset-btn" type="button" data-bpm="140" data-scale="natural_minor" data-tonic="9" data-bars="4" data-time="4">Dark</button>
+            <button class="preset-btn" type="button" data-bpm="150" data-scale="dorian" data-tonic="2" data-bars="4" data-time="4">Funk</button>
+        </div>
         <div class="metronome-row">
             <label for="tonic" title="Root note of the scale">Tonic</label>
             <select id="tonic">
