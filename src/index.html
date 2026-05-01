@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -10,16 +10,16 @@
 </head>
 
 <body>
-    <button id="start" type="button">Iniciar áudio</button>
-    <div id="status">Clique em "Iniciar áudio" para carregar os samples.</div>
+    <button id="start" type="button">Start audio</button>
+    <div id="status">Click "Start audio" to load samples.</div>
 
     <div id="piano-scroll">
         <div id="piano"></div>
     </div>
 
     <p class="hint">
-        Use o mouse, toque ou o teclado (<kbd>A</kbd>–<kbd>J</kbd> brancas, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> pretas).
-        Oitava <span id="kbd-octave">3</span> &mdash; <kbd>Z</kbd>/<kbd>X</kbd> para mudar.
+        Mouse, touch, or keyboard (<kbd>A</kbd>–<kbd>J</kbd> white keys, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> black keys).
+        Octave <span id="kbd-octave">3</span> &mdash; <kbd>Z</kbd>/<kbd>X</kbd> to shift.
     </p>
 
     <section id="metronome">
@@ -29,7 +29,7 @@
             <label for="bpm">BPM</label>
             <input id="bpm" type="range" min="40" max="240" value="110">
             <span id="bpm-display">110</span>
-            <label for="beats-per-bar">Compasso</label>
+            <label for="beats-per-bar">Time</label>
             <select id="beats-per-bar">
                 <option value="2">2/4</option>
                 <option value="3">3/4</option>
@@ -40,15 +40,15 @@
         </div>
         <div class="metronome-row">
             <label><input type="checkbox" id="click-enabled"> Click track</label>
-            <label><input type="checkbox" id="song-enabled" checked> Música procedural</label>
+            <label><input type="checkbox" id="song-enabled" checked> Procedural music</label>
         </div>
     </section>
 
     <section id="generator">
-        <h2>Gerador</h2>
+        <h2>Generator</h2>
         <div class="metronome-row">
-            <button id="generate-btn" type="button">Gerar nova</button>
-            <label for="tonic">Tônica</label>
+            <button id="generate-btn" type="button">Generate new</button>
+            <label for="tonic">Tonic</label>
             <select id="tonic">
                 <option value="0" selected>C</option>
                 <option value="1">C#</option>
@@ -63,7 +63,7 @@
                 <option value="10">A#</option>
                 <option value="11">B</option>
             </select>
-            <label for="scale">Escala</label>
+            <label for="scale">Scale</label>
             <select id="scale">
                 <option value="major" selected>major</option>
                 <option value="natural_minor">natural minor</option>
@@ -76,7 +76,7 @@
                 <option value="pentatonic_minor">pentatonic minor</option>
                 <option value="blues">blues</option>
             </select>
-            <label for="bars">Compassos</label>
+            <label for="bars">Bars</label>
             <select id="bars">
                 <option value="2">2</option>
                 <option value="4" selected>4</option>
@@ -91,10 +91,10 @@
     </section>
 
     <section id="export">
-        <h2>Exportar</h2>
+        <h2>Export</h2>
         <div class="metronome-row">
-            <button id="export-midi" type="button">Baixar MIDI</button>
-            <button id="export-wav" type="button">Renderizar WAV</button>
+            <button id="export-midi" type="button">Download MIDI</button>
+            <button id="export-wav" type="button">Render WAV</button>
             <span id="export-status" class="hint"></span>
         </div>
     </section>

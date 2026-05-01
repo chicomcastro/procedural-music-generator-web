@@ -45,17 +45,17 @@ function setStatus(msg) {
 
 async function bootstrap() {
   if (ready) return;
-  setStatus('Carregando samples…');
+  setStatus('Loading samples…');
   startBtn.disabled = true;
   try {
     const ctx = await init();
     await loadAll(ctx);
     ready = true;
     startBtn.style.display = 'none';
-    setStatus('Pronto. Clique nas teclas ou em Play.');
+    setStatus('Ready. Click the keys or press Play.');
   } catch (err) {
     console.error(err);
-    setStatus(`Erro: ${err.message}`);
+    setStatus(`Error: ${err.message}`);
     startBtn.disabled = false;
   }
 }
@@ -164,7 +164,7 @@ function regenerateSong({ keepSeed = false } = {}) {
   currentSong = generateSong({ seed, tonic, scale, bars, beatsPerBar: transport.beatsPerBar });
 
   seedInput.value = String(seed);
-  songInfo.textContent = `seed ${seed} · ${currentSong.preset} · ${currentSong.events.length} notas`;
+  songInfo.textContent = `seed ${seed} · ${currentSong.preset} · ${currentSong.events.length} notes`;
 }
 
 generateBtn.addEventListener('click', () => regenerateSong({ keepSeed: false }));
@@ -206,7 +206,7 @@ exportWavBtn.addEventListener('click', async () => {
   if (!currentSong) return;
   await bootstrap();
   if (!ready) return;
-  exportStatus.textContent = 'Renderizando…';
+  exportStatus.textContent = 'Rendering…';
   exportWavBtn.disabled = true;
   exportMidiBtn.disabled = true;
   try {
@@ -216,7 +216,7 @@ exportWavBtn.addEventListener('click', async () => {
     exportStatus.textContent = `WAV: ${(wav.length / 1024 / 1024).toFixed(2)} MB`;
   } catch (err) {
     console.error(err);
-    exportStatus.textContent = `Erro: ${err.message}`;
+    exportStatus.textContent = `Error: ${err.message}`;
   } finally {
     exportWavBtn.disabled = false;
     exportMidiBtn.disabled = false;
