@@ -155,6 +155,14 @@
             <span id="velocity-display">80%</span>
         </div>
         <div class="metronome-row">
+            <label for="melody-vol" data-tip="Melody track volume">Melody</label>
+            <input id="melody-vol" type="range" min="0" max="1.0" step="0.05" value="1.0" aria-label="Melody volume">
+            <span id="melody-vol-display">100%</span>
+            <label for="chord-vol" data-tip="Chord track volume">Chords</label>
+            <input id="chord-vol" type="range" min="0" max="1.0" step="0.05" value="0.7" aria-label="Chord volume">
+            <span id="chord-vol-display">70%</span>
+        </div>
+        <div class="metronome-row">
             <label for="seed" data-tip="Same seed = same song">Seed</label>
             <input id="seed" type="number" min="0" max="4294967295" step="1" data-tip="Enter a seed to reproduce a melody">
             <button id="generate-btn" type="button" data-tip="Roll a new random seed">&#127922; Randomize</button>

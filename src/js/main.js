@@ -48,6 +48,10 @@ const transposeDownBtn = document.getElementById('transpose-down');
 const transposeDisplay = document.getElementById('transpose-display');
 const velocityInput = document.getElementById('velocity');
 const velocityDisplay = document.getElementById('velocity-display');
+const melodyVolInput = document.getElementById('melody-vol');
+const melodyVolDisplay = document.getElementById('melody-vol-display');
+const chordVolInput = document.getElementById('chord-vol');
+const chordVolDisplay = document.getElementById('chord-vol-display');
 const reverbInput = document.getElementById('reverb');
 const reverbDisplay = document.getElementById('reverb-display');
 const delayInput = document.getElementById('delay');
@@ -184,7 +188,8 @@ function scheduleNote(midi, when, durationSec, velocity, evType = 'melody') {
   const ctx = getContext();
   const dest = getMasterGain();
   const voice = getSelectedVoice();
-  const vel = velocity * Number(velocityInput.value);
+  const trackVol = evType === 'chord' ? Number(chordVolInput.value) : Number(melodyVolInput.value);
+  const vel = velocity * Number(velocityInput.value) * trackVol;
 
   if (voice === 'piano') {
     const { buffer, playbackRate } = getPlaybackFor(midi);
@@ -383,6 +388,14 @@ velocityInput.addEventListener('input', (e) => {
   velocityDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
   pushUrlState();
   checkUnsaved();
+});
+
+melodyVolInput.addEventListener('input', (e) => {
+  melodyVolDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
+});
+
+chordVolInput.addEventListener('input', (e) => {
+  chordVolDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
 });
 
 reverbInput.addEventListener('input', (e) => {

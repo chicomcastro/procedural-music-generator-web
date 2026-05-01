@@ -409,12 +409,12 @@ input[type="text"]:focus {
   font-family: monospace;
 }
 
-#bpm, #density, #swing, #velocity, #reverb, #delay {
+#bpm, #density, #swing, #velocity, #reverb, #delay, #melody-vol, #chord-vol {
   width: 120px;
   accent-color: var(--accent);
 }
 
-#bpm-display, #density-display, #swing-display, #velocity-display, #reverb-display, #delay-display {
+#bpm-display, #density-display, #swing-display, #velocity-display, #reverb-display, #delay-display, #melody-vol-display, #chord-vol-display {
   font-family: monospace;
   font-size: 13px;
   min-width: 30px;
