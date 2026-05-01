@@ -1,3 +1,4 @@
+/** @param {{ bpm?: number, beatsPerBar?: number }} [opts] @returns {{ bpm: number, beatsPerBar: number, beatDuration: number, setBpm: (n: number) => void, setBeatsPerBar: (n: number) => void }} */
 export function createTransport({ bpm = 120, beatsPerBar = 4 } = {}) {
   const state = { bpm, beatsPerBar };
   return {

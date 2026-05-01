@@ -15,12 +15,14 @@ export const SCALES = {
   blues:           [0, 3, 5, 6, 7, 10],
 };
 
+/** @param {string} scaleName @returns {number[]} interval pattern */
 export function getScale(scaleName) {
   const intervals = SCALES[scaleName];
   if (!intervals) throw new Error(`Unknown scale: ${scaleName}`);
   return intervals;
 }
 
+/** @param {number} rootMidi @param {string} scaleName @param {number} [octaves] @returns {number[]} */
 export function scaleNotes(rootMidi, scaleName, octaves = 1) {
   const intervals = getScale(scaleName);
   const out = [];
@@ -30,12 +32,14 @@ export function scaleNotes(rootMidi, scaleName, octaves = 1) {
   return out;
 }
 
+/** @param {number} midi @param {number} rootMidi @param {string} scaleName @returns {boolean} */
 export function isInScale(midi, rootMidi, scaleName) {
   const intervals = getScale(scaleName);
   const pc = pitchClass(midi - rootMidi);
   return intervals.includes(pc);
 }
 
+/** @param {number} midi @param {number} rootMidi @param {string} scaleName @returns {number|null} */
 export function degreeOf(midi, rootMidi, scaleName) {
   const intervals = getScale(scaleName);
   const pc = pitchClass(midi - rootMidi);

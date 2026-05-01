@@ -1,6 +1,7 @@
 import { createVoice } from '../audio/Voice.js';
 import { getPlaybackFor } from '../audio/SampleLibrary.js';
 
+/** @param {Object} song @param {Object} transport @returns {Promise<AudioBuffer>} */
 export async function renderSongToBuffer(song, transport, { sampleRate = 44100, tailSeconds = 1.5 } = {}) {
   const beatDuration = 60 / transport.bpm;
   const lengthSec = song.lengthBeats * beatDuration + tailSeconds;
@@ -33,6 +34,7 @@ function writeAscii(view, offset, str) {
   for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
 }
 
+/** @param {AudioBuffer} buf @returns {Uint8Array} 16-bit PCM WAV */
 export function audioBufferToWav(buf) {
   const numCh = buf.numberOfChannels;
   const sampleRate = buf.sampleRate;

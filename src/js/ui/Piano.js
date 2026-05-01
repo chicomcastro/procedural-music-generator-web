@@ -31,6 +31,7 @@ function midiAt(octave, pc) {
   return (octave + 1) * 12 + pc;
 }
 
+/** @param {HTMLElement} rootEl @returns {{ setPressed: (midi: number, on: boolean) => void, setVisual: (midi: number, on: boolean) => void, clearAllVisual: () => void, keyboardOctave: number }} */
 export function createPiano(rootEl, { startOctave = 3, octaves = 2, onAttack, onRelease, onOctaveChange = null }) {
   rootEl.innerHTML = '';
   const keyByMidi = new Map();

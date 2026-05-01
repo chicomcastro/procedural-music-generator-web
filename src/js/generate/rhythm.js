@@ -1,3 +1,4 @@
+/** @param {() => number} rng @returns {{ atBeat: number, durationBeats: number, isDownbeat: boolean, onBeat: boolean }[]} */
 export function generateRhythm(rng, { bars = 4, beatsPerBar = 4, density = 0.65, swing = 0 }) {
   const slots = bars * beatsPerBar * 2;
   const onsets = [];

@@ -3,6 +3,7 @@ import { generateProgression } from './progression.js';
 import { generateRhythm } from './rhythm.js';
 import { generateMelody } from './melody.js';
 
+/** @returns {{ seed: number, tonic: number, scale: string, bars: number, beatsPerBar: number, preset: string, lengthBeats: number, events: Object[] }} */
 export function generateSong({
   seed = randomSeed(),
   tonic = 60,

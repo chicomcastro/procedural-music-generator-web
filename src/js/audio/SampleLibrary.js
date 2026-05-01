@@ -15,6 +15,7 @@ const SAMPLE_FILES = {
 
 const buffers = new Map();
 
+/** @param {AudioContext} ctx @param {string} [baseUrl] @returns {Promise<Map<number, AudioBuffer>>} */
 export async function loadAll(ctx, baseUrl = 'sounds/') {
   const entries = Object.entries(SAMPLE_FILES);
   await Promise.all(entries.map(async ([midi, file]) => {
@@ -27,6 +28,7 @@ export async function loadAll(ctx, baseUrl = 'sounds/') {
   return buffers;
 }
 
+/** @param {number} midi @returns {{ buffer: AudioBuffer, playbackRate: number }} */
 export function getPlaybackFor(midi) {
   if (buffers.size === 0) {
     throw new Error('SampleLibrary not loaded; call loadAll() first');
@@ -46,6 +48,7 @@ export function getPlaybackFor(midi) {
   };
 }
 
+/** @returns {number[]} */
 export function getLoadedMidiNumbers() {
   return [...buffers.keys()].sort((a, b) => a - b);
 }

@@ -16,18 +16,21 @@ export const SEVENTHS = {
   minMaj7: [0, 3, 7, 11],
 };
 
+/** @param {number} rootMidi @param {string} [quality] @returns {number[]} */
 export function triad(rootMidi, quality = 'major') {
   const intervals = TRIADS[quality];
   if (!intervals) throw new Error(`Unknown triad quality: ${quality}`);
   return intervals.map(i => rootMidi + i);
 }
 
+/** @param {number} rootMidi @param {string} [quality] @returns {number[]} */
 export function seventh(rootMidi, quality = 'maj7') {
   const intervals = SEVENTHS[quality];
   if (!intervals) throw new Error(`Unknown seventh quality: ${quality}`);
   return intervals.map(i => rootMidi + i);
 }
 
+/** @param {number} tonicMidi @param {string} scaleName @param {number} degree 1-based @param {{ seventh?: boolean }} [opts] @returns {number[]} */
 export function chordFromDegree(tonicMidi, scaleName, degree, { seventh: addSeventh = false } = {}) {
   const intervals = getScale(scaleName);
   if (intervals.length < 7) {
@@ -53,6 +56,7 @@ export const PROGRESSIONS = {
   twelve_bar: [1, 1, 1, 1, 4, 4, 1, 1, 5, 4, 1, 5],
 };
 
+/** @param {number} tonicMidi @param {string} scaleName @param {number[]} degrees @returns {number[][]} */
 export function progression(tonicMidi, scaleName, degrees, opts) {
   return degrees.map(d => chordFromDegree(tonicMidi, scaleName, d, opts));
 }

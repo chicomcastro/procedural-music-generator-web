@@ -1,3 +1,4 @@
+/** @param {AudioContext} ctx @param {AudioNode} dest @param {number} when @param {{ accent?: boolean }} [opts] */
 export function playClick(ctx, dest, when, { accent = false } = {}) {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();

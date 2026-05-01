@@ -17,6 +17,7 @@ function ascii(s) {
   return out;
 }
 
+/** @param {Object} song @param {{ bpm?: number, channel?: number }} [opts] @returns {Uint8Array} Standard MIDI File Format 0 */
 export function songToMidi(song, { bpm = 120, channel = 0 } = {}) {
   const ch = channel & 0x0F;
   const evs = [];

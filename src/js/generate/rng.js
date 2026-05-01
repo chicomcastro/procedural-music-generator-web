@@ -1,3 +1,4 @@
+/** @param {number} seed @returns {() => number} deterministic RNG returning [0, 1) */
 export function mulberry32(seed) {
   let t = seed >>> 0;
   return function rng() {
@@ -8,15 +9,18 @@ export function mulberry32(seed) {
   };
 }
 
+/** @returns {number} unsigned 32-bit integer */
 export function randomSeed() {
   return (Math.random() * 0xFFFFFFFF) >>> 0;
 }
 
+/** @template T @param {() => number} rng @param {T[]} arr @returns {T|undefined} */
 export function pick(rng, arr) {
   if (arr.length === 0) return undefined;
   return arr[Math.floor(rng() * arr.length)];
 }
 
+/** @template T @param {() => number} rng @param {T[]} items @param {number[]} weights @returns {T} */
 export function weighted(rng, items, weights) {
   let total = 0;
   for (const w of weights) total += w;

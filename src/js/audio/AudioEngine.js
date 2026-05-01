@@ -2,14 +2,17 @@ let ctx = null;
 let masterGain = null;
 let compressor = null;
 
+/** @returns {AudioContext|null} */
 export function getContext() {
   return ctx;
 }
 
+/** @returns {GainNode|null} */
 export function getMasterGain() {
   return masterGain;
 }
 
+/** @returns {Promise<AudioContext>} */
 export async function init() {
   if (!ctx) {
     const Ctx = window.AudioContext || window.webkitAudioContext;

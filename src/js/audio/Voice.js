@@ -1,3 +1,4 @@
+/** @param {BaseAudioContext} ctx @param {AudioNode} destination @returns {{ release: (rt?: number) => void }} */
 export function createVoice(ctx, destination, opts) {
   const {
     buffer,

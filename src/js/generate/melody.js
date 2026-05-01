@@ -18,6 +18,7 @@ function findActiveChord(progression, atBeat) {
   return null;
 }
 
+/** @param {() => number} rng @returns {{ midi: number, atBeat: number, durationBeats: number, velocity: number }[]} */
 export function generateMelody(rng, { progression, rhythm, scale, tonic, range = [tonic - 5, tonic + 14] }) {
   const allowed = scaleNotes(tonic, scale, 4).filter(n => n >= range[0] && n <= range[1]);
   if (allowed.length === 0) throw new Error('Empty melody range; check tonic/scale/range');

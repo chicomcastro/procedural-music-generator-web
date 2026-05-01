@@ -1,6 +1,7 @@
 import { progression as buildProgression, PROGRESSIONS } from '../theory/chords.js';
 import { pick } from './rng.js';
 
+/** @param {() => number} rng @returns {{ preset: string, chords: Object[] }} */
 export function generateProgression(rng, { tonic, scale, bars = 4, beatsPerBar = 4, preset = null }) {
   const presetName = preset ?? pick(rng, Object.keys(PROGRESSIONS));
   const template = PROGRESSIONS[presetName];

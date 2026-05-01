@@ -1,6 +1,7 @@
 const LOOKAHEAD_MS = 25;
 const SCHEDULE_AHEAD_TIME = 0.1;
 
+/** @param {AudioContext} ctx @param {Object} transport @param {(beat: number, when: number) => void} onBeat @returns {{ isPlaying: boolean, currentBeat: number, start: () => void, stop: () => void }} */
 export function createScheduler(ctx, transport, onBeat) {
   let intervalId = null;
   let nextNoteTime = 0;
