@@ -962,14 +962,96 @@ input[type="text"]:focus {
   }
 
   .metronome-row {
-    gap: 8px;
+    gap: 6px;
   }
 
-  #bpm {
-    width: 100px;
+  .metronome-row label {
+    font-size: 10px;
+  }
+
+  #bpm, #density, #swing, #velocity, #reverb, #delay, #melody-vol, #chord-vol, #eq-low, #eq-mid, #eq-high {
+    width: 80px;
+  }
+
+  select {
+    max-width: 100px;
+    font-size: 12px;
+  }
+
+  .preset-btn {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+
+  .player-transport {
+    gap: 6px;
+  }
+
+  #play-pause,
+  #stop-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .time-display {
+    font-size: 11px;
+    min-width: 70px;
+  }
+
+  .transpose-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+  }
+
+  #theme-toggle,
+  #shortcuts-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+
+  #shortcuts-btn {
+    right: 50px;
+  }
+
+  #theme-toggle {
+    right: 10px;
   }
 
   .hint {
     font-size: 12px;
+  }
+
+  .history-item {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+  }
+
+  .history-item-meta {
+    font-size: 10px;
+  }
+
+  .history-item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  [data-tip]::after {
+    display: none;
+  }
+
+  #generate-btn,
+  #save-btn,
+  #export-midi,
+  #export-wav,
+  #share-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  #seed {
+    width: 90px;
   }
 }
