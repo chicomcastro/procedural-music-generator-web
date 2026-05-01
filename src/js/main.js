@@ -631,6 +631,10 @@ function loadEntry(e) {
   checkUnsaved();
 }
 
+songNameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') saveBtn.click();
+});
+
 saveBtn.addEventListener('click', () => {
   if (!currentSong) return;
   const snap = currentSnapshot();
