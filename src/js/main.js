@@ -1,4 +1,4 @@
-import { init, getContext, getMasterGain } from './audio/AudioEngine.js';
+import { init, getContext, getMasterGain, getReverbSend, getDelaySend, setReverbAmount, setDelayAmount } from './audio/AudioEngine.js';
 import { loadAll, getPlaybackFor } from './audio/SampleLibrary.js';
 import { createVoice } from './audio/Voice.js';
 import { createSynthVoice } from './audio/SynthVoice.js';
@@ -48,6 +48,10 @@ const transposeDownBtn = document.getElementById('transpose-down');
 const transposeDisplay = document.getElementById('transpose-display');
 const velocityInput = document.getElementById('velocity');
 const velocityDisplay = document.getElementById('velocity-display');
+const reverbInput = document.getElementById('reverb');
+const reverbDisplay = document.getElementById('reverb-display');
+const delayInput = document.getElementById('delay');
+const delayDisplay = document.getElementById('delay-display');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
@@ -379,6 +383,18 @@ velocityInput.addEventListener('input', (e) => {
   velocityDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
   pushUrlState();
   checkUnsaved();
+});
+
+reverbInput.addEventListener('input', (e) => {
+  const v = Number(e.target.value);
+  reverbDisplay.textContent = `${Math.round(v * 100)}%`;
+  setReverbAmount(v);
+});
+
+delayInput.addEventListener('input', (e) => {
+  const v = Number(e.target.value);
+  delayDisplay.textContent = `${Math.round(v * 100)}%`;
+  setDelayAmount(v);
 });
 
 /* ---- Presets ---- */

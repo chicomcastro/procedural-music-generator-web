@@ -1,3 +1,5 @@
+import { initEffects, getReverbSend, getDelaySend } from './Effects.js';
+
 let ctx = null;
 let masterGain = null;
 let compressor = null;
@@ -12,6 +14,9 @@ export function getMasterGain() {
   return masterGain;
 }
 
+export { getReverbSend, getDelaySend };
+export { setReverbAmount, setDelayAmount } from './Effects.js';
+
 /** @returns {Promise<AudioContext>} */
 export async function init() {
   if (!ctx) {
@@ -24,6 +29,10 @@ export async function init() {
 
     masterGain.connect(compressor);
     compressor.connect(ctx.destination);
+
+    initEffects(ctx, compressor);
+    masterGain.connect(getReverbSend());
+    masterGain.connect(getDelaySend());
 
     primeIosUnlock();
   }
