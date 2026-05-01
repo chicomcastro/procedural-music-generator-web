@@ -30,11 +30,18 @@ export function seventh(rootMidi, quality = 'maj7') {
   return intervals.map(i => rootMidi + i);
 }
 
+const CHORD_SCALE_FALLBACK = {
+  blues: 'natural_minor',
+  pentatonic_minor: 'natural_minor',
+  pentatonic_major: 'major',
+};
+
 /** @param {number} tonicMidi @param {string} scaleName @param {number} degree 1-based @param {{ seventh?: boolean }} [opts] @returns {number[]} */
 export function chordFromDegree(tonicMidi, scaleName, degree, { seventh: addSeventh = false } = {}) {
-  const intervals = getScale(scaleName);
+  const resolved = CHORD_SCALE_FALLBACK[scaleName] || scaleName;
+  const intervals = getScale(resolved);
   if (intervals.length < 7) {
-    throw new Error(`Diatonic chords require a 7-note scale, got ${scaleName} (${intervals.length} notes)`);
+    throw new Error(`Diatonic chords require a 7-note scale, got ${resolved} (${intervals.length} notes)`);
   }
   const idx = degree - 1;
   const at = (k) => {
