@@ -342,3 +342,55 @@ button {
   opacity: 0.5;
   cursor: default;
 }
+
+@media (max-width: 600px) {
+  body {
+    padding: 16px 8px;
+    gap: 16px;
+  }
+
+  #hero h1 {
+    font-size: 22px;
+  }
+
+  #hero .tagline {
+    font-size: 14px;
+  }
+
+  .key {
+    width: 36px;
+    height: 150px;
+  }
+
+  .key.black {
+    width: 22px;
+    height: 100px;
+  }
+
+  .key-group.black-keys {
+    gap: 50px;
+  }
+
+  .key-subgroup {
+    gap: 14px;
+  }
+
+  #metronome,
+  #generator,
+  #export {
+    min-width: 0;
+    padding: 10px 12px;
+  }
+
+  .metronome-row {
+    gap: 8px;
+  }
+
+  #bpm {
+    width: 100px;
+  }
+
+  .hint {
+    font-size: 12px;
+  }
+}
