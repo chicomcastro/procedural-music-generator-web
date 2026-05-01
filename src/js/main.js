@@ -24,6 +24,7 @@ const scaleSelect = document.getElementById('scale');
 const barsSelect = document.getElementById('bars');
 const seedInput = document.getElementById('seed');
 const songInfo = document.getElementById('song-info');
+const kbdOctaveDisplay = document.getElementById('kbd-octave');
 
 const activeVoices = new Map();
 let ready = false;
@@ -54,6 +55,8 @@ async function bootstrap() {
 }
 
 createPiano(pianoEl, {
+  startOctave: 3,
+  octaves: 2,
   onAttack(midi) {
     if (!ready) return;
     const ctx = getContext();
@@ -70,6 +73,9 @@ createPiano(pianoEl, {
       voice.release(0.4);
       activeVoices.delete(midi);
     }
+  },
+  onOctaveChange(oct) {
+    kbdOctaveDisplay.textContent = String(oct);
   },
 });
 

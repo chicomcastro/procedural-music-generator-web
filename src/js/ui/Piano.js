@@ -8,7 +8,7 @@ const NOTE_OFFSETS = {
   'B': 11,
 };
 
-export function noteNameToMidi(name, octave = 3) {
+export function noteNameToMidi(name, octave) {
   const offset = NOTE_OFFSETS[name];
   if (offset == null) throw new Error(`Unknown note: ${name}`);
   return (octave + 1) * 12 + offset;
@@ -24,16 +24,68 @@ const KEYBOARD_MAP = {
   KeyJ: 'B',
 };
 
-export function createPiano(rootEl, { onAttack, onRelease }) {
-  const keys = [...rootEl.querySelectorAll('.key')];
+const WHITE_PCS = [0, 2, 4, 5, 7, 9, 11];
+const BLACK_GROUPS = [[1, 3], [6, 8, 10]];
+
+function midiAt(octave, pc) {
+  return (octave + 1) * 12 + pc;
+}
+
+export function createPiano(rootEl, { startOctave = 3, octaves = 2, onAttack, onRelease, onOctaveChange = null }) {
+  rootEl.innerHTML = '';
   const keyByMidi = new Map();
-  for (const el of keys) {
-    const midi = noteNameToMidi(el.dataset.note, 3);
-    el.dataset.midi = String(midi);
-    keyByMidi.set(midi, el);
+
+  const whiteRow = document.createElement('div');
+  whiteRow.className = 'key-group white-keys';
+  for (let o = 0; o < octaves; o++) {
+    for (const pc of WHITE_PCS) {
+      const midi = midiAt(startOctave + o, pc);
+      const el = document.createElement('div');
+      el.className = 'key';
+      el.dataset.midi = String(midi);
+      whiteRow.appendChild(el);
+      keyByMidi.set(midi, el);
+    }
   }
 
-  const activePointers = new Map();
+  const blackRow = document.createElement('div');
+  blackRow.className = 'key-group black-keys';
+  for (let o = 0; o < octaves; o++) {
+    for (const group of BLACK_GROUPS) {
+      const subgroup = document.createElement('div');
+      subgroup.className = 'key-subgroup';
+      for (const pc of group) {
+        const midi = midiAt(startOctave + o, pc);
+        const el = document.createElement('div');
+        el.className = 'key black';
+        el.dataset.midi = String(midi);
+        subgroup.appendChild(el);
+        keyByMidi.set(midi, el);
+      }
+      blackRow.appendChild(subgroup);
+    }
+  }
+
+  rootEl.appendChild(whiteRow);
+  rootEl.appendChild(blackRow);
+
+  let kbdOctave = startOctave;
+  const minKbdOctave = startOctave;
+  const maxKbdOctave = startOctave + octaves - 1;
+
+  function updateKbdHints() {
+    rootEl.querySelectorAll('.keyhint').forEach(el => el.remove());
+    for (const [code, note] of Object.entries(KEYBOARD_MAP)) {
+      const midi = noteNameToMidi(note, kbdOctave);
+      const keyEl = keyByMidi.get(midi);
+      if (!keyEl) continue;
+      const span = document.createElement('span');
+      span.className = 'keyhint';
+      span.textContent = code.replace('Key', '');
+      keyEl.appendChild(span);
+    }
+    if (onOctaveChange) onOctaveChange(kbdOctave);
+  }
 
   function press(midi, source) {
     const el = keyByMidi.get(midi);
@@ -53,7 +105,9 @@ export function createPiano(rootEl, { onAttack, onRelease }) {
     onRelease(midi);
   }
 
-  for (const el of keys) {
+  const activePointers = new Map();
+
+  for (const el of keyByMidi.values()) {
     el.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       const midi = Number(el.dataset.midi);
@@ -75,12 +129,29 @@ export function createPiano(rootEl, { onAttack, onRelease }) {
   const heldByCode = new Map();
 
   window.addEventListener('keydown', (e) => {
-    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.code === 'KeyZ' && !e.repeat) {
+      if (kbdOctave > minKbdOctave) {
+        kbdOctave -= 1;
+        updateKbdHints();
+      }
+      e.preventDefault();
+      return;
+    }
+    if (e.code === 'KeyX' && !e.repeat) {
+      if (kbdOctave < maxKbdOctave) {
+        kbdOctave += 1;
+        updateKbdHints();
+      }
+      e.preventDefault();
+      return;
+    }
+    if (e.repeat) return;
     const note = KEYBOARD_MAP[e.code];
     if (!note) return;
     e.preventDefault();
     if (heldByCode.has(e.code)) return;
-    const midi = noteNameToMidi(note, 3);
+    const midi = noteNameToMidi(note, kbdOctave);
     heldByCode.set(e.code, midi);
     press(midi, `key:${e.code}`);
   });
@@ -97,10 +168,13 @@ export function createPiano(rootEl, { onAttack, onRelease }) {
     heldByCode.clear();
   });
 
+  updateKbdHints();
+
   return {
     setPressed(midi, on) {
       if (on) press(midi, 'external');
       else releaseKey(midi);
     },
+    get keyboardOctave() { return kbdOctave; },
   };
 }
