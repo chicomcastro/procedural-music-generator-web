@@ -114,6 +114,23 @@
         </div>
     </section>
 
+    <section id="save-section" aria-label="Save current song">
+        <div class="metronome-row">
+            <input id="song-name" type="text" placeholder="Name this melody…" title="Give your melody a name before saving">
+            <button id="save-btn" type="button" title="Save current melody to browser storage">Save</button>
+            <span id="save-hint" class="hint" aria-live="polite"></span>
+        </div>
+    </section>
+
+    <section id="history" aria-label="Saved melodies">
+        <div class="history-header">
+            <h2>History <span class="history-badge">saved locally in your browser</span></h2>
+            <button id="clear-history" type="button" title="Delete all saved melodies">Clear all</button>
+        </div>
+        <div id="history-list"></div>
+        <p id="history-empty" class="hint">No saved melodies yet.</p>
+    </section>
+
     <section id="export" aria-label="Export options">
         <h2>Export</h2>
         <div class="metronome-row">

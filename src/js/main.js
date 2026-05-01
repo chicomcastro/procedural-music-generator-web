@@ -29,12 +29,19 @@ const seedInput = document.getElementById('seed');
 const songInfo = document.getElementById('song-info');
 const kbdOctaveDisplay = document.getElementById('kbd-octave');
 const shareBtn = document.getElementById('share-btn');
+const songNameInput = document.getElementById('song-name');
+const saveBtn = document.getElementById('save-btn');
+const saveHint = document.getElementById('save-hint');
+const historyList = document.getElementById('history-list');
+const historyEmpty = document.getElementById('history-empty');
+const clearHistoryBtn = document.getElementById('clear-history');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
 
 const activeVoices = new Map();
 let ready = false;
+let lastSavedSnapshot = null;
 
 function applyUrlParams() {
   const p = new URLSearchParams(window.location.search);
@@ -112,6 +119,7 @@ bpmInput.addEventListener('input', (e) => {
   bpmDisplay.textContent = String(v);
   pushUrlState();
   document.querySelectorAll('.preset-btn.active').forEach(b => b.classList.remove('active'));
+  checkUnsaved();
 });
 
 beatsPerBarSelect.addEventListener('change', (e) => {
@@ -206,6 +214,8 @@ function regenerateSong({ keepSeed = false } = {}) {
     generateBtn.classList.remove('flash');
     songInfo.classList.remove('flash');
   }, 200);
+
+  checkUnsaved();
 }
 
 generateBtn.addEventListener('click', () => regenerateSong({ keepSeed: false }));
@@ -305,6 +315,153 @@ shareBtn.addEventListener('click', async () => {
     setTimeout(() => { shareBtn.textContent = 'Share'; }, 1500);
   }
 });
+
+const STORAGE_KEY = 'seedsong-history';
+
+function getHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch { return []; }
+}
+
+function saveHistory(entries) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+function currentSnapshot() {
+  return {
+    seed: seedInput.value,
+    bpm: bpmInput.value,
+    time: beatsPerBarSelect.value,
+    tonic: tonicSelect.value,
+    scale: scaleSelect.value,
+    bars: barsSelect.value,
+  };
+}
+
+function snapshotsMatch(a, b) {
+  if (!a || !b) return false;
+  return a.seed === b.seed && a.bpm === b.bpm && a.time === b.time
+    && a.tonic === b.tonic && a.scale === b.scale && a.bars === b.bars;
+}
+
+function checkUnsaved() {
+  const snap = currentSnapshot();
+  if (snapshotsMatch(snap, lastSavedSnapshot)) {
+    saveHint.textContent = '';
+    saveHint.classList.remove('unsaved');
+  } else {
+    saveHint.textContent = 'Unsaved changes';
+    saveHint.classList.add('unsaved');
+  }
+}
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  const pad = n => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function scaleLabel(val) {
+  const opt = scaleSelect.querySelector(`option[value="${val}"]`);
+  return opt ? opt.textContent : val;
+}
+
+function tonicLabel(val) {
+  const opt = tonicSelect.querySelector(`option[value="${val}"]`);
+  return opt ? opt.textContent : val;
+}
+
+function renderHistory() {
+  const entries = getHistory();
+  historyList.innerHTML = '';
+  historyEmpty.style.display = entries.length ? 'none' : 'block';
+  clearHistoryBtn.style.display = entries.length ? '' : 'none';
+
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const e = entries[i];
+    const item = document.createElement('div');
+    item.className = 'history-item';
+
+    const info = document.createElement('div');
+    info.className = 'history-item-info';
+    const name = document.createElement('div');
+    name.className = 'history-item-name';
+    name.textContent = e.name || 'Untitled';
+    const meta = document.createElement('div');
+    meta.className = 'history-item-meta';
+    meta.textContent = `${formatDate(e.savedAt)} · ${tonicLabel(e.tonic)} ${scaleLabel(e.scale)} · ${e.bpm} bpm · seed ${e.seed} · ${e.noteCount || '?'} notes`;
+    info.appendChild(name);
+    info.appendChild(meta);
+
+    const actions = document.createElement('div');
+    actions.className = 'history-item-actions';
+
+    const loadBtn = document.createElement('button');
+    loadBtn.textContent = 'Load';
+    loadBtn.addEventListener('click', () => loadEntry(e));
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'Delete';
+    delBtn.addEventListener('click', () => {
+      const h = getHistory();
+      h.splice(i, 1);
+      saveHistory(h);
+      renderHistory();
+    });
+
+    actions.appendChild(loadBtn);
+    actions.appendChild(delBtn);
+    item.appendChild(info);
+    item.appendChild(actions);
+    historyList.appendChild(item);
+  }
+}
+
+function loadEntry(e) {
+  bpmInput.value = e.bpm;
+  bpmDisplay.textContent = e.bpm;
+  transport.setBpm(Number(e.bpm));
+  beatsPerBarSelect.value = e.time;
+  transport.setBeatsPerBar(Number(e.time));
+  tonicSelect.value = e.tonic;
+  scaleSelect.value = e.scale;
+  barsSelect.value = e.bars;
+  seedInput.value = e.seed;
+  songNameInput.value = e.name || '';
+  clearActivePreset();
+  regenerateSong({ keepSeed: true });
+  lastSavedSnapshot = currentSnapshot();
+  checkUnsaved();
+}
+
+saveBtn.addEventListener('click', () => {
+  if (!currentSong) return;
+  const snap = currentSnapshot();
+  const entry = {
+    ...snap,
+    name: songNameInput.value.trim(),
+    savedAt: Date.now(),
+    noteCount: currentSong.events.length,
+    preset: currentSong.preset,
+  };
+  const h = getHistory();
+  h.push(entry);
+  saveHistory(h);
+  lastSavedSnapshot = { ...snap };
+  checkUnsaved();
+  renderHistory();
+  saveHint.textContent = 'Saved!';
+  saveHint.classList.remove('unsaved');
+  setTimeout(() => checkUnsaved(), 1500);
+});
+
+clearHistoryBtn.addEventListener('click', () => {
+  saveHistory([]);
+  renderHistory();
+});
+
+renderHistory();
 
 document.addEventListener('visibilitychange', () => {
   const ctx = getContext();

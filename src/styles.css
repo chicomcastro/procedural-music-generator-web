@@ -156,7 +156,9 @@ kbd {
 
 #metronome,
 #generator,
-#export {
+#export,
+#save-section,
+#history {
   background: #222;
   border: 1px solid #444;
   border-radius: 6px;
@@ -169,7 +171,8 @@ kbd {
 
 #metronome h2,
 #generator h2,
-#export h2 {
+#export h2,
+#history h2 {
   margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: normal;
@@ -382,6 +385,125 @@ button {
   cursor: default;
 }
 
+#song-name {
+  background: #333;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 5px 8px;
+  font-size: 13px;
+  flex: 1;
+  min-width: 0;
+}
+
+#song-name::placeholder {
+  color: #777;
+  font-style: italic;
+}
+
+#save-btn {
+  background: #4a8;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#save-hint {
+  font-size: 12px;
+}
+
+#save-hint.unsaved {
+  color: #e8a735;
+  opacity: 1;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.history-header h2 {
+  margin: 0 !important;
+}
+
+.history-badge {
+  font-size: 10px;
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  opacity: 0.5;
+  margin-left: 6px;
+}
+
+#clear-history {
+  background: transparent;
+  color: #c66;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+#clear-history:hover {
+  opacity: 1;
+}
+
+#history-empty {
+  margin: 0;
+}
+
+.history-item {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.history-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-item-name {
+  font-size: 14px;
+  color: #ddd;
+  font-style: italic;
+}
+
+.history-item-meta {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+  font-family: monospace;
+}
+
+.history-item-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.history-item-actions button {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.history-item-actions button:hover {
+  color: #eee;
+}
+
 @media (max-width: 600px) {
   body {
     padding: 16px 8px;
@@ -416,7 +538,9 @@ button {
 
   #metronome,
   #generator,
-  #export {
+  #export,
+  #save-section,
+  #history {
     min-width: 0;
     padding: 10px 12px;
   }
