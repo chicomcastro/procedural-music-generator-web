@@ -6,19 +6,92 @@ export function createScoreCanvas(canvas, options = {}) {
   let lastSong = null;
 
   canvas.style.cursor = 'pointer';
-  canvas.addEventListener('click', (e) => {
-    if (!lastSong || !options.onBarClick) return;
+
+  let dragEvent = null;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let didDrag = false;
+
+  function getLayout() {
+    const cssW = canvas.clientWidth;
+    const cssH = canvas.clientHeight;
+    const pad = { top: 8, bottom: 8, left: 4, right: 4 };
+    const w = cssW - pad.left - pad.right;
+    const h = cssH - pad.top - pad.bottom;
+    const pitchEvents = lastSong.events.filter(e => e.type !== 'drum');
+    const midiValues = pitchEvents.map(e => e.midi);
+    const minMidi = Math.min(...midiValues) - 1;
+    const maxMidi = Math.max(...midiValues) + 1;
+    const midiRange = maxMidi - minMidi || 1;
+    const totalBeats = lastSong.lengthBeats;
+    const beatW = w / totalBeats;
+    const noteH = Math.min(h / midiRange, 10);
+    return { pad, w, h, minMidi, maxMidi, midiRange, totalBeats, beatW, noteH };
+  }
+
+  function hitTest(cssX, cssY) {
+    if (!lastSong) return null;
+    const l = getLayout();
+    const beat = ((cssX - l.pad.left) / l.w) * l.totalBeats;
+    const midi = l.minMidi + ((l.pad.top + l.h - cssY) / l.h) * l.midiRange;
+    for (const ev of lastSong.events) {
+      if (ev.type === 'drum') continue;
+      if (beat >= ev.atBeat && beat <= ev.atBeat + ev.durationBeats) {
+        if (Math.abs(ev.midi - midi) <= l.midiRange / l.h * l.noteH) {
+          return ev;
+        }
+      }
+    }
+    return null;
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!lastSong) return;
     const rect = canvas.getBoundingClientRect();
     const cssX = e.clientX - rect.left;
-    const cssW = canvas.clientWidth;
-    const pad = { left: 4, right: 4 };
-    const w = cssW - pad.left - pad.right;
-    const totalBeats = lastSong.lengthBeats;
-    const beat = ((cssX - pad.left) / w) * totalBeats;
-    const barIndex = Math.floor(beat / lastSong.beatsPerBar);
-    if (barIndex >= 0 && barIndex < lastSong.bars) {
-      options.onBarClick(barIndex);
+    const cssY = e.clientY - rect.top;
+    dragEvent = hitTest(cssX, cssY);
+    dragStartX = cssX;
+    dragStartY = cssY;
+    didDrag = false;
+    if (dragEvent) canvas.setPointerCapture(e.pointerId);
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragEvent || !lastSong) return;
+    const rect = canvas.getBoundingClientRect();
+    const cssX = e.clientX - rect.left;
+    const cssY = e.clientY - rect.top;
+    const dx = cssX - dragStartX;
+    const dy = cssY - dragStartY;
+    if (!didDrag && Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+    didDrag = true;
+
+    const l = getLayout();
+    const beatDelta = (dx / l.w) * l.totalBeats;
+    const midiDelta = -Math.round((dy / l.h) * l.midiRange);
+
+    dragEvent.atBeat = Math.max(0, Math.min(l.totalBeats - dragEvent.durationBeats, dragEvent.atBeat + beatDelta));
+    dragEvent.midi = dragEvent.midi + midiDelta;
+
+    dragStartX = cssX;
+    dragStartY = cssY;
+    render(lastSong);
+  });
+
+  canvas.addEventListener('pointerup', (e) => {
+    if (!didDrag && lastSong && options.onBarClick) {
+      const rect = canvas.getBoundingClientRect();
+      const cssX = e.clientX - rect.left;
+      const l = getLayout();
+      const beat = ((cssX - l.pad.left) / l.w) * l.totalBeats;
+      const barIndex = Math.floor(beat / lastSong.beatsPerBar);
+      if (barIndex >= 0 && barIndex < lastSong.bars) {
+        options.onBarClick(barIndex);
+      }
     }
+    dragEvent = null;
+    if (didDrag && options.onNoteEdited) options.onNoteEdited();
   });
 
   function setLockedBars(set) {
