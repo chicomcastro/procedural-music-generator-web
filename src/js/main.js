@@ -198,6 +198,13 @@ function regenerateSong({ keepSeed = false } = {}) {
   seedInput.value = String(seed);
   songInfo.textContent = `seed ${seed} · ${currentSong.preset} · ${currentSong.events.length} notes`;
   pushUrlState();
+
+  generateBtn.classList.add('flash');
+  songInfo.classList.add('flash');
+  setTimeout(() => {
+    generateBtn.classList.remove('flash');
+    songInfo.classList.remove('flash');
+  }, 200);
 }
 
 generateBtn.addEventListener('click', () => regenerateSong({ keepSeed: false }));

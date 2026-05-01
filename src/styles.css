@@ -233,6 +233,16 @@ kbd {
   border-radius: 4px;
   cursor: pointer;
   font-size: 13px;
+  transition: transform 80ms ease-out, background-color 80ms ease-out;
+}
+
+#generate-btn.flash {
+  transform: scale(1.08);
+  background: #5cb85c;
+}
+
+#song-info.flash {
+  opacity: 1;
 }
 
 #share-btn {
