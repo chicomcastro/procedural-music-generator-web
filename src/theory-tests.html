@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Theory module tests</title>
+    <style>
+        body { font-family: monospace; background: #111; color: #eee; padding: 24px; }
+        .pass { color: #6f6; }
+        .fail { color: #f66; font-weight: bold; }
+        .summary { margin-bottom: 16px; font-size: 16px; }
+        ol { padding-left: 20px; }
+        li { margin: 2px 0; }
+    </style>
+</head>
+
+<body>
+    <h1>Theory module tests</h1>
+    <div class="summary" id="summary">running…</div>
+    <ol id="results"></ol>
+
+    <script type="module">
+        import { midiToFreq, midiToName, nameToMidi, pitchClass, transpose } from './js/theory/notes.js';
+        import { scaleNotes, isInScale, degreeOf, getScale } from './js/theory/scales.js';
+        import { triad, seventh, chordFromDegree, progression, PROGRESSIONS } from './js/theory/chords.js';
+
+        const results = document.getElementById('results');
+        let pass = 0, fail = 0;
+
+        function eq(a, b) {
+            if (Array.isArray(a) && Array.isArray(b)) {
+                return a.length === b.length && a.every((x, i) => eq(x, b[i]));
+            }
+            return Object.is(a, b);
+        }
+
+        function approx(a, b, eps = 0.01) {
+            return Math.abs(a - b) < eps;
+        }
+
+        function check(name, ok) {
+            const li = document.createElement('li');
+            li.className = ok ? 'pass' : 'fail';
+            li.textContent = `${ok ? 'PASS' : 'FAIL'} — ${name}`;
+            results.appendChild(li);
+            ok ? pass++ : fail++;
+        }
+
+        // notes.js
+        check('nameToMidi C4 = 60', nameToMidi('C4') === 60);
+        check('nameToMidi A4 = 69', nameToMidi('A4') === 69);
+        check('nameToMidi C#4 = 61', nameToMidi('C#4') === 61);
+        check('nameToMidi Db4 = 61', nameToMidi('Db4') === 61);
+        check('nameToMidi C-1 = 0', nameToMidi('C-1') === 0);
+        check('midiToName 60 = C4', midiToName(60) === 'C4');
+        check('midiToName 61 sharp = C#4', midiToName(61) === 'C#4');
+        check('midiToName 61 flat = Db4', midiToName(61, { flats: true }) === 'Db4');
+        check('midiToFreq 69 ≈ 440', approx(midiToFreq(69), 440));
+        check('midiToFreq 60 ≈ 261.63', approx(midiToFreq(60), 261.63, 0.05));
+        check('transpose 60 +7 = 67', transpose(60, 7) === 67);
+        check('pitchClass(-1) = 11', pitchClass(-1) === 11);
+
+        // scales.js
+        check('major scale length 7', getScale('major').length === 7);
+        check('scaleNotes C major 1 oct', eq(scaleNotes(60, 'major'), [60, 62, 64, 65, 67, 69, 71]));
+        check('scaleNotes C minor pent', eq(scaleNotes(60, 'pentatonic_minor'), [60, 63, 65, 67, 70]));
+        check('scaleNotes 2 oct count', scaleNotes(60, 'major', 2).length === 14);
+        check('isInScale E in C major', isInScale(64, 60, 'major') === true);
+        check('isInScale Eb in C major', isInScale(63, 60, 'major') === false);
+        check('isInScale octave-invariant', isInScale(76, 60, 'major') === true);
+        check('degreeOf G in C major = 4', degreeOf(67, 60, 'major') === 4);
+
+        // chords.js
+        check('triad C major', eq(triad(60, 'major'), [60, 64, 67]));
+        check('triad C minor', eq(triad(60, 'minor'), [60, 63, 67]));
+        check('triad C dim', eq(triad(60, 'diminished'), [60, 63, 66]));
+        check('seventh C dom7', eq(seventh(60, 'dom7'), [60, 64, 67, 70]));
+        check('seventh C maj7', eq(seventh(60, 'maj7'), [60, 64, 67, 71]));
+        check('I in C major = C E G', eq(chordFromDegree(60, 'major', 1), [60, 64, 67]));
+        check('V in C major = G B D', eq(chordFromDegree(60, 'major', 5), [67, 71, 74]));
+        check('vi in C major = A C E', eq(chordFromDegree(60, 'major', 6), [69, 72, 76]));
+        check('ii in C major = D F A', eq(chordFromDegree(60, 'major', 2), [62, 65, 69]));
+        check('vii° in C major = B D F', eq(chordFromDegree(60, 'major', 7), [71, 74, 77]));
+        check('I7 in C major = C E G B', eq(chordFromDegree(60, 'major', 1, { seventh: true }), [60, 64, 67, 71]));
+        check('progression pop returns 4 chords', progression(60, 'major', PROGRESSIONS.pop).length === 4);
+        check('progression first chord = I', eq(progression(60, 'major', PROGRESSIONS.pop)[0], [60, 64, 67]));
+
+        const summary = document.getElementById('summary');
+        summary.textContent = `${pass} passed, ${fail} failed`;
+        summary.className = fail === 0 ? 'pass' : 'fail';
+    </script>
+</body>
+
+</html>
