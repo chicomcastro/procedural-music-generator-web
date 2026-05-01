@@ -70,6 +70,7 @@ themeToggle.addEventListener('click', () => {
 });
 
 let transposeSemitones = 0;
+let pendingLockedBars = null;
 const lockedBars = new Set();
 const lockedBarEvents = new Map();
 
@@ -114,6 +115,9 @@ function applyUrlParams() {
     transposeDisplay.textContent = transposeSemitones > 0 ? `+${transposeSemitones}` : String(transposeSemitones);
   }
   if (p.has('seed')) seedInput.value = p.get('seed');
+  if (p.has('locked')) {
+    pendingLockedBars = p.get('locked').split(',').map(Number).filter(n => !isNaN(n));
+  }
   bpmDisplay.textContent = bpmInput.value;
   densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
   swingDisplay.textContent = `${Math.round(swingInput.value * 100)}%`;
@@ -291,6 +295,7 @@ function buildShareUrl() {
   if (densityInput.value !== '0.65') url.searchParams.set('density', densityInput.value);
   if (swingInput.value !== '0') url.searchParams.set('swing', swingInput.value);
   if (transposeSemitones !== 0) url.searchParams.set('transpose', transposeSemitones);
+  if (lockedBars.size > 0) url.searchParams.set('locked', [...lockedBars].sort((a, b) => a - b).join(','));
   return url.toString();
 }
 
@@ -339,6 +344,17 @@ function regenerateSong({ keepSeed = false } = {}) {
   const lockInfo = lockedBars.size > 0 ? ` · ${lockedBars.size} locked` : '';
   songInfo.textContent = `seed ${seed} · ${currentSong.preset} · ${currentSong.events.length} notes${lockInfo}`;
   pushUrlState();
+  if (pendingLockedBars) {
+    for (const bar of pendingLockedBars) {
+      if (bar >= 0 && bar < currentSong.bars) {
+        lockedBars.add(bar);
+        lockedBarEvents.set(bar, getEventsForBar(currentSong, bar));
+      }
+    }
+    scoreCanvas.setLockedBars(lockedBars);
+    pendingLockedBars = null;
+  }
+
   scoreCanvas.render(currentSong);
   const totalSec = currentSong.lengthBeats * transport.beatDuration;
   timeDisplay.textContent = `0:00 / ${formatTime(totalSec)}`;
