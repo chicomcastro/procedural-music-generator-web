@@ -122,7 +122,8 @@ kbd {
 }
 
 #metronome,
-#generator {
+#generator,
+#export {
   background: #222;
   border: 1px solid #444;
   border-radius: 6px;
@@ -134,7 +135,8 @@ kbd {
 }
 
 #metronome h2,
-#generator h2 {
+#generator h2,
+#export h2 {
   margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: normal;
@@ -144,8 +146,32 @@ kbd {
 }
 
 #metronome .metronome-row + .metronome-row,
-#generator .metronome-row + .metronome-row {
+#generator .metronome-row + .metronome-row,
+#export .metronome-row + .metronome-row {
   margin-top: 8px;
+}
+
+#export-midi,
+#export-wav {
+  background: #4a8;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#export-midi:disabled,
+#export-wav:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+#export-status {
+  font-family: monospace;
+  font-size: 12px;
+  opacity: 0.7;
 }
 
 #tonic, #scale, #bars {
