@@ -14,6 +14,16 @@ export function noteNameToMidi(name, octave = 3) {
   return (octave + 1) * 12 + offset;
 }
 
+const KEYBOARD_MAP = {
+  KeyA: 'C', KeyW: 'C#',
+  KeyS: 'D', KeyE: 'D#',
+  KeyD: 'E',
+  KeyF: 'F', KeyT: 'F#',
+  KeyG: 'G', KeyY: 'G#',
+  KeyH: 'A', KeyU: 'A#',
+  KeyJ: 'B',
+};
+
 export function createPiano(rootEl, { onAttack, onRelease }) {
   const keys = [...rootEl.querySelectorAll('.key')];
   const keyByMidi = new Map();
@@ -61,6 +71,31 @@ export function createPiano(rootEl, { onAttack, onRelease }) {
 
   window.addEventListener('pointerup', endPointer);
   window.addEventListener('pointercancel', endPointer);
+
+  const heldByCode = new Map();
+
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    const note = KEYBOARD_MAP[e.code];
+    if (!note) return;
+    e.preventDefault();
+    if (heldByCode.has(e.code)) return;
+    const midi = noteNameToMidi(note, 3);
+    heldByCode.set(e.code, midi);
+    press(midi, `key:${e.code}`);
+  });
+
+  window.addEventListener('keyup', (e) => {
+    const midi = heldByCode.get(e.code);
+    if (midi == null) return;
+    heldByCode.delete(e.code);
+    releaseKey(midi);
+  });
+
+  window.addEventListener('blur', () => {
+    for (const midi of heldByCode.values()) releaseKey(midi);
+    heldByCode.clear();
+  });
 
   return {
     setPressed(midi, on) {

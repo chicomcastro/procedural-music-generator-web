@@ -53,6 +53,12 @@ createPiano(pianoEl, {
 
 startBtn.addEventListener('click', bootstrap);
 
+function firstGestureBootstrap() {
+  bootstrap();
+}
+window.addEventListener('keydown', firstGestureBootstrap, { once: true });
+pianoEl.addEventListener('pointerdown', firstGestureBootstrap, { once: true });
+
 document.addEventListener('visibilitychange', () => {
   const ctx = getContext();
   if (ctx && !document.hidden && ctx.state === 'suspended') {
