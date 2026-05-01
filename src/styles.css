@@ -86,6 +86,14 @@ body {
   z-index: 1;
 }
 
+.key.glow {
+  background-color: #fff7c2;
+}
+
+.key.black.glow {
+  background-color: #6a5818;
+}
+
 .key.playing {
   background-color: #ffd54a;
   transform: translateY(2px);

@@ -170,11 +170,24 @@ export function createPiano(rootEl, { startOctave = 3, octaves = 2, onAttack, on
 
   updateKbdHints();
 
+  function setVisual(midi, on) {
+    const el = keyByMidi.get(midi);
+    if (!el) return;
+    if (on) el.classList.add('glow');
+    else el.classList.remove('glow');
+  }
+
+  function clearAllVisual() {
+    rootEl.querySelectorAll('.key.glow').forEach(el => el.classList.remove('glow'));
+  }
+
   return {
     setPressed(midi, on) {
       if (on) press(midi, 'external');
       else releaseKey(midi);
     },
+    setVisual,
+    clearAllVisual,
     get keyboardOctave() { return kbdOctave; },
   };
 }
