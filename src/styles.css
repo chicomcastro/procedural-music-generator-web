@@ -74,18 +74,18 @@ body {
 .key-group.black-keys {
   position: absolute;
   top: 0;
-  gap: 72px;
+  gap: 50px;
   pointer-events: none;
 }
 
 .key-subgroup {
   display: flex;
-  gap: 20px;
+  gap: 14px;
 }
 
 .key {
-  width: 50px;
-  height: 200px;
+  width: 36px;
+  height: 160px;
   margin: 5px 0;
   background-color: white;
   border: 1px solid black;
@@ -113,8 +113,8 @@ body {
 }
 
 .key.black {
-  width: 30px;
-  height: 130px;
+  width: 22px;
+  height: 105px;
   background-color: black;
   z-index: 1;
 }
@@ -589,21 +589,21 @@ button {
   }
 
   .key {
-    width: 36px;
-    height: 150px;
+    width: 28px;
+    height: 120px;
   }
 
   .key.black {
-    width: 22px;
-    height: 100px;
+    width: 18px;
+    height: 80px;
   }
 
   .key-group.black-keys {
-    gap: 50px;
+    gap: 38px;
   }
 
   .key-subgroup {
-    gap: 14px;
+    gap: 10px;
   }
 
   #metronome,

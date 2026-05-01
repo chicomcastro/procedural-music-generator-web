@@ -116,8 +116,8 @@ async function bootstrap() {
 }
 
 const piano = createPiano(pianoEl, {
-  startOctave: 3,
-  octaves: 2,
+  startOctave: 2,
+  octaves: 4,
   onAttack(midi) {
     if (!ready) return;
     const ctx = getContext();
