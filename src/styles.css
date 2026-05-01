@@ -758,9 +758,95 @@ input[type="text"]:focus {
   line-height: 1;
 }
 
-#theme-toggle:hover {
+#theme-toggle:hover,
+#shortcuts-btn:hover {
   border-color: var(--accent);
   transform: scale(1.1);
+}
+
+#shortcuts-btn {
+  position: fixed;
+  top: 16px;
+  right: 60px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: background-color 150ms, border-color 150ms, transform 150ms;
+}
+
+/* ---- Overlay ---- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  transition: opacity 150ms;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px 28px;
+  max-width: 420px;
+  width: 90%;
+}
+
+.overlay-card h2 {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.shortcuts-grid span {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.overlay-card button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  width: 100%;
+  transition: background-color 150ms;
+}
+
+.overlay-card button:hover {
+  background: var(--accent-hover);
 }
 
 /* ---- Responsive ---- */

@@ -709,6 +709,47 @@ clearHistoryBtn.addEventListener('click', () => {
 
 renderHistory();
 
+const shortcutsOverlay = document.getElementById('shortcuts-overlay');
+const closeShortcutsBtn = document.getElementById('close-shortcuts');
+
+function toggleShortcuts() {
+  shortcutsOverlay.classList.toggle('hidden');
+}
+
+document.getElementById('shortcuts-btn').addEventListener('click', toggleShortcuts);
+closeShortcutsBtn.addEventListener('click', toggleShortcuts);
+shortcutsOverlay.addEventListener('click', (e) => {
+  if (e.target === shortcutsOverlay) toggleShortcuts();
+});
+
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+  if (e.key === '?') {
+    e.preventDefault();
+    toggleShortcuts();
+    return;
+  }
+  if (e.key === 'Escape' && !shortcutsOverlay.classList.contains('hidden')) {
+    toggleShortcuts();
+    return;
+  }
+  if (e.key === ' ') {
+    e.preventDefault();
+    playPauseBtn.click();
+    return;
+  }
+  if (e.key === 'Escape') {
+    stopBtn.click();
+    return;
+  }
+  if (e.key === 'r' || e.key === 'R') {
+    generateBtn.click();
+    return;
+  }
+});
+
 document.addEventListener('visibilitychange', () => {
   const ctx = getContext();
   if (ctx && !document.hidden && ctx.state === 'suspended') {

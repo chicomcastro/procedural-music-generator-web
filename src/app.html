@@ -21,6 +21,7 @@
 
 <body>
     <button id="theme-toggle" type="button" title="Toggle light/dark theme" aria-label="Toggle theme">&#9790;</button>
+    <button id="shortcuts-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
     <header id="hero">
         <h1>SeedSong</h1>
         <p class="tagline">Infinite piano melodies from a single seed number.</p>
@@ -170,6 +171,22 @@
             <span id="export-status" class="hint" aria-live="polite"></span>
         </div>
     </section>
+
+    <div id="shortcuts-overlay" class="overlay hidden" role="dialog" aria-label="Keyboard shortcuts">
+        <div class="overlay-card">
+            <h2>Keyboard Shortcuts</h2>
+            <div class="shortcuts-grid">
+                <kbd>A</kbd>–<kbd>J</kbd> <span>Play white keys</span>
+                <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <span>Play black keys</span>
+                <kbd>Z</kbd> / <kbd>X</kbd> <span>Shift octave down / up</span>
+                <kbd>Space</kbd> <span>Play / Pause</span>
+                <kbd>Escape</kbd> <span>Stop playback</span>
+                <kbd>R</kbd> <span>Randomize seed</span>
+                <kbd>?</kbd> <span>Toggle this help</span>
+            </div>
+            <button id="close-shortcuts" type="button">Close</button>
+        </div>
+    </div>
 
     <script type="module" src="js/main.js"></script>
     <script>
