@@ -61,7 +61,6 @@
     <section id="generator" aria-label="Song generator controls">
         <h2>Generator</h2>
         <div class="metronome-row">
-            <button id="generate-btn" type="button" title="Create a new random melody">Generate new</button>
             <label for="tonic" title="Root note of the scale">Tonic</label>
             <select id="tonic">
                 <option value="0" selected>C</option>
@@ -100,6 +99,7 @@
         <div class="metronome-row">
             <label for="seed" title="A number that uniquely determines the melody — same seed = same song">Seed</label>
             <input id="seed" type="number" min="0" max="4294967295" step="1" title="Enter a seed to reproduce a specific melody">
+            <button id="generate-btn" type="button" title="Roll a new random seed">&#127922; Randomize</button>
             <button id="share-btn" type="button" title="Copy a shareable link with all current settings">Share</button>
             <span id="song-info" class="hint" aria-live="polite"></span>
         </div>
