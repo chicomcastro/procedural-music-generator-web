@@ -3,6 +3,9 @@ import { initEffects, getReverbSend, getDelaySend } from './Effects.js';
 let ctx = null;
 let masterGain = null;
 let compressor = null;
+let eqLow = null;
+let eqMid = null;
+let eqHigh = null;
 
 /** @returns {AudioContext|null} */
 export function getContext() {
@@ -17,6 +20,11 @@ export function getMasterGain() {
 export { getReverbSend, getDelaySend };
 export { setReverbAmount, setDelayAmount } from './Effects.js';
 
+export function setEQ(band, value) {
+  const node = band === 'low' ? eqLow : band === 'mid' ? eqMid : eqHigh;
+  if (node) node.gain.value = value;
+}
+
 /** @returns {Promise<AudioContext>} */
 export async function init() {
   if (!ctx) {
@@ -27,7 +35,26 @@ export async function init() {
     masterGain = ctx.createGain();
     masterGain.gain.value = 0.8;
 
-    masterGain.connect(compressor);
+    eqLow = ctx.createBiquadFilter();
+    eqLow.type = 'lowshelf';
+    eqLow.frequency.value = 320;
+    eqLow.gain.value = 0;
+
+    eqMid = ctx.createBiquadFilter();
+    eqMid.type = 'peaking';
+    eqMid.frequency.value = 1000;
+    eqMid.Q.value = 0.5;
+    eqMid.gain.value = 0;
+
+    eqHigh = ctx.createBiquadFilter();
+    eqHigh.type = 'highshelf';
+    eqHigh.frequency.value = 3200;
+    eqHigh.gain.value = 0;
+
+    masterGain.connect(eqLow);
+    eqLow.connect(eqMid);
+    eqMid.connect(eqHigh);
+    eqHigh.connect(compressor);
     compressor.connect(ctx.destination);
 
     initEffects(ctx, compressor);

@@ -1,4 +1,4 @@
-import { init, getContext, getMasterGain, getReverbSend, getDelaySend, setReverbAmount, setDelayAmount } from './audio/AudioEngine.js';
+import { init, getContext, getMasterGain, getReverbSend, getDelaySend, setReverbAmount, setDelayAmount, setEQ } from './audio/AudioEngine.js';
 import { loadAll, getPlaybackFor } from './audio/SampleLibrary.js';
 import { createVoice } from './audio/Voice.js';
 import { createSynthVoice } from './audio/SynthVoice.js';
@@ -48,6 +48,12 @@ const transposeDownBtn = document.getElementById('transpose-down');
 const transposeDisplay = document.getElementById('transpose-display');
 const velocityInput = document.getElementById('velocity');
 const velocityDisplay = document.getElementById('velocity-display');
+const eqLowInput = document.getElementById('eq-low');
+const eqLowDisplay = document.getElementById('eq-low-display');
+const eqMidInput = document.getElementById('eq-mid');
+const eqMidDisplay = document.getElementById('eq-mid-display');
+const eqHighInput = document.getElementById('eq-high');
+const eqHighDisplay = document.getElementById('eq-high-display');
 const melodyVolInput = document.getElementById('melody-vol');
 const melodyVolDisplay = document.getElementById('melody-vol-display');
 const chordVolInput = document.getElementById('chord-vol');
@@ -389,6 +395,14 @@ velocityInput.addEventListener('input', (e) => {
   pushUrlState();
   checkUnsaved();
 });
+
+for (const [input, display, band] of [[eqLowInput, eqLowDisplay, 'low'], [eqMidInput, eqMidDisplay, 'mid'], [eqHighInput, eqHighDisplay, 'high']]) {
+  input.addEventListener('input', (e) => {
+    const v = Number(e.target.value);
+    display.textContent = `${v > 0 ? '+' : ''}${v} dB`;
+    setEQ(band, v);
+  });
+}
 
 melodyVolInput.addEventListener('input', (e) => {
   melodyVolDisplay.textContent = `${Math.round(e.target.value * 100)}%`;

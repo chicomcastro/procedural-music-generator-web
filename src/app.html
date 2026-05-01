@@ -72,6 +72,17 @@
             <label data-tip="Play the generated melody and chords"><input type="checkbox" id="song-enabled" checked> Procedural music</label>
         </div>
         <div class="metronome-row">
+            <label for="eq-low" data-tip="Low frequencies boost/cut">Low</label>
+            <input id="eq-low" type="range" min="-12" max="12" step="1" value="0" aria-label="EQ Low">
+            <span id="eq-low-display">0 dB</span>
+            <label for="eq-mid" data-tip="Mid frequencies boost/cut">Mid</label>
+            <input id="eq-mid" type="range" min="-12" max="12" step="1" value="0" aria-label="EQ Mid">
+            <span id="eq-mid-display">0 dB</span>
+            <label for="eq-high" data-tip="High frequencies boost/cut">High</label>
+            <input id="eq-high" type="range" min="-12" max="12" step="1" value="0" aria-label="EQ High">
+            <span id="eq-high-display">0 dB</span>
+        </div>
+        <div class="metronome-row">
             <label for="reverb" data-tip="Reverb — adds room ambience">Reverb</label>
             <input id="reverb" type="range" min="0" max="0.8" step="0.05" value="0" aria-label="Reverb amount">
             <span id="reverb-display">0%</span>
