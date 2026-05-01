@@ -28,5 +28,5 @@ Then open <http://localhost:8000>.
 - [x] Phase 4 — Lookahead scheduler + transport (metronome)
 - [x] Phase 5 — Procedural generators (progression, rhythm, melody)
 - [x] Phase 6 — Multi-octave keyboard rendering + Z/X octave shift
-- [ ] Phase 7 — Visualizer + UI controls
+- [x] Phase 7 — Visualizer (keys glow as the scheduler triggers notes)
 - [ ] Phase 8 — MIDI / WAV export

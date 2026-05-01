@@ -54,7 +54,7 @@ async function bootstrap() {
   }
 }
 
-createPiano(pianoEl, {
+const piano = createPiano(pianoEl, {
   startOctave: 3,
   octaves: 2,
   onAttack(midi) {
@@ -118,6 +118,11 @@ function scheduleNote(midi, when, durationSec, velocity) {
     duration: durationSec,
     releaseTime: 0.25,
   });
+
+  const onMs = Math.max(0, (when - ctx.currentTime) * 1000);
+  const offMs = onMs + durationSec * 1000;
+  setTimeout(() => piano.setVisual(midi, true), onMs);
+  setTimeout(() => piano.setVisual(midi, false), offMs);
 }
 
 function scheduleSongAtBeat(beatInSong, when) {
@@ -176,6 +181,7 @@ metroBtn.addEventListener('click', async () => {
     scheduler.stop();
     metroBtn.textContent = 'Play';
     metroBtn.classList.remove('playing');
+    setTimeout(() => piano.clearAllVisual(), 200);
   } else {
     scheduler.start();
     metroBtn.textContent = 'Stop';
