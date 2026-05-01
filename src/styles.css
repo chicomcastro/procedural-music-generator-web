@@ -360,14 +360,14 @@ input[type="text"]:focus {
   font-family: monospace;
 }
 
-#bpm {
-  width: 140px;
+#bpm, #density, #swing {
+  width: 120px;
   accent-color: #4a8;
 }
 
-#bpm-display {
+#bpm-display, #density-display, #swing-display {
   font-family: monospace;
-  font-size: 14px;
+  font-size: 13px;
   min-width: 30px;
   text-align: right;
   color: #8b949e;

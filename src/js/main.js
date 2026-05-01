@@ -40,6 +40,10 @@ const historyList = document.getElementById('history-list');
 const historyEmpty = document.getElementById('history-empty');
 const clearHistoryBtn = document.getElementById('clear-history');
 const voiceSelect = document.getElementById('voice');
+const densityInput = document.getElementById('density');
+const densityDisplay = document.getElementById('density-display');
+const swingInput = document.getElementById('swing');
+const swingDisplay = document.getElementById('swing-display');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
@@ -81,8 +85,12 @@ function applyUrlParams() {
   if (p.has('scale')) scaleSelect.value = p.get('scale');
   if (p.has('bars')) barsSelect.value = p.get('bars');
   if (p.has('voice')) voiceSelect.value = p.get('voice');
+  if (p.has('density')) densityInput.value = p.get('density');
+  if (p.has('swing')) swingInput.value = p.get('swing');
   if (p.has('seed')) seedInput.value = p.get('seed');
   bpmDisplay.textContent = bpmInput.value;
+  densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
+  swingDisplay.textContent = `${Math.round(swingInput.value * 100)}%`;
 }
 
 applyUrlParams();
@@ -254,6 +262,8 @@ function buildShareUrl() {
   url.searchParams.set('scale', scaleSelect.value);
   url.searchParams.set('bars', barsSelect.value);
   if (voiceSelect.value !== 'piano') url.searchParams.set('voice', voiceSelect.value);
+  if (densityInput.value !== '0.65') url.searchParams.set('density', densityInput.value);
+  if (swingInput.value !== '0') url.searchParams.set('swing', swingInput.value);
   return url.toString();
 }
 
@@ -290,7 +300,9 @@ function regenerateSong({ keepSeed = false } = {}) {
   const scale = scaleSelect.value;
   const bars = Number(barsSelect.value);
 
-  const raw = generateSong({ seed, tonic, scale, bars, beatsPerBar: transport.beatsPerBar });
+  const density = Number(densityInput.value);
+  const swing = Number(swingInput.value);
+  const raw = generateSong({ seed, tonic, scale, bars, beatsPerBar: transport.beatsPerBar, density, swing });
   currentSong = applyLockedBars(raw);
 
   seedInput.value = String(seed);
@@ -334,6 +346,18 @@ voiceSelect.addEventListener('change', () => {
   checkUnsaved();
 });
 
+densityInput.addEventListener('input', (e) => {
+  densityDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
+  clearActivePreset();
+  regenerateSong({ keepSeed: true });
+});
+
+swingInput.addEventListener('input', (e) => {
+  swingDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
+  clearActivePreset();
+  regenerateSong({ keepSeed: true });
+});
+
 const presetBtns = document.querySelectorAll('.preset-btn');
 
 function clearActivePreset() {
@@ -350,6 +374,10 @@ for (const btn of presetBtns) {
     tonicSelect.value = btn.dataset.tonic;
     scaleSelect.value = btn.dataset.scale;
     barsSelect.value = btn.dataset.bars;
+    densityInput.value = btn.dataset.density || '0.65';
+    densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
+    swingInput.value = btn.dataset.swing || '0';
+    swingDisplay.textContent = `${Math.round(swingInput.value * 100)}%`;
     clearActivePreset();
     clearLockedBars();
     btn.classList.add('active');
@@ -495,6 +523,8 @@ function currentSnapshot() {
     scale: scaleSelect.value,
     bars: barsSelect.value,
     voice: voiceSelect.value,
+    density: densityInput.value,
+    swing: swingInput.value,
   };
 }
 
@@ -502,7 +532,9 @@ function snapshotsMatch(a, b) {
   if (!a || !b) return false;
   return a.seed === b.seed && a.bpm === b.bpm && a.time === b.time
     && a.tonic === b.tonic && a.scale === b.scale && a.bars === b.bars
-    && (a.voice || 'piano') === (b.voice || 'piano');
+    && (a.voice || 'piano') === (b.voice || 'piano')
+    && (a.density || '0.65') === (b.density || '0.65')
+    && (a.swing || '0') === (b.swing || '0');
 }
 
 function checkUnsaved() {
@@ -614,6 +646,10 @@ function loadEntry(e) {
   scaleSelect.value = e.scale;
   barsSelect.value = e.bars;
   voiceSelect.value = e.voice || 'piano';
+  densityInput.value = e.density || '0.65';
+  densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
+  swingInput.value = e.swing || '0';
+  swingDisplay.textContent = `${Math.round(swingInput.value * 100)}%`;
   seedInput.value = e.seed;
   songNameInput.value = e.name || '';
   clearActivePreset();

@@ -75,12 +75,12 @@
         <h2>Generator</h2>
         <div class="metronome-row" id="presets-row">
             <span class="preset-label">Presets</span>
-            <button class="preset-btn" type="button" data-bpm="72" data-scale="pentatonic_minor" data-tonic="9" data-bars="4" data-time="4">Lo-fi</button>
-            <button class="preset-btn" type="button" data-bpm="130" data-scale="mixolydian" data-tonic="7" data-bars="4" data-time="4">Jazz</button>
-            <button class="preset-btn" type="button" data-bpm="108" data-scale="major" data-tonic="0" data-bars="8" data-time="4">Classical</button>
-            <button class="preset-btn" type="button" data-bpm="90" data-scale="blues" data-tonic="4" data-bars="4" data-time="4">Blues</button>
-            <button class="preset-btn" type="button" data-bpm="140" data-scale="natural_minor" data-tonic="9" data-bars="4" data-time="4">Dark</button>
-            <button class="preset-btn" type="button" data-bpm="150" data-scale="dorian" data-tonic="2" data-bars="4" data-time="4">Funk</button>
+            <button class="preset-btn" type="button" data-bpm="72" data-scale="pentatonic_minor" data-tonic="9" data-bars="4" data-time="4" data-density="0.5" data-swing="0.3">Lo-fi</button>
+            <button class="preset-btn" type="button" data-bpm="130" data-scale="mixolydian" data-tonic="7" data-bars="4" data-time="4" data-density="0.7" data-swing="0.4">Jazz</button>
+            <button class="preset-btn" type="button" data-bpm="108" data-scale="major" data-tonic="0" data-bars="8" data-time="4" data-density="0.6" data-swing="0">Classical</button>
+            <button class="preset-btn" type="button" data-bpm="90" data-scale="blues" data-tonic="4" data-bars="4" data-time="4" data-density="0.55" data-swing="0.5">Blues</button>
+            <button class="preset-btn" type="button" data-bpm="140" data-scale="natural_minor" data-tonic="9" data-bars="4" data-time="4" data-density="0.75" data-swing="0">Dark</button>
+            <button class="preset-btn" type="button" data-bpm="150" data-scale="dorian" data-tonic="2" data-bars="4" data-time="4" data-density="0.8" data-swing="0.2">Funk</button>
         </div>
         <div class="metronome-row">
             <label for="tonic" title="Root note of the scale">Tonic</label>
@@ -126,6 +126,14 @@
                 <option value="organ">Organ</option>
                 <option value="strings">Strings</option>
             </select>
+        </div>
+        <div class="metronome-row">
+            <label for="density" title="How many notes per bar — lower is sparser, higher is busier">Density</label>
+            <input id="density" type="range" min="0.2" max="1.0" step="0.05" value="0.65" aria-label="Note density">
+            <span id="density-display">65%</span>
+            <label for="swing" title="Timing offset on off-beat notes — adds a groovy, human feel">Swing</label>
+            <input id="swing" type="range" min="0" max="0.8" step="0.1" value="0" aria-label="Swing amount">
+            <span id="swing-display">0%</span>
         </div>
         <div class="metronome-row">
             <label for="seed" title="A number that uniquely determines the melody — same seed = same song">Seed</label>
