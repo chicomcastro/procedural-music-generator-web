@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Piano de uma oitava</title>
+    <title>Piano procedural</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -12,30 +12,14 @@
     <button id="start" type="button">Iniciar áudio</button>
     <div id="status">Clique em "Iniciar áudio" para carregar os samples.</div>
 
-    <div id="piano">
-        <div class="key-group white-keys">
-            <div class="key" data-note="C"><span class="keyhint">A</span></div>
-            <div class="key" data-note="D"><span class="keyhint">S</span></div>
-            <div class="key" data-note="E"><span class="keyhint">D</span></div>
-            <div class="key" data-note="F"><span class="keyhint">F</span></div>
-            <div class="key" data-note="G"><span class="keyhint">G</span></div>
-            <div class="key" data-note="A"><span class="keyhint">H</span></div>
-            <div class="key" data-note="B"><span class="keyhint">J</span></div>
-        </div>
-        <div class="key-group black-keys">
-            <div class="key-subgroup">
-                <div class="key black" data-note="C#"><span class="keyhint">W</span></div>
-                <div class="key black" data-note="D#"><span class="keyhint">E</span></div>
-            </div>
-            <div class="key-subgroup">
-                <div class="key black" data-note="F#"><span class="keyhint">T</span></div>
-                <div class="key black" data-note="G#"><span class="keyhint">Y</span></div>
-                <div class="key black" data-note="A#"><span class="keyhint">U</span></div>
-            </div>
-        </div>
+    <div id="piano-scroll">
+        <div id="piano"></div>
     </div>
 
-    <p class="hint">Use o mouse, toque ou o teclado (<kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> <kbd>F</kbd> <kbd>G</kbd> <kbd>H</kbd> <kbd>J</kbd> e <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd>).</p>
+    <p class="hint">
+        Use o mouse, toque ou o teclado (<kbd>A</kbd>–<kbd>J</kbd> brancas, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> pretas).
+        Oitava <span id="kbd-octave">3</span> &mdash; <kbd>Z</kbd>/<kbd>X</kbd> para mudar.
+    </p>
 
     <section id="metronome">
         <h2>Player</h2>

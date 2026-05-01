@@ -16,12 +16,20 @@ body {
   opacity: 0.8;
 }
 
+#piano-scroll {
+  width: 100%;
+  overflow-x: auto;
+  display: flex;
+  justify-content: center;
+}
+
 #piano {
   position: relative;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   touch-action: none;
   user-select: none;
+  flex-shrink: 0;
 }
 
 .key-group {

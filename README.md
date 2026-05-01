@@ -18,6 +18,7 @@ Then open <http://localhost:8000>.
 
 - Mouse / touch on the keys.
 - Keyboard: `A S D F G H J` for white keys, `W E T Y U` for black keys.
+- `Z` / `X` to shift the keyboard mapping down / up an octave.
 
 ## Status
 
@@ -26,6 +27,6 @@ Then open <http://localhost:8000>.
 - [x] Phase 3 — Music theory modules (notes, scales, chords) — [tests](https://chicomcastro.github.io/procedural-music-generator-web/theory-tests.html)
 - [x] Phase 4 — Lookahead scheduler + transport (metronome)
 - [x] Phase 5 — Procedural generators (progression, rhythm, melody)
-- [ ] Phase 6 — Multi-octave playback
+- [x] Phase 6 — Multi-octave keyboard rendering + Z/X octave shift
 - [ ] Phase 7 — Visualizer + UI controls
 - [ ] Phase 8 — MIDI / WAV export
