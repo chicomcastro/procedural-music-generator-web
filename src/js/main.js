@@ -571,6 +571,30 @@ function renderHistory() {
     loadBtn.textContent = 'Load';
     loadBtn.addEventListener('click', () => loadEntry(e));
 
+    const renameBtn = document.createElement('button');
+    renameBtn.textContent = 'Rename';
+    renameBtn.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'history-rename-input';
+      input.value = e.name || '';
+      name.replaceWith(input);
+      input.focus();
+      input.select();
+
+      function commitRename() {
+        const h = getHistory();
+        h[i].name = input.value.trim();
+        saveHistory(h);
+        renderHistory();
+      }
+      input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') commitRename();
+        if (ev.key === 'Escape') renderHistory();
+      });
+      input.addEventListener('blur', commitRename);
+    });
+
     const delBtn = document.createElement('button');
     delBtn.textContent = 'Delete';
     delBtn.addEventListener('click', () => {
@@ -581,6 +605,7 @@ function renderHistory() {
     });
 
     actions.appendChild(loadBtn);
+    actions.appendChild(renameBtn);
     actions.appendChild(delBtn);
     item.appendChild(info);
     item.appendChild(actions);
@@ -620,6 +645,7 @@ saveBtn.addEventListener('click', () => {
   h.push(entry);
   saveHistory(h);
   lastSavedSnapshot = { ...snap };
+  songNameInput.value = '';
   checkUnsaved();
   renderHistory();
   saveHint.textContent = 'Saved!';
