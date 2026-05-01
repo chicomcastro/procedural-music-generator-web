@@ -16,6 +16,7 @@ import { playDrumHit } from './audio/DrumSynth.js';
 import { initTheme } from './ui/Theme.js';
 import { initShortcuts } from './ui/Shortcuts.js';
 import { initHistory, checkUnsaved, setLastSaved } from './ui/History.js';
+import { initGallery } from './ui/Gallery.js';
 
 /* ---- DOM refs ---- */
 const pianoEl = document.getElementById('piano');
@@ -686,6 +687,9 @@ initHistory({
     tonicLabel: (val) => { const o = tonicSelect.querySelector(`option[value="${val}"]`); return o ? o.textContent : val; },
   }),
 });
+
+/* ---- Gallery init ---- */
+initGallery({ onLoadSeed: loadEntry });
 
 /* ---- Shortcuts init ---- */
 initShortcuts({

@@ -845,6 +845,51 @@ input[type="text"]:focus {
   transition: background-color 150ms, border-color 150ms, transform 150ms;
 }
 
+/* ---- Gallery ---- */
+
+#gallery {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  min-width: 320px;
+  max-width: 680px;
+  width: 100%;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.gallery-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 150ms, transform 150ms;
+}
+
+.gallery-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.gallery-card-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.gallery-card-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
 /* ---- Tooltips ---- */
 
 [data-tip] {
