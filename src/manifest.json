@@ -1,0 +1,17 @@
+{
+  "name": "SeedSong",
+  "short_name": "SeedSong",
+  "description": "Infinite piano melodies from a single seed number.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#333333",
+  "theme_color": "#44aa88",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
