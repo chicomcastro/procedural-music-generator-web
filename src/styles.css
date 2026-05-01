@@ -815,6 +815,38 @@ input[type="text"]:focus {
   transition: background-color 150ms, border-color 150ms, transform 150ms;
 }
 
+/* ---- Tooltips ---- */
+
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: normal;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms;
+  z-index: 50;
+}
+
+[data-tip]:hover::after {
+  opacity: 1;
+}
+
 /* ---- Overlay ---- */
 
 .overlay {

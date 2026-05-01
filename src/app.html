@@ -55,10 +55,10 @@
             <span id="time-display" class="time-display">0:00 / 0:00</span>
         </div>
         <div class="metronome-row">
-            <label for="bpm" title="Beats per minute — how fast the music plays">BPM</label>
-            <input id="bpm" type="range" min="40" max="240" value="110" title="Tempo: 40–240 BPM" aria-label="Tempo in BPM">
+            <label for="bpm" data-tip="Beats per minute — how fast the music plays">BPM</label>
+            <input id="bpm" type="range" min="40" max="240" value="110" data-tip="Tempo: 40–240 BPM" aria-label="Tempo in BPM">
             <span id="bpm-display">110</span>
-            <label for="beats-per-bar" title="Time signature — beats per bar">Time</label>
+            <label for="beats-per-bar" data-tip="Time signature — beats per bar">Time</label>
             <select id="beats-per-bar">
                 <option value="2">2/4</option>
                 <option value="3">3/4</option>
@@ -68,8 +68,8 @@
             <span class="beat-indicator" id="beat-indicator" aria-hidden="true"></span>
         </div>
         <div class="metronome-row">
-            <label title="Audible metronome tick on each beat"><input type="checkbox" id="click-enabled"> Click track</label>
-            <label title="Play the generated melody and chords"><input type="checkbox" id="song-enabled" checked> Procedural music</label>
+            <label data-tip="Audible metronome tick on each beat"><input type="checkbox" id="click-enabled"> Click track</label>
+            <label data-tip="Play the generated melody and chords"><input type="checkbox" id="song-enabled" checked> Procedural music</label>
         </div>
     </section>
 
@@ -85,7 +85,7 @@
             <button class="preset-btn" type="button" data-bpm="150" data-scale="dorian" data-tonic="2" data-bars="4" data-time="4" data-density="0.8" data-swing="0.2">Funk</button>
         </div>
         <div class="metronome-row">
-            <label for="tonic" title="Root note of the scale">Tonic</label>
+            <label for="tonic" data-tip="Root note of the scale">Tonic</label>
             <select id="tonic">
                 <option value="0" selected>C</option>
                 <option value="1">C#</option>
@@ -100,7 +100,7 @@
                 <option value="10">A#</option>
                 <option value="11">B</option>
             </select>
-            <label for="scale" title="Musical scale — determines the mood and available notes">Scale</label>
+            <label for="scale" data-tip="Musical scale — determines the mood and available notes">Scale</label>
             <select id="scale">
                 <option value="major" selected>Major</option>
                 <option value="natural_minor">Natural Minor</option>
@@ -113,13 +113,13 @@
                 <option value="pentatonic_minor">Pentatonic Minor</option>
                 <option value="blues">Blues</option>
             </select>
-            <label for="bars" title="Length of the loop in bars">Bars</label>
+            <label for="bars" data-tip="Length of the loop in bars">Bars</label>
             <select id="bars">
                 <option value="2">2</option>
                 <option value="4" selected>4</option>
                 <option value="8">8</option>
             </select>
-            <label for="voice" title="Instrument voice for melody and chords">Voice</label>
+            <label for="voice" data-tip="Instrument voice for melody and chords">Voice</label>
             <select id="voice">
                 <option value="piano" selected>Piano</option>
                 <option value="pad">Synth Pad</option>
@@ -130,35 +130,35 @@
             </select>
         </div>
         <div class="metronome-row">
-            <label for="transpose" title="Shift all notes up or down by semitones">Transpose</label>
-            <button id="transpose-down" type="button" title="Transpose down 1 semitone" class="transpose-btn">−</button>
+            <label for="transpose" data-tip="Shift all notes up or down by semitones">Transpose</label>
+            <button id="transpose-down" type="button" data-tip="Down 1 semitone" class="transpose-btn">−</button>
             <span id="transpose-display">0</span>
-            <button id="transpose-up" type="button" title="Transpose up 1 semitone" class="transpose-btn">+</button>
+            <button id="transpose-up" type="button" data-tip="Up 1 semitone" class="transpose-btn">+</button>
         </div>
         <div class="metronome-row">
-            <label for="density" title="How many notes per bar — lower is sparser, higher is busier">Density</label>
+            <label for="density" data-tip="How many notes per bar">Density</label>
             <input id="density" type="range" min="0.2" max="1.0" step="0.05" value="0.65" aria-label="Note density">
             <span id="density-display">65%</span>
-            <label for="swing" title="Timing offset on off-beat notes — adds a groovy, human feel">Swing</label>
+            <label for="swing" data-tip="Groovy off-beat timing feel">Swing</label>
             <input id="swing" type="range" min="0" max="0.8" step="0.1" value="0" aria-label="Swing amount">
             <span id="swing-display">0%</span>
-            <label for="velocity" title="How loud the notes play — lower is softer, higher is louder">Velocity</label>
+            <label for="velocity" data-tip="Note loudness — soft to loud">Velocity</label>
             <input id="velocity" type="range" min="0.1" max="1.0" step="0.05" value="0.8" aria-label="Note velocity">
             <span id="velocity-display">80%</span>
         </div>
         <div class="metronome-row">
-            <label for="seed" title="A number that uniquely determines the melody — same seed = same song">Seed</label>
-            <input id="seed" type="number" min="0" max="4294967295" step="1" title="Enter a seed to reproduce a specific melody">
-            <button id="generate-btn" type="button" title="Roll a new random seed">&#127922; Randomize</button>
-            <button id="share-btn" type="button" title="Copy a shareable link with all current settings">Share</button>
+            <label for="seed" data-tip="Same seed = same song">Seed</label>
+            <input id="seed" type="number" min="0" max="4294967295" step="1" data-tip="Enter a seed to reproduce a melody">
+            <button id="generate-btn" type="button" data-tip="Roll a new random seed">&#127922; Randomize</button>
+            <button id="share-btn" type="button" data-tip="Copy shareable link">Share</button>
             <span id="song-info" class="hint" aria-live="polite"></span>
         </div>
     </section>
 
     <section id="save-section" aria-label="Save current song">
         <div class="metronome-row">
-            <input id="song-name" type="text" placeholder="Name this melody…" title="Give your melody a name before saving">
-            <button id="save-btn" type="button" title="Save current melody to browser storage">Save</button>
+            <input id="song-name" type="text" placeholder="Name this melody…" data-tip="Give your melody a name">
+            <button id="save-btn" type="button" data-tip="Save to browser storage">Save</button>
             <span id="save-hint" class="hint" aria-live="polite"></span>
         </div>
     </section>
@@ -166,7 +166,7 @@
     <section id="history" aria-label="Saved melodies">
         <div class="history-header">
             <h2>History <span class="history-badge">saved locally in your browser</span></h2>
-            <button id="clear-history" type="button" title="Delete all saved melodies">Clear all</button>
+            <button id="clear-history" type="button" data-tip="Delete all saved melodies">Clear all</button>
         </div>
         <div id="history-list"></div>
         <p id="history-empty" class="hint">No saved melodies yet.</p>
@@ -175,8 +175,8 @@
     <section id="export" aria-label="Export options">
         <h2>Export</h2>
         <div class="metronome-row">
-            <button id="export-midi" type="button" title="Download as MIDI file — import into any DAW">Export MIDI</button>
-            <button id="export-wav" type="button" title="Render to audio file (16-bit PCM WAV)">Export WAV</button>
+            <button id="export-midi" type="button" data-tip="Download MIDI — import into any DAW">Export MIDI</button>
+            <button id="export-wav" type="button" data-tip="Render to WAV audio file">Export WAV</button>
             <span id="export-status" class="hint" aria-live="polite"></span>
         </div>
     </section>
