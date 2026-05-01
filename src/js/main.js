@@ -212,7 +212,12 @@ const piano = createPiano(pianoEl, {
   },
 });
 
-async function firstGestureBootstrap() { await bootstrap(); if (ready) startPlayback(); }
+async function firstGestureBootstrap() {
+  window.removeEventListener('keydown', firstGestureBootstrap);
+  pianoEl.removeEventListener('pointerdown', firstGestureBootstrap);
+  await bootstrap();
+  if (ready && (!scheduler || !scheduler.isPlaying)) startPlayback();
+}
 window.addEventListener('keydown', firstGestureBootstrap, { once: true });
 pianoEl.addEventListener('pointerdown', firstGestureBootstrap, { once: true });
 
@@ -497,8 +502,13 @@ function updatePlayerUI() {
 }
 
 function startPlayback() {
-  if (!scheduler) scheduler = createScheduler(getContext(), transport, onBeat);
-  if (!scheduler.isPlaying) { scheduler.start(); updatePlayerUI(); }
+  if (!scheduler) {
+    scheduler = createScheduler(getContext(), transport, onBeat);
+    scheduler.start();
+  } else if (!scheduler.isPlaying) {
+    scheduler.resume();
+  }
+  updatePlayerUI();
 }
 
 function pausePlayback() {
@@ -506,7 +516,7 @@ function pausePlayback() {
 }
 
 function stopPlayback() {
-  if (scheduler) scheduler.stop();
+  if (scheduler) { scheduler.stop(); scheduler = null; }
   updatePlayerUI();
   progressFill.style.width = '0%';
   if (currentSong) timeDisplay.textContent = `0:00 / ${formatTime(currentSong.lengthBeats * transport.beatDuration)}`;
