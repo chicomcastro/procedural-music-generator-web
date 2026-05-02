@@ -85,47 +85,79 @@
             <div class="mixer-group">
                 <div class="mixer-channel" data-ch="melody">
                     <span class="mixer-ch-label">MEL</span>
+                    <div class="mixer-pan-wrap">
+                        <span class="mixer-pan-label">L</span>
+                        <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="melody" aria-label="Melody pan">
+                        <span class="mixer-pan-label">R</span>
+                    </div>
                     <div class="mixer-fader-wrap">
                         <input id="melody-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="1" aria-label="Melody volume">
                     </div>
                     <span id="melody-vol-display" class="mixer-val">100%</span>
-                    <button class="mixer-mute" type="button" aria-label="Mute melody">M</button>
+                    <div class="mixer-btn-row">
+                        <button class="mixer-mute" type="button" aria-label="Mute melody">M</button>
+                        <button class="mixer-solo" type="button" aria-label="Solo melody">S</button>
+                    </div>
                 </div>
                 <div class="mixer-channel" data-ch="chord">
                     <span class="mixer-ch-label">CHD</span>
+                    <div class="mixer-pan-wrap">
+                        <span class="mixer-pan-label">L</span>
+                        <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="chord" aria-label="Chord pan">
+                        <span class="mixer-pan-label">R</span>
+                    </div>
                     <div class="mixer-fader-wrap">
                         <input id="chord-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.7" aria-label="Chord volume">
                     </div>
                     <span id="chord-vol-display" class="mixer-val">70%</span>
-                    <button class="mixer-mute" type="button" aria-label="Mute chords">M</button>
+                    <div class="mixer-btn-row">
+                        <button class="mixer-mute" type="button" aria-label="Mute chords">M</button>
+                        <button class="mixer-solo" type="button" aria-label="Solo chords">S</button>
+                    </div>
                 </div>
                 <div class="mixer-channel" data-ch="bass">
                     <span class="mixer-ch-label">BASS</span>
+                    <div class="mixer-pan-wrap">
+                        <span class="mixer-pan-label">L</span>
+                        <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="bass" aria-label="Bass pan">
+                        <span class="mixer-pan-label">R</span>
+                    </div>
                     <div class="mixer-fader-wrap">
                         <input id="bass-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.7" aria-label="Bass volume">
                     </div>
                     <span id="bass-vol-display" class="mixer-val">70%</span>
-                    <button class="mixer-mute" type="button" aria-label="Mute bass">M</button>
+                    <div class="mixer-btn-row">
+                        <button class="mixer-mute" type="button" aria-label="Mute bass">M</button>
+                        <button class="mixer-solo" type="button" aria-label="Solo bass">S</button>
+                    </div>
                 </div>
                 <div class="mixer-channel" data-ch="drum">
                     <span class="mixer-ch-label">DRM</span>
+                    <div class="mixer-pan-wrap">
+                        <span class="mixer-pan-label">L</span>
+                        <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="drum" aria-label="Drum pan">
+                        <span class="mixer-pan-label">R</span>
+                    </div>
                     <div class="mixer-fader-wrap">
                         <input id="drum-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.6" aria-label="Drum volume">
                     </div>
                     <span id="drum-vol-display" class="mixer-val">60%</span>
-                    <button class="mixer-mute" type="button" aria-label="Mute drums">M</button>
+                    <div class="mixer-btn-row">
+                        <button class="mixer-mute" type="button" aria-label="Mute drums">M</button>
+                        <button class="mixer-solo" type="button" aria-label="Solo drums">S</button>
+                    </div>
                 </div>
             </div>
             <div class="mixer-divider"></div>
             <div class="mixer-group">
-                <div class="mixer-channel mixer-fx">
+                <div class="mixer-channel">
                     <span class="mixer-ch-label">REV</span>
                     <div class="mixer-fader-wrap">
                         <input id="reverb" type="range" class="mixer-fader" min="0" max="0.8" step="0.05" value="0" aria-label="Reverb send">
                     </div>
                     <span id="reverb-display" class="mixer-val">0%</span>
                 </div>
-                <div class="mixer-channel mixer-fx">
+                <div class="mixer-channel">
                     <span class="mixer-ch-label">DLY</span>
                     <div class="mixer-fader-wrap">
                         <input id="delay" type="range" class="mixer-fader" min="0" max="0.7" step="0.05" value="0" aria-label="Delay send">
@@ -134,22 +166,27 @@
                 </div>
             </div>
             <div class="mixer-divider"></div>
-            <div class="mixer-group mixer-eq-group">
-                <span class="mixer-group-label">EQ</span>
-                <div class="mixer-eq-row">
-                    <label>HI</label>
-                    <input id="eq-high" type="range" class="mixer-eq-knob" min="-12" max="12" step="1" value="0" aria-label="EQ High">
-                    <span id="eq-high-display" class="mixer-eq-val">0</span>
+            <div class="mixer-group">
+                <div class="mixer-channel">
+                    <span class="mixer-ch-label">HI</span>
+                    <div class="mixer-fader-wrap">
+                        <input id="eq-high" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ High">
+                    </div>
+                    <span id="eq-high-display" class="mixer-val">0</span>
                 </div>
-                <div class="mixer-eq-row">
-                    <label>MID</label>
-                    <input id="eq-mid" type="range" class="mixer-eq-knob" min="-12" max="12" step="1" value="0" aria-label="EQ Mid">
-                    <span id="eq-mid-display" class="mixer-eq-val">0</span>
+                <div class="mixer-channel">
+                    <span class="mixer-ch-label">MID</span>
+                    <div class="mixer-fader-wrap">
+                        <input id="eq-mid" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ Mid">
+                    </div>
+                    <span id="eq-mid-display" class="mixer-val">0</span>
                 </div>
-                <div class="mixer-eq-row">
-                    <label>LO</label>
-                    <input id="eq-low" type="range" class="mixer-eq-knob" min="-12" max="12" step="1" value="0" aria-label="EQ Low">
-                    <span id="eq-low-display" class="mixer-eq-val">0</span>
+                <div class="mixer-channel">
+                    <span class="mixer-ch-label">LO</span>
+                    <div class="mixer-fader-wrap">
+                        <input id="eq-low" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ Low">
+                    </div>
+                    <span id="eq-low-display" class="mixer-val">0</span>
                 </div>
             </div>
             <div class="mixer-divider"></div>

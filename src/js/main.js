@@ -1,4 +1,4 @@
-import { init, getContext, getMasterGain, getReverbSend, getDelaySend, setReverbAmount, setDelayAmount, setEQ, setMasterVolume } from './audio/AudioEngine.js';
+import { init, getContext, getMasterGain, getReverbSend, getDelaySend, setReverbAmount, setDelayAmount, setEQ, setMasterVolume, getTrackDest, setTrackPan } from './audio/AudioEngine.js';
 import { loadAll, getPlaybackFor } from './audio/SampleLibrary.js';
 import { createVoice } from './audio/Voice.js';
 import { createSynthVoice } from './audio/SynthVoice.js';
@@ -175,7 +175,7 @@ const piano = createPiano(pianoEl, {
   onAttack(midi) {
     if (!ready) { bootstrap(); return; }
     const ctx = getContext();
-    const dest = getMasterGain();
+    const dest = getTrackDest('melody');
     const prev = activeVoices.get(midi);
     if (prev) prev.release(0.05);
     const v = getSelectedVoice();
@@ -222,9 +222,9 @@ const piano = createPiano(pianoEl, {
 /* ---- Scheduling ---- */
 function scheduleNote(midi, when, durationSec, velocity, evType = 'melody', ev = null) {
   const ctx = getContext();
-  const dest = getMasterGain();
 
   if (evType === 'drum' && ev) {
+    const dest = getTrackDest('drum');
     playDrumHit(ctx, dest, { drum: ev.drum, when, velocity: velocity * Number(velocityInput.value) * Number(drumVolInput.value) });
     return;
   }
@@ -233,6 +233,7 @@ function scheduleNote(midi, when, durationSec, velocity, evType = 'melody', ev =
     : evType === 'bass' ? Number(bassVolInput.value)
     : Number(melodyVolInput.value);
   const vel = velocity * Number(velocityInput.value) * trackVol;
+  const dest = getTrackDest(evType === 'chord' ? 'chord' : evType === 'bass' ? 'bass' : 'melody');
 
   if (evType === 'bass') {
     createSynthVoice(ctx, dest, { midi, velocity: vel, when, duration: durationSec, preset: 'bass' });
@@ -475,6 +476,54 @@ for (const muteBtn of document.querySelectorAll('.mixer-mute')) {
       fader.value = muteBtn.dataset.prev || 1;
     }
     fader.dispatchEvent(new Event('input'));
+  });
+}
+
+const trackChannels = document.querySelectorAll('.mixer-channel[data-ch]');
+
+function updateSoloState() {
+  const anySoloed = document.querySelector('.mixer-solo.soloed');
+  for (const ch of trackChannels) {
+    const fader = ch.querySelector('.mixer-fader');
+    const muteBtn = ch.querySelector('.mixer-mute');
+    const soloBtn = ch.querySelector('.mixer-solo');
+    if (!anySoloed) {
+      if (muteBtn.classList.contains('muted')) return;
+      if (ch.dataset.preSolo) {
+        fader.value = ch.dataset.preSolo;
+        delete ch.dataset.preSolo;
+        fader.dispatchEvent(new Event('input'));
+      }
+    } else {
+      const isSoloed = soloBtn.classList.contains('soloed');
+      if (isSoloed) {
+        if (ch.dataset.preSolo) {
+          fader.value = ch.dataset.preSolo;
+          delete ch.dataset.preSolo;
+        }
+      } else {
+        if (!ch.dataset.preSolo) ch.dataset.preSolo = fader.value;
+        fader.value = 0;
+      }
+      fader.dispatchEvent(new Event('input'));
+    }
+  }
+}
+
+for (const soloBtn of document.querySelectorAll('.mixer-solo')) {
+  soloBtn.addEventListener('click', () => {
+    soloBtn.classList.toggle('soloed');
+    updateSoloState();
+  });
+}
+
+for (const panInput of document.querySelectorAll('.mixer-pan')) {
+  panInput.addEventListener('input', () => {
+    setTrackPan(panInput.dataset.track, Number(panInput.value));
+  });
+  panInput.addEventListener('dblclick', () => {
+    panInput.value = 0;
+    setTrackPan(panInput.dataset.track, 0);
   });
 }
 

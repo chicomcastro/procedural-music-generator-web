@@ -6,6 +6,7 @@ let compressor = null;
 let eqLow = null;
 let eqMid = null;
 let eqHigh = null;
+const trackPanners = {};
 
 /** @returns {AudioContext|null} */
 export function getContext() {
@@ -27,6 +28,14 @@ export function setEQ(band, value) {
 
 export function setMasterVolume(value) {
   if (masterGain) masterGain.gain.value = value;
+}
+
+export function getTrackDest(track) {
+  return trackPanners[track] || masterGain;
+}
+
+export function setTrackPan(track, value) {
+  if (trackPanners[track]) trackPanners[track].pan.value = value;
 }
 
 /** @returns {Promise<AudioContext>} */
@@ -54,6 +63,12 @@ export async function init() {
     eqHigh.type = 'highshelf';
     eqHigh.frequency.value = 3200;
     eqHigh.gain.value = 0;
+
+    for (const track of ['melody', 'chord', 'bass', 'drum']) {
+      const panner = ctx.createStereoPanner();
+      panner.connect(masterGain);
+      trackPanners[track] = panner;
+    }
 
     masterGain.connect(eqLow);
     eqLow.connect(eqMid);

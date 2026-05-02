@@ -924,6 +924,63 @@ input[type="text"]:focus {
   white-space: nowrap;
 }
 
+.mixer-pan-wrap {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.mixer-pan-label {
+  font-size: 7px;
+  color: var(--text-muted);
+  font-weight: 600;
+  opacity: 0.6;
+}
+
+.mixer-pan {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 40px;
+  height: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mixer-pan::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.mixer-pan::-moz-range-track {
+  width: 100%;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.mixer-pan::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  margin-top: -4px;
+}
+
+.mixer-pan::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
 .mixer-fader-wrap {
   display: flex;
   align-items: center;
@@ -931,18 +988,21 @@ input[type="text"]:focus {
   height: 130px;
   width: 32px;
   position: relative;
+  overflow: visible;
 }
 
 .mixer-fader {
   -webkit-appearance: none;
   appearance: none;
-  writing-mode: vertical-lr;
-  direction: rtl;
   width: 130px;
   height: 32px;
   background: transparent;
   cursor: grab;
   margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-90deg);
 }
 
 .mixer-fader::-webkit-slider-runnable-track {
@@ -961,20 +1021,20 @@ input[type="text"]:focus {
 
 .mixer-fader::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 10px;
-  height: 22px;
-  background: linear-gradient(180deg, #d4d4d4 0%, #a0a0a0 40%, #888 50%, #a0a0a0 60%, #d4d4d4 100%);
+  width: 22px;
+  height: 10px;
+  background: linear-gradient(90deg, #d4d4d4 0%, #a0a0a0 40%, #888 50%, #a0a0a0 60%, #d4d4d4 100%);
   border-radius: 2px;
   border: 1px solid rgba(0,0,0,0.25);
   box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   cursor: grab;
-  margin-top: -9px;
+  margin-top: -3px;
 }
 
 .mixer-fader::-moz-range-thumb {
-  width: 10px;
-  height: 22px;
-  background: linear-gradient(180deg, #d4d4d4 0%, #a0a0a0 40%, #888 50%, #a0a0a0 60%, #d4d4d4 100%);
+  width: 22px;
+  height: 10px;
+  background: linear-gradient(90deg, #d4d4d4 0%, #a0a0a0 40%, #888 50%, #a0a0a0 60%, #d4d4d4 100%);
   border-radius: 2px;
   border: 1px solid rgba(0,0,0,0.25);
   box-shadow: 0 1px 4px rgba(0,0,0,0.3);
@@ -996,11 +1056,18 @@ input[type="text"]:focus {
   text-align: center;
 }
 
-.mixer-mute {
+.mixer-btn-row {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+}
+
+.mixer-mute,
+.mixer-solo {
   background: transparent;
   border: 1px solid var(--border-hover);
   color: var(--text-muted);
-  width: 24px;
+  width: 22px;
   height: 18px;
   border-radius: 3px;
   cursor: pointer;
@@ -1022,6 +1089,17 @@ input[type="text"]:focus {
   color: #fff;
 }
 
+.mixer-solo:hover {
+  border-color: #e8b528;
+  color: #e8b528;
+}
+
+.mixer-solo.soloed {
+  background: #e8b528;
+  border-color: #e8b528;
+  color: #111;
+}
+
 .mixer-divider {
   width: 1px;
   background: var(--border-hover);
@@ -1040,13 +1118,6 @@ input[type="text"]:focus {
 
 /* Mixer EQ */
 
-.mixer-eq-group {
-  flex-direction: column;
-  padding: 6px 10px;
-  gap: 6px;
-  justify-content: center;
-}
-
 .mixer-group-label {
   font-size: 9px;
   font-weight: 700;
@@ -1055,36 +1126,6 @@ input[type="text"]:focus {
   color: var(--text-secondary);
   text-align: center;
   margin-bottom: 2px;
-}
-
-.mixer-eq-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.mixer-eq-row label {
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--text-muted);
-  width: 22px;
-  text-align: right;
-  text-transform: uppercase;
-  letter-spacing: 0;
-}
-
-.mixer-eq-knob {
-  width: 60px;
-  accent-color: var(--accent);
-  height: 14px;
-}
-
-.mixer-eq-val {
-  font-size: 10px;
-  font-family: monospace;
-  color: var(--text-muted);
-  min-width: 18px;
-  text-align: right;
 }
 
 /* ---- Gallery ---- */
@@ -1512,9 +1553,6 @@ input[type="text"]:focus {
     padding: 4px 3px;
   }
 
-  .mixer-eq-knob {
-    width: 50px;
-  }
 
   .time-display {
     font-size: 11px;
