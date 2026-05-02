@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#0f1117"/>
+  <g transform="translate(96,96)">
+    <!-- Musical note (eighth note) -->
+    <ellipse cx="-16" cy="30" rx="20" ry="15" fill="#44aa88" transform="rotate(-15)"/>
+    <rect x="2" y="-50" width="6" height="78" fill="#44aa88"/>
+    <path d="M8,-50 Q40,-45 35,-20 Q30,0 8,-5" fill="#44aa88"/>
+  </g>
+</svg>
