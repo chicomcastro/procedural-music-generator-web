@@ -4,6 +4,7 @@ export function createScoreCanvas(canvas, options = {}) {
   let playheadBeat = -1;
   let lockedBars = new Set();
   let lastSong = null;
+  let rafPending = false;
 
   canvas.style.cursor = 'pointer';
 
@@ -110,6 +111,15 @@ export function createScoreCanvas(canvas, options = {}) {
     };
   }
 
+  function requestRender() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      actualRender(lastSong);
+    });
+  }
+
   function render(song) {
     if (!song || !song.events.length) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -117,6 +127,14 @@ export function createScoreCanvas(canvas, options = {}) {
     }
 
     lastSong = song;
+    requestRender();
+  }
+
+  function actualRender(song) {
+    if (!song || !song.events.length) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
     const colors = getThemeColors();
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
 

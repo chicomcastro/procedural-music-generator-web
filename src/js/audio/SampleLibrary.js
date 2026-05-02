@@ -13,18 +13,31 @@ const SAMPLE_FILES = {
   59: 'B3.mp3',
 };
 
+const PRIORITY_MIDI = [48, 52, 55, 57]; // C3, E3, G3, A3
+
 const buffers = new Map();
+
+async function loadSample(ctx, midi, file, baseUrl) {
+  const res = await fetch(baseUrl + file);
+  if (!res.ok) throw new Error(`Failed to fetch ${file}: ${res.status}`);
+  const arr = await res.arrayBuffer();
+  const buf = await ctx.decodeAudioData(arr);
+  buffers.set(Number(midi), buf);
+}
 
 /** @param {AudioContext} ctx @param {string} [baseUrl] @returns {Promise<Map<number, AudioBuffer>>} */
 export async function loadAll(ctx, baseUrl = 'sounds/') {
   const entries = Object.entries(SAMPLE_FILES);
-  await Promise.all(entries.map(async ([midi, file]) => {
-    const res = await fetch(baseUrl + file);
-    if (!res.ok) throw new Error(`Failed to fetch ${file}: ${res.status}`);
-    const arr = await res.arrayBuffer();
-    const buf = await ctx.decodeAudioData(arr);
-    buffers.set(Number(midi), buf);
-  }));
+  const priorityEntries = entries.filter(([midi]) => PRIORITY_MIDI.includes(Number(midi)));
+  const remainingEntries = entries.filter(([midi]) => !PRIORITY_MIDI.includes(Number(midi)));
+
+  // Load priority samples first and resolve once they're ready
+  await Promise.all(priorityEntries.map(([midi, file]) => loadSample(ctx, midi, file, baseUrl)));
+
+  // Continue loading the rest in the background (fire-and-forget)
+  Promise.all(remainingEntries.map(([midi, file]) => loadSample(ctx, midi, file, baseUrl)))
+    .catch(err => console.warn('Background sample loading error:', err));
+
   return buffers;
 }
 
