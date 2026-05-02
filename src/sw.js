@@ -1,4 +1,4 @@
-const CACHE_NAME = 'seedsong-v27';
+const CACHE_NAME = 'seedsong-v28';
 
 const ASSETS = [
   './',

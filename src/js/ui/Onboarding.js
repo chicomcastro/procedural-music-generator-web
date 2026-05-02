@@ -130,9 +130,6 @@ function renderStep() {
     const isFirst = currentStep === 0;
     const isLast = currentStep === STEPS.length - 1;
 
-    const arrow = step.position === 'top' ? 'down' : step.position === 'bottom' ? 'up' : '';
-    cardEl.setAttribute('data-arrow', arrow);
-
     cardEl.innerHTML = `
       <div class="onboarding-step-num">${stepNum}</div>
       <div class="onboarding-title">${step.title}</div>
@@ -161,6 +158,7 @@ function renderStep() {
 }
 
 function positionCard(target, position) {
+  cardEl.style.position = 'fixed';
   cardEl.style.removeProperty('top');
   cardEl.style.removeProperty('bottom');
   cardEl.style.removeProperty('left');
@@ -189,14 +187,21 @@ function positionCard(target, position) {
   cardEl.style.left = `${left}px`;
   cardEl.style.width = `${cardW}px`;
 
-  if (position === 'top') {
-    const topPos = rect.top + window.scrollY - margin;
-    cardEl.style.top = `${topPos}px`;
-    cardEl.style.transform = 'translateY(-100%)';
+  const cardH = 220;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  const fitsBelow = spaceBelow >= cardH + margin;
+  const preferTop = position === 'top' || (!fitsBelow && spaceAbove > spaceBelow);
+
+  if (preferTop) {
+    cardEl.style.top = `${Math.max(margin, rect.top - margin - cardH)}px`;
+    cardEl.setAttribute('data-arrow', 'down');
   } else {
-    const topPos = rect.bottom + window.scrollY + margin;
-    cardEl.style.top = `${topPos}px`;
+    cardEl.style.top = `${Math.min(rect.bottom + margin, window.innerHeight - cardH - margin)}px`;
+    cardEl.setAttribute('data-arrow', 'up');
   }
+
+  requestAnimationFrame(() => cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
 }
 
 function next() {
