@@ -4,97 +4,63 @@ const STEPS = [
   {
     target: '#hero',
     title: 'Welcome to SeedSong',
-    text: 'A procedural music generator that creates infinite piano melodies from a single seed number. Let\'s take a quick tour of all the features!',
-    position: 'bottom',
-  },
-  {
-    target: '#piano-scroll',
-    title: 'Piano Keyboard',
-    text: 'Play notes with your mouse, touch, or keyboard. Keys A–J play white notes, W E T Y U play black notes. Press Z/X to shift octave down/up.',
+    text: 'A procedural music generator that creates infinite melodies from a single seed number. Let\'s take a quick tour!',
     position: 'bottom',
   },
   {
     target: '#score-section',
-    title: 'Score Visualizer',
-    text: 'See your melody as a piano roll. Click a bar to lock it — locked bars survive when you regenerate. Drag notes to rearrange them.',
+    title: 'Score Canvas',
+    text: 'Your song visualized as a piano roll. Multi-section songs show Intro, Verse, Chorus, and Outro. Click a bar to lock it — locked bars survive regeneration. Click notes to select, drag to move, resize edges to change duration.',
     position: 'bottom',
   },
   {
-    target: '.player-transport',
-    title: 'Transport Controls',
-    text: 'Play/pause, stop, record, and metronome — all in one row. The metronome cycles: off → downbeat only → all beats. Press Space to toggle playback. Hit the red circle to record keyboard notes.',
-    position: 'bottom',
-  },
-  {
-    target: '#metronome > :nth-child(3)',
-    title: 'Tempo & Time Signature',
-    text: 'Adjust the BPM (40–240) and time signature (2/4, 3/4, 4/4, 6/8). The beat indicator pulses on each beat, with accent on the downbeat.',
-    position: 'bottom',
-  },
-  {
-    target: '#mixer',
-    title: 'Mixer Console',
-    text: 'Control volume for each track with vertical faders, including click track. Pan knobs position tracks in stereo (L/R). Mute (M) and Solo (S) for quick mixing. Plus reverb/delay sends, 3-band EQ, and master volume.',
+    target: '#tab-bar',
+    title: 'Tabbed Controls',
+    text: 'Switch between Generator, Mixer, History, Export, and Gallery tabs. The Piano toggle opens a playable keyboard below.',
     position: 'bottom',
   },
   {
     target: '#presets-row',
-    title: 'Style Presets',
-    text: 'Quick-load genre presets: Lo-fi, Jazz, Classical, Blues, Dark, Funk. Each sets the BPM, scale, density, swing, and other parameters to match the style.',
+    title: 'Genre & Mood Presets',
+    text: 'One-click presets set tonic, scale, tempo, density, swing, voice, and effects. Genre row (Lo-fi, Jazz, Classical...) and Mood row (Chill, Energetic, Dreamy...) give instant starting points.',
     position: 'bottom',
   },
   {
-    target: '#generator > :nth-child(3)',
-    title: 'Tonic, Scale, Bars & Voice',
-    text: 'Choose the root note (tonic), musical scale (major, minor, dorian, blues...), loop length in bars, and instrument voice (piano, synth pad, pluck, bass, organ, strings).',
+    target: '.gen-grid',
+    title: 'Generator Controls',
+    text: 'Fine-tune tonic, scale, chord progression, bars, song structure (single/short/full), melody voice, chord voice, contour, and rhythm template.',
     position: 'bottom',
   },
   {
-    target: '#generator > :nth-child(4)',
-    title: 'Transpose',
-    text: 'Shift all notes up or down by semitones (-24 to +24). Useful for matching a key or finding a sweeter register.',
-    position: 'bottom',
-  },
-  {
-    target: '#generator > :nth-child(5)',
-    title: 'Density, Swing & Velocity',
-    text: 'Density controls how many notes per bar. Swing adds groovy off-beat timing. Velocity sets note loudness — softer notes also get a darker timbre.',
-    position: 'bottom',
-  },
-  {
-    target: '#generator > :nth-child(6)',
+    target: '.gen-seed-row',
     title: 'Seed & Sharing',
-    text: 'The seed number is the DNA of your melody — same seed = same song. Randomize to explore, or type a number to reproduce. Share copies a URL that recreates the exact same song.',
+    text: 'The seed is the DNA of your song — same seed = same song. Randomize to explore, Share to copy a URL that recreates the exact piece. Save to keep it in your history.',
     position: 'top',
   },
   {
-    target: '#save-section',
-    title: 'Save Your Melodies',
-    text: 'Give your melody a name and save it to browser storage. Unsaved changes show a warning. All data stays local — nothing is sent to a server.',
+    target: '#panel-mixer',
+    title: 'Mixer Console',
+    text: 'Per-track volume faders (MEL, CHD, BASS, DRM, CLK) with pan knobs and mute/solo buttons. Reverb presets (Room/Hall/Cathedral), delay, chorus sends. 3-band EQ and master volume. All settings persist across reloads.',
     position: 'bottom',
+    activateTab: 'mixer',
   },
   {
-    target: '#history',
-    title: 'History',
-    text: 'All saved melodies appear here. Load, rename, or delete entries. Use "Clear all" to start fresh.',
+    target: '#transport-bar',
+    title: 'Transport Bar',
+    text: 'Play/pause, stop, record, and click track. Progress bar with time display. Adjust BPM and time signature on the right. Press Space for play/pause.',
     position: 'top',
   },
   {
-    target: '#export',
+    target: '#panel-export',
     title: 'Export',
-    text: 'Download your song as MIDI (for any DAW) or WAV (audio file). Preview Clip renders a quick 2-bar audio snippet you can listen to instantly.',
-    position: 'top',
-  },
-  {
-    target: '#gallery',
-    title: 'Gallery',
-    text: 'A curated collection of community seeds. Click any card to load its settings — a great starting point for exploration.',
-    position: 'top',
+    text: 'Download as multi-track MIDI (Format 1 with separate tracks per instrument) or WAV audio. Preview Clip renders a quick 2-bar snippet.',
+    position: 'bottom',
+    activateTab: 'export',
   },
   {
     target: '#theme-toggle',
     title: 'Theme & Shortcuts',
-    text: 'Toggle between dark and light themes. Press ? or click the help button next to it to see all keyboard shortcuts. Your theme preference is saved.',
+    text: 'Toggle dark/light theme. Press ? to see all keyboard shortcuts. Your preferences are saved.',
     position: 'below-fixed',
   },
 ];
@@ -125,12 +91,25 @@ function cleanup() {
   });
 }
 
+function activateTab(panelName) {
+  const tabBar = document.getElementById('tab-bar');
+  if (!tabBar) return;
+  for (const t of tabBar.querySelectorAll('[role="tab"]')) {
+    t.setAttribute('aria-selected', t.dataset.panel === panelName ? 'true' : 'false');
+  }
+  for (const p of document.querySelectorAll('.tab-panel')) {
+    p.classList.toggle('hidden', p.id !== `panel-${panelName}`);
+  }
+}
+
 function renderStep() {
   cleanup();
   const step = STEPS[currentStep];
+
+  if (step.activateTab) activateTab(step.activateTab);
+
   const target = document.querySelector(step.target);
 
-  // Fade the card out before repositioning
   cardEl.classList.remove('visible');
   cardEl.style.transition = 'opacity 150ms';
   cardEl.style.opacity = '0';
@@ -143,13 +122,11 @@ function renderStep() {
     target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  // Wait for scroll to settle, then reposition and fade in
   setTimeout(() => {
     const stepNum = `${currentStep + 1} / ${STEPS.length}`;
     const isFirst = currentStep === 0;
     const isLast = currentStep === STEPS.length - 1;
 
-    // Set data-arrow attribute based on position
     const arrow = step.position === 'top' ? 'down' : step.position === 'bottom' ? 'up' : '';
     cardEl.setAttribute('data-arrow', arrow);
 
@@ -237,6 +214,7 @@ function prev() {
 
 function finish() {
   cleanup();
+  activateTab('generator');
   window.removeEventListener('keydown', handleKeydown);
   backdropEl.remove();
   cardEl.remove();

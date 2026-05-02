@@ -1096,14 +1096,14 @@ input[type="text"]:focus {
 #tour-btn,
 #shortcuts-btn {
   position: fixed;
-  top: 6px;
+  top: 5px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 12px;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
@@ -1113,9 +1113,9 @@ input[type="text"]:focus {
   line-height: 1;
 }
 
-#theme-toggle { right: 12px; font-size: 16px; }
-#shortcuts-btn { right: 50px; font-weight: 600; }
-#tour-btn { right: 88px; }
+#theme-toggle { right: 10px; font-size: 13px; }
+#shortcuts-btn { right: 40px; font-weight: 600; }
+#tour-btn { right: 70px; }
 
 #theme-toggle:hover,
 #shortcuts-btn:hover,
