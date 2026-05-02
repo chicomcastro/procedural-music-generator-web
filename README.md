@@ -57,15 +57,4 @@ src/js/
 
 For the reasoning behind the key architectural decisions, see [`docs/decisions.md`](docs/decisions.md).
 
-## Development phases
 
-- [x] Phase 1 — Web Audio API core, polyphony, module split
-- [x] Phase 2 — QWERTY keyboard input, first-gesture bootstrap
-- [x] Phase 3 — Music theory modules (notes, scales, chords) — [tests](https://chicomcastro.github.io/procedural-music-generator-web/theory-tests.html)
-- [x] Phase 4 — Lookahead scheduler + transport (metronome)
-- [x] Phase 5 — Procedural generators (progression, rhythm, melody)
-- [x] Phase 6 — Multi-octave keyboard rendering + Z/X octave shift
-- [x] Phase 7 — Visualizer (keys glow as the scheduler triggers notes)
-- [x] Phase 8 — MIDI / WAV export
-- [x] Phase 9 — Product polish (branding, i18n, sharing, presets, responsive, a11y)
-- [x] Phase 10 — DAW layout, multi-section songs, mixer console, settings persistence
