@@ -1,4 +1,4 @@
-import { init, getContext, getMasterGain, getReverbSend, getDelaySend, setReverbAmount, setDelayAmount, setEQ } from './audio/AudioEngine.js';
+import { init, getContext, getMasterGain, getReverbSend, getDelaySend, setReverbAmount, setDelayAmount, setEQ, setMasterVolume } from './audio/AudioEngine.js';
 import { loadAll, getPlaybackFor } from './audio/SampleLibrary.js';
 import { createVoice } from './audio/Voice.js';
 import { createSynthVoice } from './audio/SynthVoice.js';
@@ -61,6 +61,12 @@ const melodyVolInput = document.getElementById('melody-vol');
 const melodyVolDisplay = document.getElementById('melody-vol-display');
 const chordVolInput = document.getElementById('chord-vol');
 const chordVolDisplay = document.getElementById('chord-vol-display');
+const bassVolInput = document.getElementById('bass-vol');
+const bassVolDisplay = document.getElementById('bass-vol-display');
+const drumVolInput = document.getElementById('drum-vol');
+const drumVolDisplay = document.getElementById('drum-vol-display');
+const masterVolInput = document.getElementById('master-vol');
+const masterVolDisplay = document.getElementById('master-vol-display');
 const reverbInput = document.getElementById('reverb');
 const reverbDisplay = document.getElementById('reverb-display');
 const delayInput = document.getElementById('delay');
@@ -167,7 +173,7 @@ const piano = createPiano(pianoEl, {
   startOctave: 2,
   octaves: 4,
   onAttack(midi) {
-    if (!ready) return;
+    if (!ready) { bootstrap(); return; }
     const ctx = getContext();
     const dest = getMasterGain();
     const prev = activeVoices.get(midi);
@@ -213,26 +219,19 @@ const piano = createPiano(pianoEl, {
   },
 });
 
-async function firstGestureBootstrap() {
-  window.removeEventListener('keydown', firstGestureBootstrap);
-  pianoEl.removeEventListener('pointerdown', firstGestureBootstrap);
-  await bootstrap();
-  if (ready && (!scheduler || !scheduler.isPlaying)) startPlayback();
-}
-window.addEventListener('keydown', firstGestureBootstrap, { once: true });
-pianoEl.addEventListener('pointerdown', firstGestureBootstrap, { once: true });
-
 /* ---- Scheduling ---- */
 function scheduleNote(midi, when, durationSec, velocity, evType = 'melody', ev = null) {
   const ctx = getContext();
   const dest = getMasterGain();
 
   if (evType === 'drum' && ev) {
-    playDrumHit(ctx, dest, { drum: ev.drum, when, velocity: velocity * Number(velocityInput.value) });
+    playDrumHit(ctx, dest, { drum: ev.drum, when, velocity: velocity * Number(velocityInput.value) * Number(drumVolInput.value) });
     return;
   }
 
-  const trackVol = evType === 'chord' ? Number(chordVolInput.value) : Number(melodyVolInput.value);
+  const trackVol = evType === 'chord' ? Number(chordVolInput.value)
+    : evType === 'bass' ? Number(bassVolInput.value)
+    : Number(melodyVolInput.value);
   const vel = velocity * Number(velocityInput.value) * trackVol;
 
   if (evType === 'bass') {
@@ -439,33 +438,45 @@ velocityInput.addEventListener('input', (e) => {
   checkUnsaved();
 });
 
+/* ---- Mixer controls ---- */
 for (const [input, display, band] of [[eqLowInput, eqLowDisplay, 'low'], [eqMidInput, eqMidDisplay, 'mid'], [eqHighInput, eqHighDisplay, 'high']]) {
   input.addEventListener('input', (e) => {
     const v = Number(e.target.value);
-    display.textContent = `${v > 0 ? '+' : ''}${v} dB`;
+    display.textContent = `${v > 0 ? '+' : ''}${v}`;
     setEQ(band, v);
   });
 }
 
-melodyVolInput.addEventListener('input', (e) => {
-  melodyVolDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
-});
+for (const [input, display] of [[melodyVolInput, melodyVolDisplay], [chordVolInput, chordVolDisplay], [bassVolInput, bassVolDisplay], [drumVolInput, drumVolDisplay], [masterVolInput, masterVolDisplay]]) {
+  input.addEventListener('input', (e) => {
+    display.textContent = `${Math.round(e.target.value * 100)}%`;
+  });
+}
 
-chordVolInput.addEventListener('input', (e) => {
-  chordVolDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
-});
+masterVolInput.addEventListener('input', (e) => setMasterVolume(Number(e.target.value)));
 
 reverbInput.addEventListener('input', (e) => {
-  const v = Number(e.target.value);
-  reverbDisplay.textContent = `${Math.round(v * 100)}%`;
-  setReverbAmount(v);
+  reverbDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
+  setReverbAmount(Number(e.target.value));
 });
 
 delayInput.addEventListener('input', (e) => {
-  const v = Number(e.target.value);
-  delayDisplay.textContent = `${Math.round(v * 100)}%`;
-  setDelayAmount(v);
+  delayDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
+  setDelayAmount(Number(e.target.value));
 });
+
+for (const muteBtn of document.querySelectorAll('.mixer-mute')) {
+  muteBtn.addEventListener('click', () => {
+    const fader = muteBtn.closest('.mixer-channel').querySelector('.mixer-fader');
+    if (muteBtn.classList.toggle('muted')) {
+      muteBtn.dataset.prev = fader.value;
+      fader.value = 0;
+    } else {
+      fader.value = muteBtn.dataset.prev || 1;
+    }
+    fader.dispatchEvent(new Event('input'));
+  });
+}
 
 /* ---- Presets ---- */
 const presetBtns = document.querySelectorAll('.preset-btn');
