@@ -38,16 +38,10 @@ const STEPS = [
     position: 'bottom',
   },
   {
-    target: '#metronome > :nth-child(5)',
-    title: '3-Band EQ',
-    text: 'Shape the sound with Low (bass), Mid, and High (treble) equalizer bands. Boost or cut each by up to 12 dB.',
+    target: '#mixer',
+    title: 'Mixer Console',
+    text: 'Control volume for each track (melody, chords, bass, drums) with vertical faders. Mute individual tracks with the M button. Adjust reverb/delay sends, 3-band EQ, and master volume.',
     position: 'bottom',
-  },
-  {
-    target: '#metronome > :nth-child(6)',
-    title: 'Reverb & Delay',
-    text: 'Add room ambience with reverb and echo with delay. Both use real-time audio processing — reverb is a convolution effect, delay has feedback with a lowpass filter.',
-    position: 'top',
   },
   {
     target: '#presets-row',
@@ -75,12 +69,6 @@ const STEPS = [
   },
   {
     target: '#generator > :nth-child(6)',
-    title: 'Track Mix',
-    text: 'Adjust the melody and chord volume independently. The bass and drums follow the overall level.',
-    position: 'bottom',
-  },
-  {
-    target: '#generator > :nth-child(7)',
     title: 'Seed & Sharing',
     text: 'The seed number is the DNA of your melody — same seed = same song. Randomize to explore, or type a number to reproduce. Share copies a URL that recreates the exact same song.',
     position: 'top',
@@ -148,6 +136,11 @@ function renderStep() {
   const step = STEPS[currentStep];
   const target = document.querySelector(step.target);
 
+  // Fade the card out before repositioning
+  cardEl.classList.remove('visible');
+  cardEl.style.transition = 'opacity 150ms';
+  cardEl.style.opacity = '0';
+
   if (target) {
     target.classList.add('onboarding-spotlight');
     const cs = getComputedStyle(target);
@@ -156,33 +149,41 @@ function renderStep() {
     target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  const stepNum = `${currentStep + 1} / ${STEPS.length}`;
-  const isFirst = currentStep === 0;
-  const isLast = currentStep === STEPS.length - 1;
+  // Wait for scroll to settle, then reposition and fade in
+  setTimeout(() => {
+    const stepNum = `${currentStep + 1} / ${STEPS.length}`;
+    const isFirst = currentStep === 0;
+    const isLast = currentStep === STEPS.length - 1;
 
-  cardEl.innerHTML = `
-    <div class="onboarding-step-num">${stepNum}</div>
-    <div class="onboarding-title">${step.title}</div>
-    <div class="onboarding-text">${step.text}</div>
-    <div class="onboarding-progress">
-      ${STEPS.map((_, i) => `<span class="onboarding-dot${i === currentStep ? ' active' : i < currentStep ? ' done' : ''}"></span>`).join('')}
-    </div>
-    <div class="onboarding-actions">
-      <button class="onboarding-skip" type="button">Skip tour</button>
-      <div class="onboarding-nav">
-        ${isFirst ? '' : '<button class="onboarding-prev" type="button">Back</button>'}
-        <button class="onboarding-next" type="button">${isLast ? 'Finish' : 'Next'}</button>
+    // Set data-arrow attribute based on position
+    const arrow = step.position === 'top' ? 'down' : step.position === 'bottom' ? 'up' : '';
+    cardEl.setAttribute('data-arrow', arrow);
+
+    cardEl.innerHTML = `
+      <div class="onboarding-step-num">${stepNum}</div>
+      <div class="onboarding-title">${step.title}</div>
+      <div class="onboarding-text">${step.text}</div>
+      <div class="onboarding-progress">
+        ${STEPS.map((_, i) => `<span class="onboarding-dot${i === currentStep ? ' active' : i < currentStep ? ' done' : ''}"></span>`).join('')}
       </div>
-    </div>
-  `;
+      <div class="onboarding-actions">
+        <button class="onboarding-skip" type="button">Skip tour</button>
+        <div class="onboarding-nav">
+          ${isFirst ? '' : '<button class="onboarding-prev" type="button">Back</button>'}
+          <button class="onboarding-next" type="button">${isLast ? 'Finish' : 'Next'}</button>
+        </div>
+      </div>
+    `;
 
-  cardEl.querySelector('.onboarding-skip').addEventListener('click', finish);
-  const prevBtn = cardEl.querySelector('.onboarding-prev');
-  if (prevBtn) prevBtn.addEventListener('click', prev);
-  cardEl.querySelector('.onboarding-next').addEventListener('click', next);
+    cardEl.querySelector('.onboarding-skip').addEventListener('click', finish);
+    const prevBtn = cardEl.querySelector('.onboarding-prev');
+    if (prevBtn) prevBtn.addEventListener('click', prev);
+    cardEl.querySelector('.onboarding-next').addEventListener('click', next);
 
-  positionCard(target, step.position);
-  cardEl.classList.add('visible');
+    positionCard(target, step.position);
+    cardEl.style.opacity = '1';
+    cardEl.classList.add('visible');
+  }, 300);
 }
 
 function positionCard(target, position) {
@@ -242,6 +243,7 @@ function prev() {
 
 function finish() {
   cleanup();
+  window.removeEventListener('keydown', handleKeydown);
   backdropEl.remove();
   cardEl.remove();
   backdropEl = null;

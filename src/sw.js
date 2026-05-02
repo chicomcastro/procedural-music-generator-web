@@ -1,4 +1,4 @@
-const CACHE_NAME = 'seedsong-v7';
+const CACHE_NAME = 'seedsong-v8';
 
 const ASSETS = [
   './',
@@ -6,6 +6,8 @@ const ASSETS = [
   './app.html',
   './styles.css',
   './favicon.svg',
+  './icon-192.svg',
+  './icon-512.svg',
   './manifest.json',
   './js/main.js',
   './js/audio/AudioEngine.js',

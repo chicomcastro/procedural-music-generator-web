@@ -25,6 +25,10 @@ export function setEQ(band, value) {
   if (node) node.gain.value = value;
 }
 
+export function setMasterVolume(value) {
+  if (masterGain) masterGain.gain.value = value;
+}
+
 /** @returns {Promise<AudioContext>} */
 export async function init() {
   if (!ctx) {
