@@ -5,14 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SeedSong — Procedural Music Generator</title>
-    <meta name="description" content="Generate infinite piano melodies from a single seed number. Play, tweak, and export to MIDI or WAV — no install, no sign-up.">
+    <meta name="description" content="Generate infinite melodies from a single seed number. Multi-section songs, full mixer, MIDI/WAV export — no install, no sign-up.">
     <meta property="og:title" content="SeedSong — Procedural Music Generator">
-    <meta property="og:description" content="Generate infinite piano melodies from a single seed. Play, tweak, share, and export to MIDI or WAV.">
+    <meta property="og:description" content="Compose multi-section songs with a DAW-style interface. Same seed = same song. Share a URL and anyone hears your exact piece.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://chicomcastro.github.io/procedural-music-generator-web/">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:image" content="https://chicomcastro.github.io/procedural-music-generator-web/screenshots/generator.png">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="SeedSong — Procedural Music Generator">
-    <meta name="twitter:description" content="Generate infinite piano melodies from a single seed. Play, tweak, share, and export.">
+    <meta name="twitter:description" content="Compose multi-section songs from a single seed number. Mix, edit, and export — right in your browser.">
+    <meta name="twitter:image" content="https://chicomcastro.github.io/procedural-music-generator-web/screenshots/generator.png">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0f1117">
@@ -20,7 +22,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon-192.svg">
     <link rel="stylesheet" href="styles.css">
-    <style>html{background:#0f1117}</style>
+    <script>document.documentElement.style.background=localStorage.getItem('seedsong-theme')==='light'?'#f6f8fa':'#0f1117';</script>
 </head>
 
 <body style="opacity:0">
@@ -207,6 +209,7 @@
                         <input id="seed" type="number" min="0" max="4294967295" step="1">
                         <button id="generate-btn" type="button">&#127922; Randomize</button>
                         <button id="share-btn" type="button">Share</button>
+                        <button id="share-image-btn" type="button" title="Copy score image to clipboard">Copy Image</button>
                         <input id="song-name" type="text" placeholder="Name this melody…">
                         <button id="save-btn" type="button">Save</button>
                         <span id="save-hint" class="hint" aria-live="polite"></span>

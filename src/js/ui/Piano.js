@@ -25,7 +25,6 @@ const KEYBOARD_MAP = {
 };
 
 const WHITE_PCS = [0, 2, 4, 5, 7, 9, 11];
-const BLACK_GROUPS = [[1, 3], [6, 8, 10]];
 
 function midiAt(octave, pc) {
   return (octave + 1) * 12 + pc;

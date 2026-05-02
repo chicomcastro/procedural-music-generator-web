@@ -146,7 +146,7 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.8 · Shareable Seed URLs with Preview
 
-**Status:** To do
+**Status:** Done
 **Priority:** P1 | **Size:** M
 
 **Context:** Share button already copies a URL with seed + parameters. But when pasted into chat/social, it's just a bare URL — no preview image, no title, no description.
@@ -203,8 +203,8 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.11 · Community Seed Gallery
 
-**Status:** To do
-**Priority:** P2 | **Size:** L
+**Status:** Nice to have
+**Priority:** P3 | **Size:** L
 
 **Context:** The current gallery is a hardcoded array in `Gallery.js`. Users can't contribute their own seeds. A community gallery would drive engagement and discovery.
 

@@ -1,4 +1,4 @@
-import { init, getContext, getMasterGain, getReverbSend, getDelaySend, getChorusSend, setReverbAmount, setDelayAmount, setChorusAmount, setReverbPreset, setEQ, setMasterVolume, getTrackDest, setTrackPan } from './audio/AudioEngine.js';
+import { init, getContext, setReverbAmount, setDelayAmount, setChorusAmount, setReverbPreset, setEQ, setMasterVolume, getTrackDest, setTrackPan } from './audio/AudioEngine.js';
 import { loadAll, getPlaybackFor } from './audio/SampleLibrary.js';
 import { createVoice } from './audio/Voice.js';
 import { createSynthVoice } from './audio/SynthVoice.js';
@@ -15,7 +15,7 @@ import { createScoreCanvas } from './ui/ScoreCanvas.js';
 import { playDrumHit } from './audio/DrumSynth.js';
 import { initTheme } from './ui/Theme.js';
 import { initShortcuts } from './ui/Shortcuts.js';
-import { initHistory, checkUnsaved, setLastSaved } from './ui/History.js';
+import { initHistory, checkUnsaved } from './ui/History.js';
 import { initGallery } from './ui/Gallery.js';
 import { startOnboarding, shouldShowOnboarding } from './ui/Onboarding.js';
 
@@ -946,6 +946,21 @@ shareBtn.addEventListener('click', async () => {
     shareBtn.textContent = 'Copy failed';
     setTimeout(() => { shareBtn.textContent = 'Share'; }, 1500);
   }
+});
+
+const shareImageBtn = document.getElementById('share-image-btn');
+shareImageBtn.addEventListener('click', async () => {
+  if (!currentSong) return;
+  const canvas = document.getElementById('score-canvas');
+  try {
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    shareImageBtn.textContent = 'Copied!';
+    shareImageBtn.classList.add('copied');
+  } catch {
+    shareImageBtn.textContent = 'Failed';
+  }
+  setTimeout(() => { shareImageBtn.textContent = 'Copy Image'; shareImageBtn.classList.remove('copied'); }, 1500);
 });
 
 /* ---- Snapshot helpers for History ---- */

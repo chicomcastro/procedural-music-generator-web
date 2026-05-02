@@ -30,6 +30,7 @@ export default [
         getComputedStyle: 'readonly',
         Audio: 'readonly',
         Event: 'readonly',
+        ClipboardItem: 'readonly',
         Date: 'readonly',
         Map: 'readonly',
         Set: 'readonly',
