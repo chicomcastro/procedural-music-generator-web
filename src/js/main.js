@@ -17,6 +17,7 @@ import { initTheme } from './ui/Theme.js';
 import { initShortcuts } from './ui/Shortcuts.js';
 import { initHistory, checkUnsaved, setLastSaved } from './ui/History.js';
 import { initGallery } from './ui/Gallery.js';
+import { startOnboarding, shouldShowOnboarding } from './ui/Onboarding.js';
 
 /* ---- DOM refs ---- */
 const pianoEl = document.getElementById('piano');
@@ -707,6 +708,11 @@ initShortcuts({
   onStop: () => stopBtn.click(),
   onRandomize: () => generateBtn.click(),
 });
+
+/* ---- Onboarding ---- */
+const tourBtn = document.getElementById('tour-btn');
+tourBtn.addEventListener('click', () => startOnboarding());
+if (shouldShowOnboarding()) startOnboarding();
 
 /* ---- Visibility resume ---- */
 document.addEventListener('visibilitychange', () => {
