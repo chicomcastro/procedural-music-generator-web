@@ -24,18 +24,21 @@ const STEPS = [
     title: 'Genre & Mood Presets',
     text: 'One-click presets set tonic, scale, tempo, density, swing, voice, and effects. Genre row (Lo-fi, Jazz, Classical...) and Mood row (Chill, Energetic, Dreamy...) give instant starting points.',
     position: 'bottom',
+    activateTab: 'generator',
   },
   {
     target: '.gen-grid',
     title: 'Generator Controls',
     text: 'Fine-tune tonic, scale, chord progression, bars, song structure (single/short/full), melody voice, chord voice, contour, and rhythm template.',
     position: 'bottom',
+    activateTab: 'generator',
   },
   {
     target: '.gen-seed-row',
     title: 'Seed & Sharing',
     text: 'The seed is the DNA of your song — same seed = same song. Randomize to explore, Share to copy a URL that recreates the exact piece. Save to keep it in your history.',
     position: 'top',
+    activateTab: 'generator',
   },
   {
     target: '#panel-mixer',
