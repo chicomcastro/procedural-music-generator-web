@@ -1,6 +1,6 @@
 # Architectural Decisions
 
-A compressed log of the load-bearing calls made across phases 1–8. PR descriptions hold the granular rationale; this file is the index for someone arriving cold.
+A compressed log of the load-bearing calls made across phases 1–9. PR descriptions hold the granular rationale; this file is the index for someone arriving cold.
 
 Format follows a stripped-down [ADR](https://adr.github.io/): Context · Decision · Consequences · Alternatives considered.
 
@@ -194,6 +194,91 @@ For MIDI: `@tonejs/midi` is excellent and well-tested. Adding it forces a bundle
 
 ---
 
+## ADR-011 · Mixer console with vertical faders
+
+**Status:** Accepted (Phase 9)
+
+**Context.** Volume, EQ, reverb/delay controls were scattered across different sections. User requested a mixing-console layout.
+
+**Decision.** Consolidated into a dedicated Mixer section with vertical fader channel strips (MEL, CHD, BASS, DRM, CLK, REV, DLY, HI, MID, LO, MAIN). Used CSS `transform: rotate(-90deg)` for vertical range inputs (`writing-mode` approach failed cross-browser). Each channel has label, pan knob, fader, value display, mute and solo buttons.
+
+**Consequences.**
+- Single mental model for all audio controls.
+- Vertical faders needed absolute positioning with rotation transform.
+- Pan knobs use percentage-based `left` positioning.
+
+**Alternatives.** `writing-mode: vertical-lr` (failed in Safari), custom canvas-drawn faders (overkill for range inputs).
+
+---
+
+## ADR-012 · Per-track StereoPannerNode for panning
+
+**Status:** Accepted (Phase 9)
+
+**Context.** User requested stereo positioning per track, like a real mixer.
+
+**Decision.** Create one `StereoPannerNode` per track (melody, chord, bass, drum, click) during `AudioEngine.init()`. All track audio routes through its panner before reaching `masterGain`. Pan range −1 (left) to +1 (right).
+
+**Consequences.**
+- Near-zero CPU overhead (`StereoPannerNode` is lightweight).
+- Click track also gets its own panner for independent positioning.
+- Double-click pan knob resets to center.
+
+**Alternatives.** Manual gain-based panning with two channels (more code, same result).
+
+---
+
+## ADR-013 · Three-mode click track
+
+**Status:** Accepted (Phase 9)
+
+**Context.** User wanted more granular metronome control than on/off.
+
+**Decision.** Cycle button with 3 modes: off → all beats (accent on downbeat) → downbeat only. Replaces the old checkbox. Click routes through its own mixer channel (CLK) with volume and pan.
+
+**Consequences.**
+- Click is now a first-class mixer channel.
+- SVG metronome icon replaces emoji.
+- Mode stored as `data-mode` attribute (0/1/2).
+
+**Alternatives.** Two separate checkboxes (cluttered UI). Dropdown select (slower interaction).
+
+---
+
+## ADR-014 · Piano keyboard with measured black key positioning
+
+**Status:** Accepted (Phase 9)
+
+**Context.** Black keys were positioned using CSS gaps between subgroups, which broke at different key widths. User reported misalignment.
+
+**Decision.** Each black key is absolutely positioned using pixel values calculated from the measured white key `offsetWidth` (via `requestAnimationFrame` after DOM render). Offsets: C#=0.75, D#=1.75, F#=3.75, G#=4.75, A#=5.75 white-key-widths from octave start.
+
+**Consequences.**
+- Perfect alignment at any screen size.
+- Keys use `box-sizing: border-box` for predictable widths.
+- Range extended to 6 octaves (C1–B6) to cover bass notes.
+
+**Alternatives.** Percentage-based positioning (broke due to flex container width mismatch). Fixed pixel offsets (broke on mobile).
+
+---
+
+## ADR-015 · Two-phase product roadmap
+
+**Status:** Accepted (Phase 9)
+
+**Context.** App evolved from a procedural music playground. User wants to enable composition on top of generated material (locked bars was the first step).
+
+**Decision.** Phase 1 — evolve the current playground (song sections, chord picker, melody contour, better lock workflow, note editing). Phase 2 — new `editor.html` with timeline/arrangement, per-section seeds, full piano roll, undo/redo.
+
+**Consequences.**
+- Phase 1 features must be backward-compatible with current single-page app.
+- Phase 2 creates a separate entry point sharing JS modules.
+- No attempt to become a full DAW — the differentiator is seed-based procedural generation as a composition starting point.
+
+**Alternatives.** Evolve into a full DAW (rejected — years of work, crowded market). Stay as playground only (rejected — user wants composition workflow).
+
+---
+
 ## Decisions explicitly *not* made
 
 These came up during planning but were postponed; recording them so the next contributor doesn't redo the analysis.
@@ -202,4 +287,3 @@ These came up during planning but were postponed; recording them so the next con
 - **Voice leading (`voiceLead(prev, next)`).** Would smooth chord transitions in Phase 5. Skipped because block chords down an octave hide most of the awkwardness; revisit if arpeggios land.
 - **Roman-numeral parser for chord progressions.** `chordFromDegree` walks the scale by thirds and lets quality emerge — handles modes uniformly and avoids parsing ambiguity. Add a parser only when secondary dominants / borrowed chords appear.
 - **TypeScript.** Forces a bundler (ADR-002). Re-evaluate if the codebase doubles.
-- **Tests.** `theory-tests.html` runs in-browser assertions for the pure modules. No headless-CI test runner; the cost outweighs the benefit at current scale.
