@@ -56,6 +56,30 @@ const PRESETS = {
     vibratoRate: 5,
     vibratoDepth: 10,
   },
+  marimba: {
+    oscTypes: ['sine', 'sine'],
+    detune: [0, 3],
+    gainPerOsc: 0.55,
+    filterFreq: 4000,
+    filterQ: 1,
+    attack: 0.001,
+    release: 0.08,
+    filterDecay: 0.12,
+    filterSustainFreq: 500,
+    vibratoRate: 0,
+    vibratoDepth: 0,
+  },
+  bell: {
+    oscTypes: ['sine', 'sine'],
+    detune: [0, 1900],
+    gainPerOsc: 0.35,
+    filterFreq: 6000,
+    filterQ: 0.5,
+    attack: 0.002,
+    release: 1.8,
+    vibratoRate: 3,
+    vibratoDepth: 4,
+  },
 };
 
 /** @returns {string[]} */

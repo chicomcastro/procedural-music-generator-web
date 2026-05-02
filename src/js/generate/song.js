@@ -70,21 +70,51 @@ export function generateSong({
   }
 
   const totalBeats = bars * beatsPerBar;
+  const drumThreshold = 0.25 + (1 - density) * 0.4; // sparse songs skip more hits
   for (let beat = 0; beat < totalBeats; beat++) {
     const posInBar = beat % beatsPerBar;
+    const barIndex = Math.floor(beat / beatsPerBar);
+    const isFillBar = barIndex === bars - 1; // last bar gets fills
+    const isLastTwoBeats = isFillBar && posInBar >= beatsPerBar - 2;
+
+    // --- Kick ---
     if (posInBar === 0) {
       events.push({ type: 'drum', drum: 'kick', atBeat: beat, durationBeats: 0.25, velocity: 0.7, midi: 36 });
     }
+    // Off-beat kick variation
+    if (posInBar === 2.5 && rng() > 0.75) {
+      events.push({ type: 'drum', drum: 'kick', atBeat: beat + 0.5, durationBeats: 0.2, velocity: 0.45, midi: 36 });
+    }
+    // Extra kick on beat 3 in fills
+    if (isLastTwoBeats && rng() > 0.5) {
+      events.push({ type: 'drum', drum: 'kick', atBeat: beat, durationBeats: 0.2, velocity: 0.55, midi: 36 });
+    }
+
+    // --- Snare ---
     if (beatsPerBar === 4 && posInBar === 2) {
       events.push({ type: 'drum', drum: 'snare', atBeat: beat, durationBeats: 0.25, velocity: 0.55, midi: 38 });
     } else if (beatsPerBar === 3 && posInBar === 1) {
       events.push({ type: 'drum', drum: 'snare', atBeat: beat, durationBeats: 0.25, velocity: 0.5, midi: 38 });
     }
-    if (rng() > 0.35) {
+    // Ghost snare — quiet hit on off-beats
+    if (rng() > (0.82 - density * 0.1)) {
+      events.push({ type: 'drum', drum: 'snare', atBeat: beat + 0.5, durationBeats: 0.15, velocity: 0.18, midi: 38 });
+    }
+    // Fill snare flurry in last bar
+    if (isLastTwoBeats && rng() > 0.4) {
+      events.push({ type: 'drum', drum: 'snare', atBeat: beat + 0.25, durationBeats: 0.12, velocity: 0.35, midi: 38 });
+    }
+
+    // --- Hi-hat (closed) --- density-based probability
+    if (rng() > drumThreshold) {
       events.push({ type: 'drum', drum: 'hat', atBeat: beat, durationBeats: 0.15, velocity: 0.3, midi: 42 });
     }
-    if (rng() > 0.6) {
+    if (rng() > (drumThreshold + 0.15)) {
       events.push({ type: 'drum', drum: 'hat', atBeat: beat + 0.5, durationBeats: 0.1, velocity: 0.2, midi: 42 });
+    }
+    // Open hat on off-beats occasionally
+    if (rng() > 0.88) {
+      events.push({ type: 'drum', drum: 'hat', atBeat: beat + 0.5, durationBeats: 0.3, velocity: 0.25, midi: 46 });
     }
   }
 
