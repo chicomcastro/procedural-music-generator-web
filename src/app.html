@@ -219,8 +219,11 @@
 
             <div id="panel-mixer" role="tabpanel" class="tab-panel hidden">
                 <section id="mixer" aria-label="Mixer">
-                    <div class="mixer-header">
-                        <span class="mixer-title">Mixer</span>
+                    <div class="panel-header">
+                        <div class="panel-title-group">
+                            <span class="panel-title">Mixer</span>
+                            <span class="panel-badge">volume, pan &amp; effects</span>
+                        </div>
                         <select id="reverb-preset" class="mixer-inline-select" aria-label="Reverb type">
                             <option value="hall" selected>Hall</option>
                             <option value="room">Room</option>
@@ -374,8 +377,11 @@
 
             <div id="panel-history" role="tabpanel" class="tab-panel hidden">
                 <section id="history" aria-label="Saved melodies">
-                    <div class="history-header">
-                        <h3>History <span class="history-badge">saved locally in your browser</span></h3>
+                    <div class="panel-header">
+                        <div class="panel-title-group">
+                            <span class="panel-title">History</span>
+                            <span class="panel-badge">saved locally</span>
+                        </div>
                         <button id="clear-history" type="button">Clear all</button>
                     </div>
                     <div id="history-list"></div>
@@ -385,19 +391,37 @@
 
             <div id="panel-export" role="tabpanel" class="tab-panel hidden">
                 <section id="export" aria-label="Export options">
+                    <div class="panel-header">
+                        <div class="panel-title-group">
+                            <span class="panel-title">Export</span>
+                            <span class="panel-badge">MIDI, WAV or preview clip</span>
+                        </div>
+                        <span id="export-status" class="panel-badge" aria-live="polite"></span>
+                    </div>
                     <div class="gen-row">
                         <button id="export-midi" type="button">Export MIDI</button>
                         <button id="export-wav" type="button">Export WAV</button>
                         <button id="export-preview" type="button">Preview Clip</button>
-                        <span id="export-status" class="hint" aria-live="polite"></span>
                     </div>
+                    <div class="panel-header" style="margin-top:12px">
+                        <div class="panel-title-group">
+                            <span class="panel-title">Export Log</span>
+                            <span class="panel-badge">saved locally</span>
+                        </div>
+                        <button id="clear-export-log" type="button">Clear all</button>
+                    </div>
+                    <div id="export-log-list"></div>
+                    <p id="export-log-empty" class="hint">No exports yet.</p>
                 </section>
             </div>
 
             <div id="panel-gallery" role="tabpanel" class="tab-panel hidden">
                 <section id="gallery" aria-label="Seed gallery">
-                    <div class="history-header">
-                        <h3>Gallery <span class="history-badge">community seed collection</span></h3>
+                    <div class="panel-header">
+                        <div class="panel-title-group">
+                            <span class="panel-title">Gallery</span>
+                            <span class="panel-badge">community seeds</span>
+                        </div>
                     </div>
                     <div id="gallery-list" class="gallery-grid"></div>
                 </section>
@@ -447,6 +471,23 @@
                 <option value="6">6/8</option>
             </select>
             <span class="beat-indicator" id="beat-indicator" aria-live="polite"></span>
+        </div>
+        <button id="transport-more" type="button" class="transport-more-btn" aria-label="More controls" title="More controls">&#8943;</button>
+        <div id="transport-dropdown" class="transport-dropdown">
+            <div class="transport-dropdown-row">
+                <span class="transport-dropdown-label">BPM</span>
+                <input id="bpm-mobile" type="range" min="40" max="240" value="110" aria-label="Tempo in BPM">
+                <span id="bpm-mobile-display">110</span>
+            </div>
+            <div class="transport-dropdown-row">
+                <span class="transport-dropdown-label">Time</span>
+                <select id="beats-per-bar-mobile" aria-label="Time signature">
+                    <option value="2">2/4</option>
+                    <option value="3">3/4</option>
+                    <option value="4" selected>4/4</option>
+                    <option value="6">6/8</option>
+                </select>
+            </div>
         </div>
         <input type="checkbox" id="song-enabled" checked hidden>
     </footer>

@@ -228,6 +228,7 @@ kbd {
 #score-section {
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+  overflow: hidden;
 }
 
 #score-canvas {
@@ -308,6 +309,11 @@ kbd {
   flex: 1;
 }
 
+.tab-panel > section {
+  margin: 0;
+  padding: 0;
+}
+
 .tab-panel.hidden {
   display: none;
 }
@@ -375,6 +381,71 @@ kbd {
   color: var(--text-secondary);
 }
 
+.transport-more-btn {
+  display: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  color: var(--text-primary);
+  font-size: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.transport-dropdown {
+  display: none;
+}
+
+.transport-dropdown.visible {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: absolute;
+  bottom: 100%;
+  right: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.3);
+  z-index: 100;
+  min-width: 200px;
+}
+
+.transport-dropdown-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.transport-dropdown-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 36px;
+}
+
+.transport-dropdown-row input[type="range"] {
+  flex: 1;
+}
+
+.transport-dropdown-row select {
+  flex: 1;
+}
+
+.transport-dropdown-row span {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 30px;
+  text-align: right;
+}
+
 /* ---- Generator inside tab ---- */
 
 #generator {
@@ -382,9 +453,7 @@ kbd {
   width: 100%;
 }
 
-#generator h2,
-#export h2,
-#history h2 {
+#generator h2 {
   margin: 0 0 10px 0;
   font-size: 12px;
   font-weight: 600;
@@ -467,19 +536,38 @@ kbd {
 
 /* ---- Mixer header ---- */
 
-.mixer-header {
+.panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  min-height: 24px;
+  height: 24px;
 }
 
-.mixer-title {
+.panel-title {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-secondary);
+  line-height: 1;
+}
+
+.panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-badge {
+  font-size: 10px;
+  font-weight: normal;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-secondary);
+  opacity: 0.5;
 }
 
 /* ---- Score ---- */
@@ -931,6 +1019,51 @@ input[type="text"]:focus {
   opacity: 0.5;
 }
 
+#clear-export-log {
+  background: transparent;
+  color: var(--danger);
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0.7;
+  transition: opacity 150ms;
+}
+
+#clear-export-log:hover {
+  opacity: 1;
+}
+
+#export-log-empty {
+  margin: 0;
+}
+
+.export-log-item {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.export-log-item .export-log-seed {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.export-log-item .export-log-type {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+}
+
 /* ---- Beat indicator ---- */
 
 .beat-indicator {
@@ -991,25 +1124,6 @@ input[type="text"]:focus {
 
 /* ---- History ---- */
 
-.history-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.history-header h2 {
-  margin: 0 !important;
-}
-
-.history-badge {
-  font-size: 10px;
-  font-weight: normal;
-  text-transform: none;
-  letter-spacing: normal;
-  opacity: 0.4;
-  margin-left: 6px;
-}
 
 #clear-history {
   background: transparent;
@@ -1024,6 +1138,7 @@ input[type="text"]:focus {
 #clear-history:hover {
   opacity: 1;
 }
+
 
 #history-empty {
   margin: 0;
@@ -1131,13 +1246,11 @@ input[type="text"]:focus {
 
 .mixer-inline-select {
   font-size: 11px;
-  padding: 1px 4px;
-  margin-left: 8px;
-  border-radius: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
   border: 1px solid var(--border);
   background: var(--bg-input);
   color: var(--text-secondary);
-  vertical-align: middle;
 }
 
 .mixer-console {
@@ -1704,8 +1817,26 @@ input[type="text"]:focus {
 
 
 @media (max-width: 600px) {
+  html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+    font-size: 16px;
+  }
+
+  #daw-main {
+    overflow-x: hidden;
+  }
+
   #hero .tagline {
     display: none;
+  }
+
+  #hero {
+    padding: 6px 12px;
+  }
+
+  #score-section {
+    padding: 8px 10px;
   }
 
   #score-canvas {
@@ -1713,16 +1844,44 @@ input[type="text"]:focus {
     min-height: 150px;
   }
 
-  .key {
-    width: 28px;
-    height: 120px;
+  .score-bar-actions {
+    gap: 4px;
   }
 
-  .key.black {
-    width: 18px;
-    height: 80px;
+  /* Tabs */
+  #tab-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
+  #tab-bar [role="tab"] {
+    padding: 8px 12px;
+    font-size: 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .tab-panel {
+    padding: 10px 12px;
+    overflow-x: hidden;
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
+    gap: 4px;
+    height: auto;
+    min-height: 24px;
+  }
+
+  .panel-title {
+    font-size: 14px;
+  }
+
+  .panel-badge {
+    font-size: 12px;
+  }
+
+  /* Generator */
   .gen-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -1732,20 +1891,45 @@ input[type="text"]:focus {
     gap: 8px;
   }
 
+  .gen-row {
+    gap: 6px;
+  }
+
+  .gen-field label {
+    font-size: 14px;
+  }
+
   select {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .preset-btn {
-    padding: 3px 8px;
-    font-size: 11px;
+    padding: 4px 10px;
+    font-size: 14px;
+  }
+
+  .preset-label {
+    font-size: 14px;
+  }
+
+  .bar-action-btn {
+    font-size: 14px;
+    padding: 4px 10px;
+  }
+
+  /* Transport */
+  #transport-bar {
+    gap: 8px;
+    padding: 8px 10px;
+    flex-shrink: 0;
+    position: relative;
   }
 
   #play-pause,
   #stop-btn {
     width: 36px;
     height: 36px;
-    font-size: 13px;
+    font-size: 14px;
   }
 
   #record-btn {
@@ -1759,13 +1943,23 @@ input[type="text"]:focus {
     height: 30px;
   }
 
-  .transport-right label {
+  .transport-right {
     display: none;
   }
 
-  #bpm {
-    min-width: 60px;
-    max-width: 100px;
+  .transport-more-btn {
+    display: flex;
+  }
+
+  .time-display {
+    font-size: 13px;
+    min-width: auto;
+  }
+
+  /* Mixer */
+  .mixer-console {
+    overflow-x: auto;
+    max-width: 100%;
   }
 
   .mixer-fader-wrap {
@@ -1777,32 +1971,53 @@ input[type="text"]:focus {
   }
 
   .mixer-channel {
-    min-width: 42px;
-    padding: 4px 3px;
+    min-width: 48px;
+    padding: 4px 4px;
   }
 
-  .time-display {
-    font-size: 11px;
-    min-width: 70px;
-  }
-
-  .transpose-btn {
-    width: 24px;
-    height: 24px;
-    font-size: 14px;
-  }
-
-  .hint {
+  .mixer-ch-label {
     font-size: 12px;
   }
 
+  .mixer-val {
+    font-size: 12px;
+  }
+
+  .mixer-mute,
+  .mixer-solo {
+    font-size: 12px;
+  }
+
+  /* Other */
+  .transpose-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+
+  .hint {
+    font-size: 14px;
+  }
+
+  #song-info {
+    font-size: 14px;
+  }
+
   .history-item {
-    padding: 8px 10px;
+    padding: 10px 12px;
     flex-wrap: wrap;
   }
 
+  .history-item-name {
+    font-size: 16px;
+  }
+
   .history-item-meta {
-    font-size: 10px;
+    font-size: 13px;
+  }
+
+  .history-item-actions button {
+    font-size: 14px;
   }
 
   .history-item-actions {
@@ -1818,17 +2033,40 @@ input[type="text"]:focus {
   #save-btn,
   #export-midi,
   #export-wav,
-  #share-btn {
-    padding: 6px 12px;
-    font-size: 12px;
+  #export-preview,
+  #share-btn,
+  #share-image-btn {
+    padding: 8px 14px;
+    font-size: 15px;
   }
 
   #seed {
-    width: 90px;
+    width: 100px;
+    font-size: 14px;
   }
 
-  #tab-bar [role="tab"] {
-    padding: 6px 10px;
+  #clear-history,
+  #clear-export-log {
+    font-size: 14px;
+  }
+
+  .export-log-item {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+
+  .export-log-item {
     font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .key {
+    width: 28px;
+    height: 120px;
+  }
+
+  .key.black {
+    width: 18px;
+    height: 80px;
   }
 }

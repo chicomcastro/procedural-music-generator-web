@@ -82,6 +82,9 @@ const exportPreviewBtn = document.getElementById('export-preview');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
+const exportLogList = document.getElementById('export-log-list');
+const exportLogEmpty = document.getElementById('export-log-empty');
+const clearExportLogBtn = document.getElementById('clear-export-log');
 const structureSelect = document.getElementById('structure');
 const contourSelect = document.getElementById('contour');
 const rhythmTemplateSelect = document.getElementById('rhythm-template');
@@ -483,9 +486,54 @@ bpmInput.addEventListener('input', (e) => {
 
 beatsPerBarSelect.addEventListener('change', () => {
   transport.setBeatsPerBar(Number(beatsPerBarSelect.value));
+  const mobileSel = document.getElementById('beats-per-bar-mobile');
+  if (mobileSel) mobileSel.value = beatsPerBarSelect.value;
   clearLockedBars();
   regenerateSong({ keepSeed: true });
 });
+
+/* ---- Mobile transport dropdown ---- */
+const transportMoreBtn = document.getElementById('transport-more');
+const transportDropdown = document.getElementById('transport-dropdown');
+const bpmMobile = document.getElementById('bpm-mobile');
+const bpmMobileDisplay = document.getElementById('bpm-mobile-display');
+const beatsPerBarMobile = document.getElementById('beats-per-bar-mobile');
+
+if (transportMoreBtn && transportDropdown) {
+  transportMoreBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    transportDropdown.classList.toggle('visible');
+    if (transportDropdown.classList.contains('visible')) {
+      bpmMobile.value = bpmInput.value;
+      bpmMobileDisplay.textContent = bpmInput.value;
+      beatsPerBarMobile.value = beatsPerBarSelect.value;
+    }
+  });
+
+  bpmMobile.addEventListener('input', (e) => {
+    const v = Number(e.target.value);
+    transport.setBpm(v);
+    bpmMobileDisplay.textContent = String(v);
+    bpmInput.value = v;
+    bpmDisplay.textContent = String(v);
+    pushUrlState();
+    clearActivePreset();
+    checkUnsaved();
+  });
+
+  beatsPerBarMobile.addEventListener('change', () => {
+    beatsPerBarSelect.value = beatsPerBarMobile.value;
+    transport.setBeatsPerBar(Number(beatsPerBarMobile.value));
+    clearLockedBars();
+    regenerateSong({ keepSeed: true });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!transportDropdown.contains(e.target) && e.target !== transportMoreBtn) {
+      transportDropdown.classList.remove('visible');
+    }
+  });
+}
 
 const CLICK_TITLES = ['Click track: off', 'Click track: all beats', 'Click track: downbeat only'];
 clickModeBtn.addEventListener('click', () => {
@@ -655,8 +703,10 @@ for (const btn of presetBtns) {
   btn.addEventListener('click', () => {
     bpmInput.value = btn.dataset.bpm;
     bpmDisplay.textContent = btn.dataset.bpm;
+    if (bpmMobile) { bpmMobile.value = btn.dataset.bpm; bpmMobileDisplay.textContent = btn.dataset.bpm; }
     transport.setBpm(Number(btn.dataset.bpm));
     beatsPerBarSelect.value = btn.dataset.time;
+    if (beatsPerBarMobile) beatsPerBarMobile.value = btn.dataset.time;
     transport.setBeatsPerBar(Number(btn.dataset.time));
     tonicSelect.value = btn.dataset.tonic;
     scaleSelect.value = btn.dataset.scale;
@@ -876,12 +926,55 @@ recordBtn.addEventListener('click', async () => {
   }
 });
 
+/* ---- Export Log ---- */
+const EXPORT_LOG_KEY = 'seedsong-export-log';
+
+function loadExportLog() {
+  try { return JSON.parse(localStorage.getItem(EXPORT_LOG_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveExportLog(log) {
+  localStorage.setItem(EXPORT_LOG_KEY, JSON.stringify(log));
+}
+
+function addExportEntry(type, seed, size) {
+  const log = loadExportLog();
+  log.unshift({ type, seed, size, date: new Date().toISOString() });
+  if (log.length > 50) log.length = 50;
+  saveExportLog(log);
+  renderExportLog();
+}
+
+function renderExportLog() {
+  const log = loadExportLog();
+  exportLogList.innerHTML = '';
+  exportLogEmpty.style.display = log.length ? 'none' : '';
+  log.forEach(entry => {
+    const el = document.createElement('div');
+    el.className = 'export-log-item';
+    const d = new Date(entry.date);
+    const dateStr = `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    el.innerHTML = `<span><span class="export-log-seed">seed ${entry.seed}</span> · ${entry.size} · ${dateStr}</span><span class="export-log-type">${entry.type}</span>`;
+    exportLogList.appendChild(el);
+  });
+}
+
+clearExportLogBtn.addEventListener('click', () => {
+  localStorage.removeItem(EXPORT_LOG_KEY);
+  renderExportLog();
+});
+
+renderExportLog();
+
 /* ---- Export ---- */
 exportMidiBtn.addEventListener('click', () => {
   if (!currentSong) return;
   const bytes = songToMidi(currentSong, { bpm: transport.bpm });
   downloadBlob(bytes, `song-${currentSong.seed}.mid`, 'audio/midi');
-  exportStatus.textContent = `MIDI: ${(bytes.length / 1024).toFixed(1)} KB`;
+  const sizeStr = `${(bytes.length / 1024).toFixed(1)} KB`;
+  exportStatus.textContent = `MIDI: ${sizeStr}`;
+  addExportEntry('MIDI', currentSong.seed, sizeStr);
 });
 
 exportWavBtn.addEventListener('click', async () => {
@@ -895,7 +988,9 @@ exportWavBtn.addEventListener('click', async () => {
     const buf = await renderSongToBuffer(currentSong, transport, { voice: getSelectedVoice() });
     const wav = audioBufferToWav(buf);
     downloadBlob(wav, `song-${currentSong.seed}.wav`, 'audio/wav');
-    exportStatus.textContent = `WAV: ${(wav.length / 1024 / 1024).toFixed(2)} MB`;
+    const sizeStr = `${(wav.length / 1024 / 1024).toFixed(2)} MB`;
+    exportStatus.textContent = `WAV: ${sizeStr}`;
+    addExportEntry('WAV', currentSong.seed, sizeStr);
   } catch (err) {
     console.error(err);
     exportStatus.textContent = `Error: ${err.message}`;
