@@ -109,8 +109,6 @@ button {
 #piano-scroll {
   width: 100%;
   overflow-x: auto;
-  display: flex;
-  justify-content: center;
 }
 
 #piano {
@@ -124,23 +122,20 @@ button {
 
 .key-group {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
 }
 
 .key-group.black-keys {
   position: absolute;
   top: 0;
-  gap: 50px;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
   pointer-events: none;
 }
 
-.key-subgroup {
-  display: flex;
-  gap: 14px;
-}
-
 .key {
+  box-sizing: border-box;
   width: 36px;
   height: 160px;
   margin: 5px 0;
@@ -170,8 +165,10 @@ button {
 }
 
 .key.black {
+  position: absolute;
   width: 22px;
   height: 105px;
+  margin: 5px 0;
   background-color: var(--key-black);
   border-radius: 0 0 4px 4px;
   z-index: 1;
@@ -185,12 +182,20 @@ button {
   background-color: #c2f5e2;
 }
 
+.key.glow.glow-bass {
+  background-color: #c2d8f5;
+}
+
 .key.black.glow {
   background-color: #6a5818;
 }
 
 .key.black.glow.glow-chord {
   background-color: #1a5c3a;
+}
+
+.key.black.glow.glow-bass {
+  background-color: #1a3a5c;
 }
 
 .key.playing {
@@ -411,8 +416,15 @@ input[type="text"]:focus {
   font-family: monospace;
 }
 
-#bpm, #density, #swing, #velocity {
+#density, #swing, #velocity {
   width: 120px;
+  accent-color: var(--accent);
+}
+
+#bpm {
+  flex: 1;
+  min-width: 120px;
+  max-width: 400px;
   accent-color: var(--accent);
 }
 
@@ -427,19 +439,29 @@ input[type="text"]:focus {
 /* ---- Record button ---- */
 
 #record-btn {
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-hover);
-  padding: 4px 12px;
-  border-radius: 14px;
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   cursor: pointer;
-  font-size: 12px;
-  transition: border-color 150ms, color 150ms, background-color 150ms;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 150ms, transform 150ms, color 150ms;
+}
+
+#record-btn:hover {
+  background: var(--border-hover);
+  color: var(--danger);
+  transform: translateY(-1px);
 }
 
 #record-btn.recording {
   background: var(--danger);
-  border-color: var(--danger);
   color: #fff;
   animation: pulse-rec 1s ease-in-out infinite;
 }
@@ -447,6 +469,35 @@ input[type="text"]:focus {
 @keyframes pulse-rec {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
+}
+
+/* ---- Transport click button ---- */
+
+.transport-btn {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity 150ms, background-color 150ms, color 150ms;
+}
+
+.transport-btn[data-mode="1"] {
+  opacity: 0.8;
+  color: var(--accent);
+}
+
+.transport-btn[data-mode="2"] {
+  opacity: 1;
+  color: var(--accent);
+  background: var(--accent-glow);
 }
 
 /* ---- Transpose ---- */
@@ -903,6 +954,7 @@ input[type="text"]:focus {
 
 .mixer-group {
   display: flex;
+  align-items: stretch;
   gap: 0;
 }
 
@@ -910,6 +962,7 @@ input[type="text"]:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 4px 6px;
   min-width: 50px;
@@ -1483,14 +1536,6 @@ input[type="text"]:focus {
     height: 80px;
   }
 
-  .key-group.black-keys {
-    gap: 38px;
-  }
-
-  .key-subgroup {
-    gap: 10px;
-  }
-
   #metronome,
   #generator,
   #export,
@@ -1515,8 +1560,12 @@ input[type="text"]:focus {
     font-size: 10px;
   }
 
-  #bpm, #density, #swing, #velocity {
+  #density, #swing, #velocity {
     width: 80px;
+  }
+
+  #bpm {
+    min-width: 80px;
   }
 
   select {
@@ -1538,6 +1587,17 @@ input[type="text"]:focus {
     width: 36px;
     height: 36px;
     font-size: 13px;
+  }
+
+  #record-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
+  .transport-btn {
+    width: 30px;
+    height: 30px;
   }
 
   .mixer-fader-wrap {

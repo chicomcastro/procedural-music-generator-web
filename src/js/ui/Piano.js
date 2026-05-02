@@ -36,6 +36,9 @@ export function createPiano(rootEl, { startOctave = 3, octaves = 2, onAttack, on
   rootEl.innerHTML = '';
   const keyByMidi = new Map();
 
+  const BLACK_PCS = [1, 3, 6, 8, 10];
+  const BLACK_OFFSETS = { 1: 0.75, 3: 1.75, 6: 3.75, 8: 4.75, 10: 5.75 };
+
   const whiteRow = document.createElement('div');
   whiteRow.className = 'key-group white-keys';
   for (let o = 0; o < octaves; o++) {
@@ -49,28 +52,31 @@ export function createPiano(rootEl, { startOctave = 3, octaves = 2, onAttack, on
     }
   }
 
+  rootEl.appendChild(whiteRow);
+
   const blackRow = document.createElement('div');
   blackRow.className = 'key-group black-keys';
-  for (let o = 0; o < octaves; o++) {
-    for (const group of BLACK_GROUPS) {
-      const subgroup = document.createElement('div');
-      subgroup.className = 'key-subgroup';
-      for (const pc of group) {
+  rootEl.appendChild(blackRow);
+
+  requestAnimationFrame(() => {
+    const whiteKeyEl = whiteRow.querySelector('.key');
+    const W = whiteKeyEl ? whiteKeyEl.offsetWidth : 36;
+    for (let o = 0; o < octaves; o++) {
+      for (const pc of BLACK_PCS) {
         const midi = midiAt(startOctave + o, pc);
         const el = document.createElement('div');
         el.className = 'key black';
         el.dataset.midi = String(midi);
-        subgroup.appendChild(el);
+        const left = (o * 7 + BLACK_OFFSETS[pc]) * W;
+        el.style.left = `${left}px`;
+        blackRow.appendChild(el);
         keyByMidi.set(midi, el);
       }
-      blackRow.appendChild(subgroup);
     }
-  }
+    updateKbdHints();
+  });
 
-  rootEl.appendChild(whiteRow);
-  rootEl.appendChild(blackRow);
-
-  let kbdOctave = startOctave;
+  let kbdOctave = Math.min(startOctave + 2, startOctave + octaves - 1);
   const minKbdOctave = startOctave;
   const maxKbdOctave = startOctave + octaves - 1;
 
@@ -178,15 +184,16 @@ export function createPiano(rootEl, { startOctave = 3, octaves = 2, onAttack, on
     if (!el) return;
     if (on) {
       el.classList.add('glow');
+      el.classList.remove('glow-chord', 'glow-bass');
       if (type === 'chord') el.classList.add('glow-chord');
-      else el.classList.remove('glow-chord');
+      else if (type === 'bass') el.classList.add('glow-bass');
     } else {
-      el.classList.remove('glow', 'glow-chord');
+      el.classList.remove('glow', 'glow-chord', 'glow-bass');
     }
   }
 
   function clearAllVisual() {
-    rootEl.querySelectorAll('.key.glow').forEach(el => el.classList.remove('glow', 'glow-chord'));
+    rootEl.querySelectorAll('.key.glow').forEach(el => el.classList.remove('glow', 'glow-chord', 'glow-bass'));
   }
 
   return {

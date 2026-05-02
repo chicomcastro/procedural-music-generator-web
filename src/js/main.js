@@ -30,7 +30,7 @@ const progressBar = document.getElementById('progress-bar');
 const progressFill = document.getElementById('progress-fill');
 const timeDisplay = document.getElementById('time-display');
 const beatIndicator = document.getElementById('beat-indicator');
-const clickEnabledInput = document.getElementById('click-enabled');
+const clickModeBtn = document.getElementById('click-mode');
 const songEnabledInput = document.getElementById('song-enabled');
 const generateBtn = document.getElementById('generate-btn');
 const tonicSelect = document.getElementById('tonic');
@@ -65,6 +65,8 @@ const bassVolInput = document.getElementById('bass-vol');
 const bassVolDisplay = document.getElementById('bass-vol-display');
 const drumVolInput = document.getElementById('drum-vol');
 const drumVolDisplay = document.getElementById('drum-vol-display');
+const clickVolInput = document.getElementById('click-vol');
+const clickVolDisplay = document.getElementById('click-vol-display');
 const masterVolInput = document.getElementById('master-vol');
 const masterVolDisplay = document.getElementById('master-vol-display');
 const reverbInput = document.getElementById('reverb');
@@ -170,8 +172,8 @@ async function bootstrap() {
 function getSelectedVoice() { return voiceSelect.value; }
 
 const piano = createPiano(pianoEl, {
-  startOctave: 2,
-  octaves: 4,
+  startOctave: 1,
+  octaves: 6,
   onAttack(midi) {
     if (!ready) { bootstrap(); return; }
     const ctx = getContext();
@@ -218,6 +220,15 @@ const piano = createPiano(pianoEl, {
     kbdOctaveDisplay.textContent = String(oct);
   },
 });
+
+const pianoScroll = document.getElementById('piano-scroll');
+if (pianoScroll) {
+  requestAnimationFrame(() => {
+    const f3Index = 2 * 7 + 3;
+    const keyW = pianoEl.querySelector('.key')?.offsetWidth || 36;
+    pianoScroll.scrollLeft = f3Index * keyW - pianoScroll.clientWidth / 2;
+  });
+}
 
 /* ---- Scheduling ---- */
 function scheduleNote(midi, when, durationSec, velocity, evType = 'melody', ev = null) {
@@ -291,7 +302,11 @@ function updateProgress(beatInSong) {
 
 function onBeat(beat, when) {
   const accent = beat % transport.beatsPerBar === 0;
-  if (clickEnabledInput.checked) playClick(getContext(), getMasterGain(), when, { accent });
+  const clickMode = Number(clickModeBtn.dataset.mode);
+  const clickDest = getTrackDest('click');
+  const clickVol = Number(clickVolInput.value);
+  if (clickMode === 1) playClick(getContext(), clickDest, when, { accent, volume: clickVol });
+  if (clickMode === 2 && accent) playClick(getContext(), clickDest, when, { accent: true, volume: clickVol });
   flashBeat(when, accent);
   if (songEnabledInput.checked && currentSong) {
     const beatInSong = beat % currentSong.lengthBeats;
@@ -414,6 +429,13 @@ beatsPerBarSelect.addEventListener('change', () => {
   regenerateSong({ keepSeed: true });
 });
 
+const CLICK_TITLES = ['Click track: off', 'Click track: all beats', 'Click track: downbeat only'];
+clickModeBtn.addEventListener('click', () => {
+  const mode = (Number(clickModeBtn.dataset.mode) + 1) % 3;
+  clickModeBtn.dataset.mode = String(mode);
+  clickModeBtn.title = CLICK_TITLES[mode];
+});
+
 [tonicSelect, scaleSelect].forEach(sel =>
   sel.addEventListener('change', () => { clearActivePreset(); regenerateSong({ keepSeed: true }); })
 );
@@ -448,7 +470,7 @@ for (const [input, display, band] of [[eqLowInput, eqLowDisplay, 'low'], [eqMidI
   });
 }
 
-for (const [input, display] of [[melodyVolInput, melodyVolDisplay], [chordVolInput, chordVolDisplay], [bassVolInput, bassVolDisplay], [drumVolInput, drumVolDisplay], [masterVolInput, masterVolDisplay]]) {
+for (const [input, display] of [[melodyVolInput, melodyVolDisplay], [chordVolInput, chordVolDisplay], [bassVolInput, bassVolDisplay], [drumVolInput, drumVolDisplay], [clickVolInput, clickVolDisplay], [masterVolInput, masterVolDisplay]]) {
   input.addEventListener('input', (e) => {
     display.textContent = `${Math.round(e.target.value * 100)}%`;
   });

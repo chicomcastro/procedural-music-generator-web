@@ -64,7 +64,7 @@ export async function init() {
     eqHigh.frequency.value = 3200;
     eqHigh.gain.value = 0;
 
-    for (const track of ['melody', 'chord', 'bass', 'drum']) {
+    for (const track of ['melody', 'chord', 'bass', 'drum', 'click']) {
       const panner = ctx.createStereoPanner();
       panner.connect(masterGain);
       trackPanners[track] = panner;

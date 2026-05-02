@@ -21,8 +21,8 @@ const STEPS = [
   },
   {
     target: '.player-transport',
-    title: 'Player Controls',
-    text: 'Play/pause, stop, and seek through the song. The progress bar is clickable — jump to any point in the loop. You can also press Space to toggle playback.',
+    title: 'Transport Controls',
+    text: 'Play/pause, stop, record, and metronome — all in one row. The metronome cycles: off → downbeat only → all beats. Press Space to toggle playback. Hit the red circle to record keyboard notes.',
     position: 'bottom',
   },
   {
@@ -32,15 +32,9 @@ const STEPS = [
     position: 'bottom',
   },
   {
-    target: '#metronome > :nth-child(4)',
-    title: 'Click Track & Recording',
-    text: 'Toggle the metronome click and the procedural music. Hit Rec to record your own keyboard notes into the melody — they replace existing melody notes.',
-    position: 'bottom',
-  },
-  {
     target: '#mixer',
     title: 'Mixer Console',
-    text: 'Control volume for each track (melody, chords, bass, drums) with vertical faders. Mute individual tracks with the M button. Adjust reverb/delay sends, 3-band EQ, and master volume.',
+    text: 'Control volume for each track with vertical faders, including click track. Pan knobs position tracks in stereo (L/R). Mute (M) and Solo (S) for quick mixing. Plus reverb/delay sends, 3-band EQ, and master volume.',
     position: 'bottom',
   },
   {

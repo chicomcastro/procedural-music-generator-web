@@ -52,6 +52,14 @@
         <div class="player-transport">
             <button id="play-pause" type="button" title="Play / Pause" aria-label="Play">&#9654;</button>
             <button id="stop-btn" type="button" title="Stop and rewind" aria-label="Stop">&#9632;</button>
+            <button id="record-btn" type="button" data-tip="Record keyboard into melody" aria-label="Record">&#9679;</button>
+            <button id="click-mode" type="button" class="transport-btn" data-mode="0" data-tip="Click: off / downbeat / all beats" aria-label="Click track" title="Click track: off">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                    <line x1="8" y1="2" x2="8" y2="11"/>
+                    <circle cx="8" cy="13" r="2" fill="currentColor" stroke="none"/>
+                    <line x1="8" y1="2" x2="12" y2="5"/>
+                </svg>
+            </button>
             <div class="progress-wrap">
                 <div class="progress-bar" id="progress-bar">
                     <div class="progress-fill" id="progress-fill"></div>
@@ -63,7 +71,7 @@
             <label for="bpm" data-tip="Beats per minute — how fast the music plays">BPM</label>
             <input id="bpm" type="range" min="40" max="240" value="110" data-tip="Tempo: 40–240 BPM" aria-label="Tempo in BPM">
             <span id="bpm-display">110</span>
-            <label for="beats-per-bar" data-tip="Time signature — beats per bar">Time</label>
+            <label for="beats-per-bar" data-tip="Time signature — beats per bar">TIME</label>
             <select id="beats-per-bar">
                 <option value="2">2/4</option>
                 <option value="3">3/4</option>
@@ -72,11 +80,7 @@
             </select>
             <span class="beat-indicator" id="beat-indicator" aria-live="polite"></span>
         </div>
-        <div class="metronome-row">
-            <label data-tip="Audible metronome tick on each beat"><input type="checkbox" id="click-enabled"> Click track</label>
-            <label data-tip="Play the generated melody and chords"><input type="checkbox" id="song-enabled" checked> Procedural music</label>
-            <button id="record-btn" type="button" data-tip="Record keyboard into melody" aria-label="Record">&#9679; Rec</button>
-        </div>
+        <input type="checkbox" id="song-enabled" checked hidden>
     </section>
 
     <section id="mixer" aria-label="Mixer">
@@ -145,6 +149,22 @@
                     <div class="mixer-btn-row">
                         <button class="mixer-mute" type="button" aria-label="Mute drums">M</button>
                         <button class="mixer-solo" type="button" aria-label="Solo drums">S</button>
+                    </div>
+                </div>
+                <div class="mixer-channel" data-ch="click">
+                    <span class="mixer-ch-label">CLK</span>
+                    <div class="mixer-pan-wrap">
+                        <span class="mixer-pan-label">L</span>
+                        <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="click" aria-label="Click pan">
+                        <span class="mixer-pan-label">R</span>
+                    </div>
+                    <div class="mixer-fader-wrap">
+                        <input id="click-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.5" aria-label="Click volume">
+                    </div>
+                    <span id="click-vol-display" class="mixer-val">50%</span>
+                    <div class="mixer-btn-row">
+                        <button class="mixer-mute" type="button" aria-label="Mute click">M</button>
+                        <button class="mixer-solo" type="button" aria-label="Solo click">S</button>
                     </div>
                 </div>
             </div>
