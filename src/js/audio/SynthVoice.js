@@ -80,6 +80,30 @@ const PRESETS = {
     vibratoRate: 3,
     vibratoDepth: 4,
   },
+  epiano: {
+    oscTypes: ['sine', 'triangle'],
+    detune: [0, 1200],
+    gainPerOsc: 0.4,
+    filterFreq: 3500,
+    filterQ: 1.5,
+    attack: 0.003,
+    release: 0.4,
+    filterDecay: 0.3,
+    filterSustainFreq: 800,
+    vibratoRate: 4,
+    vibratoDepth: 5,
+  },
+  lead: {
+    oscTypes: ['sawtooth'],
+    detune: [0],
+    gainPerOsc: 0.5,
+    filterFreq: 2200,
+    filterQ: 2,
+    attack: 0.02,
+    release: 0.25,
+    vibratoRate: 5,
+    vibratoDepth: 12,
+  },
 };
 
 /** @returns {string[]} */

@@ -59,11 +59,12 @@ body {
   color: var(--text-primary);
   transition: background-color 200ms, color 200ms;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
-  padding: 24px;
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 20px;
+  padding: 0;
+  gap: 0;
 }
 
 button {
@@ -73,33 +74,22 @@ button {
 /* ---- Hero ---- */
 
 #hero {
-  text-align: center;
-  max-width: 480px;
-  transition: opacity 400ms, max-height 400ms;
-  overflow: hidden;
-}
-
-#hero.collapsed {
-  opacity: 0;
-  max-height: 0 !important;
-  margin: 0;
-  padding: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 #hero h1 {
-  font-size: 28px;
+  font-size: 18px;
   letter-spacing: 0.04em;
   color: var(--accent);
+  white-space: nowrap;
 }
 
 #hero .tagline {
-  margin-top: 6px;
-  font-size: 16px;
-  opacity: 0.85;
-}
-
-#hero .subtitle {
-  margin-top: 4px;
   font-size: 13px;
   opacity: 0.5;
 }
@@ -227,30 +217,296 @@ kbd {
   color: var(--text-primary);
 }
 
-/* ---- Cards ---- */
+/* ---- DAW Layout ---- */
 
-#metronome,
-#generator,
-#export,
-#save-section,
-#history,
+#daw-main {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
 #score-section {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 20px;
-  min-width: 320px;
-  max-width: 680px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+#score-canvas {
   width: 100%;
+  height: 45vh;
+  min-height: 200px;
+  display: block;
+  border-radius: 8px;
+}
+
+/* ---- Tab system ---- */
+
+#tab-panels {
+}
+
+#tab-bar {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  flex-shrink: 0;
+}
+
+#tab-bar [role="tab"] {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms;
+  font-family: inherit;
+}
+
+#tab-bar [role="tab"]:hover {
+  color: var(--text-primary);
+}
+
+#tab-bar [role="tab"][aria-selected="true"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+#piano-toggle {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms, background-color 150ms;
+  font-family: inherit;
+  align-self: center;
+}
+
+#piano-toggle:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+#piano-toggle[aria-expanded="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.tab-panel {
+  padding: 12px 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.tab-panel.hidden {
+  display: none;
+}
+
+/* ---- Piano drawer ---- */
+
+#piano-drawer {
+  overflow: hidden;
+  max-height: 220px;
+  transition: max-height 300ms ease;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  padding: 8px 12px;
+}
+
+#piano-drawer.collapsed {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top: none;
+}
+
+.piano-hint {
+  margin-top: 6px;
+}
+
+/* ---- Transport bar ---- */
+
+#transport-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.transport-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.transport-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.transport-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.transport-right label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* ---- Generator inside tab ---- */
+
+#generator {
+  max-width: none;
+  width: 100%;
+}
+
+#generator h2,
+#export h2,
+#history h2 {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.gen-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.gen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.gen-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gen-field label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.gen-field select {
+  width: 100%;
+}
+
+.gen-field-transpose .transpose-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gen-sliders {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.gen-slider {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.gen-slider label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.gen-slider input[type="range"] {
+  flex: 1;
+  min-width: 60px;
+}
+
+.gen-seed-row {
+  margin-bottom: 0;
+}
+
+/* ---- Mixer header ---- */
+
+.mixer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mixer-title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
 
 /* ---- Score ---- */
 
-#score-canvas {
-  width: 100%;
-  height: 120px;
-  display: block;
-  border-radius: 8px;
+.score-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.bar-action-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.bar-action-btn:hover {
+  background: var(--accent);
+  color: var(--bg);
 }
 
 .score-hint {
@@ -265,8 +521,8 @@ kbd {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
 }
+
 
 #play-pause,
 #stop-btn {
@@ -351,20 +607,6 @@ kbd {
   text-align: right;
 }
 
-/* ---- Section headings ---- */
-
-#metronome h2,
-#generator h2,
-#export h2,
-#history h2 {
-  margin: 0 0 10px 0;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-}
-
 /* ---- Rows ---- */
 
 .metronome-row {
@@ -372,12 +614,6 @@ kbd {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-#metronome .metronome-row + .metronome-row,
-#generator .metronome-row + .metronome-row,
-#export .metronome-row + .metronome-row {
-  margin-top: 10px;
 }
 
 .metronome-row label {
@@ -423,8 +659,8 @@ input[type="text"]:focus {
 
 #bpm {
   flex: 1;
-  min-width: 120px;
-  max-width: 400px;
+  min-width: 80px;
+  max-width: 160px;
   accent-color: var(--accent);
 }
 
@@ -585,6 +821,11 @@ input[type="text"]:focus {
   font-family: monospace;
   font-size: 11px;
   opacity: 0.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
 }
 
 #song-info.flash {
@@ -851,17 +1092,19 @@ input[type="text"]:focus {
 
 /* ---- Theme toggle ---- */
 
-#theme-toggle {
+#theme-toggle,
+#tour-btn,
+#shortcuts-btn {
   position: fixed;
-  top: 16px;
-  right: 16px;
+  top: 6px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 15px;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -870,84 +1113,38 @@ input[type="text"]:focus {
   line-height: 1;
 }
 
+#theme-toggle { right: 12px; font-size: 16px; }
+#shortcuts-btn { right: 50px; font-weight: 600; }
+#tour-btn { right: 88px; }
+
 #theme-toggle:hover,
-#shortcuts-btn:hover {
-  border-color: var(--accent);
-  transform: scale(1.1);
-}
-
-#tour-btn {
-  position: fixed;
-  top: 16px;
-  right: 104px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  font-size: 18px;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  transition: background-color 150ms, border-color 150ms, transform 150ms;
-}
-
+#shortcuts-btn:hover,
 #tour-btn:hover {
   border-color: var(--accent);
   transform: scale(1.1);
 }
 
-#shortcuts-btn {
-  position: fixed;
-  top: 16px;
-  right: 60px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  transition: background-color 150ms, border-color 150ms, transform 150ms;
-}
-
 /* ---- Mixer ---- */
 
-#mixer {
-  background: var(--bg-card);
+.mixer-inline-select {
+  font-size: 11px;
+  padding: 1px 4px;
+  margin-left: 8px;
+  border-radius: 3px;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 20px;
-  min-width: 320px;
-  max-width: 680px;
-  width: 100%;
-}
-
-#mixer h2 {
-  margin: 0 0 10px 0;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  background: var(--bg-input);
   color: var(--text-secondary);
+  vertical-align: middle;
 }
 
 .mixer-console {
   display: flex;
+  flex-wrap: wrap;
   align-items: stretch;
   background: var(--bg-input);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 10px 6px;
+  padding: 6px 4px;
   overflow-x: auto;
   gap: 0;
 }
@@ -1182,16 +1379,6 @@ input[type="text"]:focus {
 }
 
 /* ---- Gallery ---- */
-
-#gallery {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 20px;
-  min-width: 320px;
-  max-width: 680px;
-  width: 100%;
-}
 
 .gallery-grid {
   display: grid;
@@ -1512,18 +1699,15 @@ input[type="text"]:focus {
 
 /* ---- Responsive ---- */
 
+
 @media (max-width: 600px) {
-  body {
-    padding: 16px 8px;
-    gap: 14px;
-  }
-
-  #hero h1 {
-    font-size: 22px;
-  }
-
   #hero .tagline {
-    font-size: 14px;
+    display: none;
+  }
+
+  #score-canvas {
+    height: 35vh;
+    min-height: 150px;
   }
 
   .key {
@@ -1536,50 +1720,22 @@ input[type="text"]:focus {
     height: 80px;
   }
 
-  #metronome,
-  #generator,
-  #export,
-  #save-section,
-  #history,
-  #score-section,
-  #mixer {
-    min-width: 0;
-    padding: 12px 14px;
-    border-radius: 10px;
+  .gen-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
-  #score-canvas {
-    height: 90px;
-  }
-
-  .metronome-row {
-    gap: 6px;
-  }
-
-  .metronome-row label {
-    font-size: 10px;
-  }
-
-  #density, #swing, #velocity {
-    width: 80px;
-  }
-
-  #bpm {
-    min-width: 80px;
+  .gen-sliders {
+    flex-direction: column;
+    gap: 8px;
   }
 
   select {
-    max-width: 100px;
     font-size: 12px;
   }
 
   .preset-btn {
     padding: 3px 8px;
     font-size: 11px;
-  }
-
-  .player-transport {
-    gap: 6px;
   }
 
   #play-pause,
@@ -1600,6 +1756,15 @@ input[type="text"]:focus {
     height: 30px;
   }
 
+  .transport-right label {
+    display: none;
+  }
+
+  #bpm {
+    min-width: 60px;
+    max-width: 100px;
+  }
+
   .mixer-fader-wrap {
     height: 100px;
   }
@@ -1613,7 +1778,6 @@ input[type="text"]:focus {
     padding: 4px 3px;
   }
 
-
   .time-display {
     font-size: 11px;
     min-width: 70px;
@@ -1623,26 +1787,6 @@ input[type="text"]:focus {
     width: 24px;
     height: 24px;
     font-size: 14px;
-  }
-
-  #theme-toggle,
-  #shortcuts-btn,
-  #tour-btn {
-    width: 30px;
-    height: 30px;
-    font-size: 14px;
-  }
-
-  #tour-btn {
-    right: 84px;
-  }
-
-  #shortcuts-btn {
-    right: 50px;
-  }
-
-  #theme-toggle {
-    right: 10px;
   }
 
   .hint {
@@ -1678,5 +1822,10 @@ input[type="text"]:focus {
 
   #seed {
     width: 90px;
+  }
+
+  #tab-bar [role="tab"] {
+    padding: 6px 10px;
+    font-size: 11px;
   }
 }

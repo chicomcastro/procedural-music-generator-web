@@ -20,46 +20,412 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon-192.svg">
     <link rel="stylesheet" href="styles.css">
+    <style>html{background:#0f1117}</style>
 </head>
 
-<body>
-    <a href="#metronome" class="skip-link">Skip to controls</a>
+<body style="opacity:0">
+    <a href="#transport-bar" class="skip-link">Skip to controls</a>
     <button id="tour-btn" type="button" title="Take the tour" aria-label="Take the tour">&#9432;</button>
     <button id="theme-toggle" type="button" title="Toggle light/dark theme" aria-label="Toggle theme">&#9790;</button>
     <button id="shortcuts-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+
     <header id="hero">
         <h1>SeedSong</h1>
         <p class="tagline">Infinite piano melodies from a single seed number.</p>
-        <p class="subtitle">Generate, play, tweak, and export — right in your browser.</p>
     </header>
 
-    <div id="piano-scroll" role="region" aria-label="Piano keyboard">
-        <div id="piano" role="application"></div>
+    <main id="daw-main">
+        <section id="score-section" aria-label="Score visualization">
+            <canvas id="score-canvas" aria-label="Song score piano roll"></canvas>
+            <div class="score-bar-actions">
+                <button id="lock-all-btn" type="button" class="bar-action-btn" title="Lock all bars">Lock All</button>
+                <button id="unlock-all-btn" type="button" class="bar-action-btn" title="Unlock all bars">Unlock All</button>
+                <button id="invert-lock-btn" type="button" class="bar-action-btn" title="Invert locked bars">Invert</button>
+                <span id="song-info" class="hint" aria-live="polite"></span>
+            </div>
+        </section>
+
+        <div id="tab-panels">
+            <nav id="tab-bar" role="tablist">
+                <button role="tab" data-panel="generator" aria-selected="true">Generator</button>
+                <button role="tab" data-panel="mixer" aria-selected="false">Mixer</button>
+                <button role="tab" data-panel="history" aria-selected="false">History</button>
+                <button role="tab" data-panel="export" aria-selected="false">Export</button>
+                <button role="tab" data-panel="gallery" aria-selected="false">Gallery</button>
+                <button id="piano-toggle" type="button" aria-expanded="false">Piano</button>
+            </nav>
+
+            <div id="panel-generator" role="tabpanel" class="tab-panel">
+                <section id="generator" aria-label="Song generator controls">
+                    <div class="gen-row" id="presets-row">
+                        <span class="preset-label">Genre</span>
+                        <button class="preset-btn" type="button" data-bpm="72" data-scale="pentatonic_minor" data-tonic="9" data-bars="4" data-time="4" data-density="0.5" data-swing="0.3" data-voice="piano" data-reverb="0.3" data-delay="0.15">Lo-fi</button>
+                        <button class="preset-btn" type="button" data-bpm="130" data-scale="mixolydian" data-tonic="7" data-bars="4" data-time="4" data-density="0.7" data-swing="0.4" data-voice="piano" data-reverb="0.2" data-delay="0">Jazz</button>
+                        <button class="preset-btn" type="button" data-bpm="108" data-scale="major" data-tonic="0" data-bars="8" data-time="4" data-density="0.6" data-swing="0" data-voice="piano" data-reverb="0.4" data-delay="0">Classical</button>
+                        <button class="preset-btn" type="button" data-bpm="90" data-scale="blues" data-tonic="4" data-bars="4" data-time="4" data-density="0.55" data-swing="0.5" data-voice="piano" data-reverb="0.15" data-delay="0.1">Blues</button>
+                        <button class="preset-btn" type="button" data-bpm="140" data-scale="natural_minor" data-tonic="9" data-bars="4" data-time="4" data-density="0.75" data-swing="0" data-voice="pluck" data-reverb="0.5" data-delay="0.2">Dark</button>
+                        <button class="preset-btn" type="button" data-bpm="150" data-scale="dorian" data-tonic="2" data-bars="4" data-time="4" data-density="0.8" data-swing="0.2" data-voice="pluck" data-reverb="0.1" data-delay="0">Funk</button>
+                    </div>
+                    <div class="gen-row" id="mood-presets-row">
+                        <span class="preset-label">Mood</span>
+                        <button class="preset-btn" type="button" data-bpm="65" data-scale="major" data-tonic="5" data-bars="4" data-time="4" data-density="0.35" data-swing="0.1" data-voice="pad" data-reverb="0.6" data-delay="0.2" data-velocity="0.5">Chill</button>
+                        <button class="preset-btn" type="button" data-bpm="170" data-scale="major" data-tonic="7" data-bars="4" data-time="4" data-density="0.9" data-swing="0.15" data-voice="pluck" data-reverb="0.1" data-delay="0">Energetic</button>
+                        <button class="preset-btn" type="button" data-bpm="76" data-scale="natural_minor" data-tonic="4" data-bars="4" data-time="3" data-density="0.4" data-swing="0" data-voice="strings" data-reverb="0.5" data-delay="0.1" data-velocity="0.6">Melancholic</button>
+                        <button class="preset-btn" type="button" data-bpm="80" data-scale="lydian" data-tonic="5" data-bars="8" data-time="4" data-density="0.3" data-swing="0" data-voice="pad" data-reverb="0.7" data-delay="0.35" data-velocity="0.4">Dreamy</button>
+                        <button class="preset-btn" type="button" data-bpm="160" data-scale="phrygian" data-tonic="4" data-bars="4" data-time="4" data-density="0.85" data-swing="0" data-voice="pluck" data-reverb="0.3" data-delay="0" data-velocity="0.95">Aggressive</button>
+                        <button class="preset-btn" type="button" data-bpm="95" data-scale="pentatonic_major" data-tonic="7" data-bars="4" data-time="4" data-density="0.5" data-swing="0.3" data-voice="marimba" data-reverb="0.2" data-delay="0.15" data-velocity="0.6">Tropical</button>
+                    </div>
+                    <div class="gen-grid">
+                        <div class="gen-field">
+                            <label for="tonic">Tonic</label>
+                            <select id="tonic">
+                                <option value="0" selected>C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option>
+                                <option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option>
+                                <option value="8">G#</option><option value="9">A</option><option value="10">A#</option><option value="11">B</option>
+                            </select>
+                        </div>
+                        <div class="gen-field">
+                            <label for="scale">Scale</label>
+                            <select id="scale">
+                                <option value="major" selected>Major</option>
+                                <option value="natural_minor">Natural Minor</option>
+                                <option value="harmonic_minor">Harmonic Minor</option>
+                                <option value="dorian">Dorian</option>
+                                <option value="phrygian">Phrygian</option>
+                                <option value="lydian">Lydian</option>
+                                <option value="mixolydian">Mixolydian</option>
+                                <option value="pentatonic_major">Pentatonic Major</option>
+                                <option value="pentatonic_minor">Pentatonic Minor</option>
+                                <option value="blues">Blues</option>
+                            </select>
+                        </div>
+                        <div class="gen-field">
+                            <label for="progression">Chords</label>
+                            <select id="progression">
+                                <option value="auto" selected>Auto (from seed)</option>
+                                <option value="pop">I-V-vi-IV (Pop)</option>
+                                <option value="fifties">I-vi-IV-V (50s)</option>
+                                <option value="pachelbel">I-V-vi-iii-IV (Pachelbel)</option>
+                                <option value="jazz_ii_V_I">ii-V-I (Jazz)</option>
+                                <option value="minor_loop">i-VI-III-VII (Minor)</option>
+                                <option value="twelve_bar">12-Bar Blues</option>
+                            </select>
+                        </div>
+                        <div class="gen-field">
+                            <label for="bars">Bars</label>
+                            <select id="bars">
+                                <option value="2">2</option>
+                                <option value="4" selected>4</option>
+                                <option value="8">8</option>
+                            </select>
+                        </div>
+                        <div class="gen-field">
+                            <label for="structure">Structure</label>
+                            <select id="structure">
+                                <option value="single" selected>Loop</option>
+                                <option value="short">Short (I-V-C-O)</option>
+                                <option value="full">Full (I-V-C-V-C-O)</option>
+                            </select>
+                        </div>
+                        <div class="gen-field">
+                            <label for="voice">Melody voice</label>
+                            <select id="voice">
+                                <option value="piano" selected>Piano</option>
+                                <option value="pad">Synth Pad</option>
+                                <option value="pluck">Pluck</option>
+                                <option value="organ">Organ</option>
+                                <option value="strings">Strings</option>
+                                <option value="marimba">Marimba</option>
+                                <option value="bell">Bell</option>
+                                <option value="epiano">E.Piano</option>
+                                <option value="lead">Lead</option>
+                            </select>
+                        </div>
+                        <div class="gen-field">
+                            <label for="chord-voice">Chord voice</label>
+                            <select id="chord-voice">
+                                <option value="pad" selected>Synth Pad</option>
+                                <option value="piano">Piano</option>
+                                <option value="pluck">Pluck</option>
+                                <option value="organ">Organ</option>
+                                <option value="strings">Strings</option>
+                                <option value="marimba">Marimba</option>
+                                <option value="bell">Bell</option>
+                                <option value="epiano">E.Piano</option>
+                                <option value="lead">Lead</option>
+                            </select>
+                        </div>
+                        <div class="gen-field">
+                            <label for="contour">Contour</label>
+                            <select id="contour">
+                                <option value="auto" selected>Auto</option>
+                                <option value="ascending">Ascending</option>
+                                <option value="descending">Descending</option>
+                                <option value="arc">Arc</option>
+                                <option value="wave">Wave</option>
+                                <option value="flat">Flat</option>
+                            </select>
+                        </div>
+                        <div class="gen-field">
+                            <label for="rhythm-template">Rhythm</label>
+                            <select id="rhythm-template">
+                                <option value="auto" selected>Auto</option>
+                                <option value="straight">Straight</option>
+                                <option value="syncopated">Syncopated</option>
+                                <option value="sparse">Sparse</option>
+                                <option value="driving">Driving</option>
+                            </select>
+                        </div>
+                        <div class="gen-field gen-field-transpose">
+                            <label>Transpose</label>
+                            <div class="transpose-group">
+                                <button id="transpose-down" type="button" class="transpose-btn">−</button>
+                                <span id="transpose-display">0</span>
+                                <button id="transpose-up" type="button" class="transpose-btn">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gen-sliders">
+                        <div class="gen-slider">
+                            <label for="density">Density</label>
+                            <input id="density" type="range" min="0.2" max="1.0" step="0.05" value="0.65">
+                            <span id="density-display">65%</span>
+                        </div>
+                        <div class="gen-slider">
+                            <label for="swing">Swing</label>
+                            <input id="swing" type="range" min="0" max="0.8" step="0.1" value="0">
+                            <span id="swing-display">0%</span>
+                        </div>
+                        <div class="gen-slider">
+                            <label for="velocity">Velocity</label>
+                            <input id="velocity" type="range" min="0.1" max="1.0" step="0.05" value="0.8">
+                            <span id="velocity-display">80%</span>
+                        </div>
+                    </div>
+                    <div class="gen-row gen-seed-row">
+                        <label for="seed">Seed</label>
+                        <input id="seed" type="number" min="0" max="4294967295" step="1">
+                        <button id="generate-btn" type="button">&#127922; Randomize</button>
+                        <button id="share-btn" type="button">Share</button>
+                        <input id="song-name" type="text" placeholder="Name this melody…">
+                        <button id="save-btn" type="button">Save</button>
+                        <span id="save-hint" class="hint" aria-live="polite"></span>
+                    </div>
+                </section>
+            </div>
+
+            <div id="panel-mixer" role="tabpanel" class="tab-panel hidden">
+                <section id="mixer" aria-label="Mixer">
+                    <div class="mixer-header">
+                        <span class="mixer-title">Mixer</span>
+                        <select id="reverb-preset" class="mixer-inline-select" aria-label="Reverb type">
+                            <option value="hall" selected>Hall</option>
+                            <option value="room">Room</option>
+                            <option value="cathedral">Cathedral</option>
+                        </select>
+                    </div>
+                    <div class="mixer-console">
+                        <div class="mixer-group">
+                            <div class="mixer-channel" data-ch="melody">
+                                <span class="mixer-ch-label">MEL</span>
+                                <div class="mixer-pan-wrap">
+                                    <span class="mixer-pan-label">L</span>
+                                    <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="melody" aria-label="Melody pan">
+                                    <span class="mixer-pan-label">R</span>
+                                </div>
+                                <div class="mixer-fader-wrap">
+                                    <input id="melody-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="1" aria-label="Melody volume">
+                                </div>
+                                <span id="melody-vol-display" class="mixer-val">100%</span>
+                                <div class="mixer-btn-row">
+                                    <button class="mixer-mute" type="button" aria-label="Mute melody">M</button>
+                                    <button class="mixer-solo" type="button" aria-label="Solo melody">S</button>
+                                </div>
+                            </div>
+                            <div class="mixer-channel" data-ch="chord">
+                                <span class="mixer-ch-label">CHD</span>
+                                <div class="mixer-pan-wrap">
+                                    <span class="mixer-pan-label">L</span>
+                                    <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="chord" aria-label="Chord pan">
+                                    <span class="mixer-pan-label">R</span>
+                                </div>
+                                <div class="mixer-fader-wrap">
+                                    <input id="chord-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.7" aria-label="Chord volume">
+                                </div>
+                                <span id="chord-vol-display" class="mixer-val">70%</span>
+                                <div class="mixer-btn-row">
+                                    <button class="mixer-mute" type="button" aria-label="Mute chords">M</button>
+                                    <button class="mixer-solo" type="button" aria-label="Solo chords">S</button>
+                                </div>
+                            </div>
+                            <div class="mixer-channel" data-ch="bass">
+                                <span class="mixer-ch-label">BASS</span>
+                                <div class="mixer-pan-wrap">
+                                    <span class="mixer-pan-label">L</span>
+                                    <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="bass" aria-label="Bass pan">
+                                    <span class="mixer-pan-label">R</span>
+                                </div>
+                                <div class="mixer-fader-wrap">
+                                    <input id="bass-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.7" aria-label="Bass volume">
+                                </div>
+                                <span id="bass-vol-display" class="mixer-val">70%</span>
+                                <div class="mixer-btn-row">
+                                    <button class="mixer-mute" type="button" aria-label="Mute bass">M</button>
+                                    <button class="mixer-solo" type="button" aria-label="Solo bass">S</button>
+                                </div>
+                            </div>
+                            <div class="mixer-channel" data-ch="drum">
+                                <span class="mixer-ch-label">DRM</span>
+                                <div class="mixer-pan-wrap">
+                                    <span class="mixer-pan-label">L</span>
+                                    <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="drum" aria-label="Drum pan">
+                                    <span class="mixer-pan-label">R</span>
+                                </div>
+                                <div class="mixer-fader-wrap">
+                                    <input id="drum-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.6" aria-label="Drum volume">
+                                </div>
+                                <span id="drum-vol-display" class="mixer-val">60%</span>
+                                <div class="mixer-btn-row">
+                                    <button class="mixer-mute" type="button" aria-label="Mute drums">M</button>
+                                    <button class="mixer-solo" type="button" aria-label="Solo drums">S</button>
+                                </div>
+                            </div>
+                            <div class="mixer-channel" data-ch="click">
+                                <span class="mixer-ch-label">CLK</span>
+                                <div class="mixer-pan-wrap">
+                                    <span class="mixer-pan-label">L</span>
+                                    <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="click" aria-label="Click pan">
+                                    <span class="mixer-pan-label">R</span>
+                                </div>
+                                <div class="mixer-fader-wrap">
+                                    <input id="click-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.5" aria-label="Click volume">
+                                </div>
+                                <span id="click-vol-display" class="mixer-val">50%</span>
+                                <div class="mixer-btn-row">
+                                    <button class="mixer-mute" type="button" aria-label="Mute click">M</button>
+                                    <button class="mixer-solo" type="button" aria-label="Solo click">S</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mixer-divider"></div>
+                        <div class="mixer-group">
+                            <div class="mixer-channel">
+                                <span class="mixer-ch-label">REV</span>
+                                <div class="mixer-fader-wrap">
+                                    <input id="reverb" type="range" class="mixer-fader" min="0" max="0.8" step="0.05" value="0" aria-label="Reverb send">
+                                </div>
+                                <span id="reverb-display" class="mixer-val">0%</span>
+                            </div>
+                            <div class="mixer-channel">
+                                <span class="mixer-ch-label">DLY</span>
+                                <div class="mixer-fader-wrap">
+                                    <input id="delay" type="range" class="mixer-fader" min="0" max="0.7" step="0.05" value="0" aria-label="Delay send">
+                                </div>
+                                <span id="delay-display" class="mixer-val">0%</span>
+                            </div>
+                            <div class="mixer-channel">
+                                <span class="mixer-ch-label">CHR</span>
+                                <div class="mixer-fader-wrap">
+                                    <input id="chorus" type="range" class="mixer-fader" min="0" max="0.8" step="0.05" value="0" aria-label="Chorus send">
+                                </div>
+                                <span id="chorus-display" class="mixer-val">0%</span>
+                            </div>
+                        </div>
+                        <div class="mixer-divider"></div>
+                        <div class="mixer-group">
+                            <div class="mixer-channel">
+                                <span class="mixer-ch-label">HI</span>
+                                <div class="mixer-fader-wrap">
+                                    <input id="eq-high" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ High">
+                                </div>
+                                <span id="eq-high-display" class="mixer-val">0</span>
+                            </div>
+                            <div class="mixer-channel">
+                                <span class="mixer-ch-label">MID</span>
+                                <div class="mixer-fader-wrap">
+                                    <input id="eq-mid" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ Mid">
+                                </div>
+                                <span id="eq-mid-display" class="mixer-val">0</span>
+                            </div>
+                            <div class="mixer-channel">
+                                <span class="mixer-ch-label">LO</span>
+                                <div class="mixer-fader-wrap">
+                                    <input id="eq-low" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ Low">
+                                </div>
+                                <span id="eq-low-display" class="mixer-val">0</span>
+                            </div>
+                        </div>
+                        <div class="mixer-divider"></div>
+                        <div class="mixer-group">
+                            <div class="mixer-channel mixer-master-ch">
+                                <span class="mixer-ch-label">MAIN</span>
+                                <div class="mixer-fader-wrap">
+                                    <input id="master-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.8" aria-label="Master volume">
+                                </div>
+                                <span id="master-vol-display" class="mixer-val">80%</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <div id="panel-history" role="tabpanel" class="tab-panel hidden">
+                <section id="history" aria-label="Saved melodies">
+                    <div class="history-header">
+                        <h3>History <span class="history-badge">saved locally in your browser</span></h3>
+                        <button id="clear-history" type="button">Clear all</button>
+                    </div>
+                    <div id="history-list"></div>
+                    <p id="history-empty" class="hint">No saved melodies yet.</p>
+                </section>
+            </div>
+
+            <div id="panel-export" role="tabpanel" class="tab-panel hidden">
+                <section id="export" aria-label="Export options">
+                    <div class="gen-row">
+                        <button id="export-midi" type="button">Export MIDI</button>
+                        <button id="export-wav" type="button">Export WAV</button>
+                        <button id="export-preview" type="button">Preview Clip</button>
+                        <span id="export-status" class="hint" aria-live="polite"></span>
+                    </div>
+                </section>
+            </div>
+
+            <div id="panel-gallery" role="tabpanel" class="tab-panel hidden">
+                <section id="gallery" aria-label="Seed gallery">
+                    <div class="history-header">
+                        <h3>Gallery <span class="history-badge">community seed collection</span></h3>
+                    </div>
+                    <div id="gallery-list" class="gallery-grid"></div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <div id="piano-drawer" class="collapsed">
+        <div id="piano-scroll" role="region" aria-label="Piano keyboard">
+            <div id="piano" role="application"></div>
+        </div>
+        <p class="hint piano-hint">
+            <kbd>A</kbd>–<kbd>J</kbd> white keys, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> black keys.
+            Octave <span id="kbd-octave">3</span> — <kbd>Z</kbd>/<kbd>X</kbd> to shift.
+        </p>
     </div>
 
-    <p class="hint">
-        Mouse, touch, or keyboard (<kbd>A</kbd>–<kbd>J</kbd> white keys, <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> black keys).
-        Octave <span id="kbd-octave">3</span> &mdash; <kbd>Z</kbd>/<kbd>X</kbd> to shift.
-    </p>
-
-    <section id="score-section" aria-label="Score visualization">
-        <canvas id="score-canvas" aria-label="Song score piano roll"></canvas>
-        <p class="hint score-hint">Click a bar to lock it — locked bars survive regeneration.</p>
-    </section>
-
-    <section id="metronome" aria-label="Playback controls">
-        <h2>Player</h2>
-        <div class="player-transport">
+    <footer id="transport-bar">
+        <div class="transport-left">
             <button id="play-pause" type="button" title="Play / Pause" aria-label="Play">&#9654;</button>
             <button id="stop-btn" type="button" title="Stop and rewind" aria-label="Stop">&#9632;</button>
-            <button id="record-btn" type="button" data-tip="Record keyboard into melody" aria-label="Record">&#9679;</button>
-            <button id="click-mode" type="button" class="transport-btn" data-mode="0" data-tip="Click: off / downbeat / all beats" aria-label="Click track" title="Click track: off">
+            <button id="record-btn" type="button" aria-label="Record">&#9679;</button>
+            <button id="click-mode" type="button" class="transport-btn" data-mode="0" aria-label="Click track" title="Click track: off">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
                     <line x1="8" y1="2" x2="8" y2="11"/>
                     <circle cx="8" cy="13" r="2" fill="currentColor" stroke="none"/>
                     <line x1="8" y1="2" x2="12" y2="5"/>
                 </svg>
             </button>
+        </div>
+        <div class="transport-center">
             <div class="progress-wrap">
                 <div class="progress-bar" id="progress-bar">
                     <div class="progress-fill" id="progress-fill"></div>
@@ -67,12 +433,11 @@
             </div>
             <span id="time-display" class="time-display">0:00 / 0:00</span>
         </div>
-        <div class="metronome-row">
-            <label for="bpm" data-tip="Beats per minute — how fast the music plays">BPM</label>
-            <input id="bpm" type="range" min="40" max="240" value="110" data-tip="Tempo: 40–240 BPM" aria-label="Tempo in BPM">
+        <div class="transport-right">
+            <label for="bpm">BPM</label>
+            <input id="bpm" type="range" min="40" max="240" value="110" aria-label="Tempo in BPM">
             <span id="bpm-display">110</span>
-            <label for="beats-per-bar" data-tip="Time signature — beats per bar">TIME</label>
-            <select id="beats-per-bar">
+            <select id="beats-per-bar" aria-label="Time signature">
                 <option value="2">2/4</option>
                 <option value="3">3/4</option>
                 <option value="4" selected>4/4</option>
@@ -81,283 +446,7 @@
             <span class="beat-indicator" id="beat-indicator" aria-live="polite"></span>
         </div>
         <input type="checkbox" id="song-enabled" checked hidden>
-    </section>
-
-    <section id="mixer" aria-label="Mixer">
-        <h2>Mixer</h2>
-        <div class="mixer-console">
-            <div class="mixer-group">
-                <div class="mixer-channel" data-ch="melody">
-                    <span class="mixer-ch-label">MEL</span>
-                    <div class="mixer-pan-wrap">
-                        <span class="mixer-pan-label">L</span>
-                        <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="melody" aria-label="Melody pan">
-                        <span class="mixer-pan-label">R</span>
-                    </div>
-                    <div class="mixer-fader-wrap">
-                        <input id="melody-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="1" aria-label="Melody volume">
-                    </div>
-                    <span id="melody-vol-display" class="mixer-val">100%</span>
-                    <div class="mixer-btn-row">
-                        <button class="mixer-mute" type="button" aria-label="Mute melody">M</button>
-                        <button class="mixer-solo" type="button" aria-label="Solo melody">S</button>
-                    </div>
-                </div>
-                <div class="mixer-channel" data-ch="chord">
-                    <span class="mixer-ch-label">CHD</span>
-                    <div class="mixer-pan-wrap">
-                        <span class="mixer-pan-label">L</span>
-                        <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="chord" aria-label="Chord pan">
-                        <span class="mixer-pan-label">R</span>
-                    </div>
-                    <div class="mixer-fader-wrap">
-                        <input id="chord-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.7" aria-label="Chord volume">
-                    </div>
-                    <span id="chord-vol-display" class="mixer-val">70%</span>
-                    <div class="mixer-btn-row">
-                        <button class="mixer-mute" type="button" aria-label="Mute chords">M</button>
-                        <button class="mixer-solo" type="button" aria-label="Solo chords">S</button>
-                    </div>
-                </div>
-                <div class="mixer-channel" data-ch="bass">
-                    <span class="mixer-ch-label">BASS</span>
-                    <div class="mixer-pan-wrap">
-                        <span class="mixer-pan-label">L</span>
-                        <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="bass" aria-label="Bass pan">
-                        <span class="mixer-pan-label">R</span>
-                    </div>
-                    <div class="mixer-fader-wrap">
-                        <input id="bass-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.7" aria-label="Bass volume">
-                    </div>
-                    <span id="bass-vol-display" class="mixer-val">70%</span>
-                    <div class="mixer-btn-row">
-                        <button class="mixer-mute" type="button" aria-label="Mute bass">M</button>
-                        <button class="mixer-solo" type="button" aria-label="Solo bass">S</button>
-                    </div>
-                </div>
-                <div class="mixer-channel" data-ch="drum">
-                    <span class="mixer-ch-label">DRM</span>
-                    <div class="mixer-pan-wrap">
-                        <span class="mixer-pan-label">L</span>
-                        <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="drum" aria-label="Drum pan">
-                        <span class="mixer-pan-label">R</span>
-                    </div>
-                    <div class="mixer-fader-wrap">
-                        <input id="drum-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.6" aria-label="Drum volume">
-                    </div>
-                    <span id="drum-vol-display" class="mixer-val">60%</span>
-                    <div class="mixer-btn-row">
-                        <button class="mixer-mute" type="button" aria-label="Mute drums">M</button>
-                        <button class="mixer-solo" type="button" aria-label="Solo drums">S</button>
-                    </div>
-                </div>
-                <div class="mixer-channel" data-ch="click">
-                    <span class="mixer-ch-label">CLK</span>
-                    <div class="mixer-pan-wrap">
-                        <span class="mixer-pan-label">L</span>
-                        <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="click" aria-label="Click pan">
-                        <span class="mixer-pan-label">R</span>
-                    </div>
-                    <div class="mixer-fader-wrap">
-                        <input id="click-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.5" aria-label="Click volume">
-                    </div>
-                    <span id="click-vol-display" class="mixer-val">50%</span>
-                    <div class="mixer-btn-row">
-                        <button class="mixer-mute" type="button" aria-label="Mute click">M</button>
-                        <button class="mixer-solo" type="button" aria-label="Solo click">S</button>
-                    </div>
-                </div>
-            </div>
-            <div class="mixer-divider"></div>
-            <div class="mixer-group">
-                <div class="mixer-channel">
-                    <span class="mixer-ch-label">REV</span>
-                    <div class="mixer-fader-wrap">
-                        <input id="reverb" type="range" class="mixer-fader" min="0" max="0.8" step="0.05" value="0" aria-label="Reverb send">
-                    </div>
-                    <span id="reverb-display" class="mixer-val">0%</span>
-                </div>
-                <div class="mixer-channel">
-                    <span class="mixer-ch-label">DLY</span>
-                    <div class="mixer-fader-wrap">
-                        <input id="delay" type="range" class="mixer-fader" min="0" max="0.7" step="0.05" value="0" aria-label="Delay send">
-                    </div>
-                    <span id="delay-display" class="mixer-val">0%</span>
-                </div>
-            </div>
-            <div class="mixer-divider"></div>
-            <div class="mixer-group">
-                <div class="mixer-channel">
-                    <span class="mixer-ch-label">HI</span>
-                    <div class="mixer-fader-wrap">
-                        <input id="eq-high" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ High">
-                    </div>
-                    <span id="eq-high-display" class="mixer-val">0</span>
-                </div>
-                <div class="mixer-channel">
-                    <span class="mixer-ch-label">MID</span>
-                    <div class="mixer-fader-wrap">
-                        <input id="eq-mid" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ Mid">
-                    </div>
-                    <span id="eq-mid-display" class="mixer-val">0</span>
-                </div>
-                <div class="mixer-channel">
-                    <span class="mixer-ch-label">LO</span>
-                    <div class="mixer-fader-wrap">
-                        <input id="eq-low" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ Low">
-                    </div>
-                    <span id="eq-low-display" class="mixer-val">0</span>
-                </div>
-            </div>
-            <div class="mixer-divider"></div>
-            <div class="mixer-group">
-                <div class="mixer-channel mixer-master-ch">
-                    <span class="mixer-ch-label">MAIN</span>
-                    <div class="mixer-fader-wrap">
-                        <input id="master-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.8" aria-label="Master volume">
-                    </div>
-                    <span id="master-vol-display" class="mixer-val">80%</span>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="generator" aria-label="Song generator controls">
-        <h2>Generator</h2>
-        <div class="metronome-row" id="presets-row">
-            <span class="preset-label">Genre</span>
-            <button class="preset-btn" type="button" data-bpm="72" data-scale="pentatonic_minor" data-tonic="9" data-bars="4" data-time="4" data-density="0.5" data-swing="0.3" data-voice="piano" data-reverb="0.3" data-delay="0.15">Lo-fi</button>
-            <button class="preset-btn" type="button" data-bpm="130" data-scale="mixolydian" data-tonic="7" data-bars="4" data-time="4" data-density="0.7" data-swing="0.4" data-voice="piano" data-reverb="0.2" data-delay="0">Jazz</button>
-            <button class="preset-btn" type="button" data-bpm="108" data-scale="major" data-tonic="0" data-bars="8" data-time="4" data-density="0.6" data-swing="0" data-voice="piano" data-reverb="0.4" data-delay="0">Classical</button>
-            <button class="preset-btn" type="button" data-bpm="90" data-scale="blues" data-tonic="4" data-bars="4" data-time="4" data-density="0.55" data-swing="0.5" data-voice="piano" data-reverb="0.15" data-delay="0.1">Blues</button>
-            <button class="preset-btn" type="button" data-bpm="140" data-scale="natural_minor" data-tonic="9" data-bars="4" data-time="4" data-density="0.75" data-swing="0" data-voice="pluck" data-reverb="0.5" data-delay="0.2">Dark</button>
-            <button class="preset-btn" type="button" data-bpm="150" data-scale="dorian" data-tonic="2" data-bars="4" data-time="4" data-density="0.8" data-swing="0.2" data-voice="pluck" data-reverb="0.1" data-delay="0">Funk</button>
-        </div>
-        <div class="metronome-row" id="mood-presets-row">
-            <span class="preset-label">Mood</span>
-            <button class="preset-btn" type="button" data-bpm="65" data-scale="major" data-tonic="5" data-bars="4" data-time="4" data-density="0.35" data-swing="0.1" data-voice="pad" data-reverb="0.6" data-delay="0.2" data-velocity="0.5">Chill</button>
-            <button class="preset-btn" type="button" data-bpm="170" data-scale="major" data-tonic="7" data-bars="4" data-time="4" data-density="0.9" data-swing="0.15" data-voice="pluck" data-reverb="0.1" data-delay="0">Energetic</button>
-            <button class="preset-btn" type="button" data-bpm="76" data-scale="natural_minor" data-tonic="4" data-bars="4" data-time="3" data-density="0.4" data-swing="0" data-voice="strings" data-reverb="0.5" data-delay="0.1" data-velocity="0.6">Melancholic</button>
-            <button class="preset-btn" type="button" data-bpm="80" data-scale="lydian" data-tonic="5" data-bars="8" data-time="4" data-density="0.3" data-swing="0" data-voice="pad" data-reverb="0.7" data-delay="0.35" data-velocity="0.4">Dreamy</button>
-            <button class="preset-btn" type="button" data-bpm="160" data-scale="phrygian" data-tonic="4" data-bars="4" data-time="4" data-density="0.85" data-swing="0" data-voice="pluck" data-reverb="0.3" data-delay="0" data-velocity="0.95">Aggressive</button>
-            <button class="preset-btn" type="button" data-bpm="95" data-scale="pentatonic_major" data-tonic="7" data-bars="4" data-time="4" data-density="0.5" data-swing="0.3" data-voice="marimba" data-reverb="0.2" data-delay="0.15" data-velocity="0.6">Tropical</button>
-        </div>
-        <div class="metronome-row">
-            <label for="tonic" data-tip="Root note of the scale">Tonic</label>
-            <select id="tonic">
-                <option value="0" selected>C</option>
-                <option value="1">C#</option>
-                <option value="2">D</option>
-                <option value="3">D#</option>
-                <option value="4">E</option>
-                <option value="5">F</option>
-                <option value="6">F#</option>
-                <option value="7">G</option>
-                <option value="8">G#</option>
-                <option value="9">A</option>
-                <option value="10">A#</option>
-                <option value="11">B</option>
-            </select>
-            <label for="scale" data-tip="Musical scale — determines the mood and available notes">Scale</label>
-            <select id="scale">
-                <option value="major" selected>Major</option>
-                <option value="natural_minor">Natural Minor</option>
-                <option value="harmonic_minor">Harmonic Minor</option>
-                <option value="dorian">Dorian</option>
-                <option value="phrygian">Phrygian</option>
-                <option value="lydian">Lydian</option>
-                <option value="mixolydian">Mixolydian</option>
-                <option value="pentatonic_major">Pentatonic Major</option>
-                <option value="pentatonic_minor">Pentatonic Minor</option>
-                <option value="blues">Blues</option>
-            </select>
-            <label for="progression" data-tip="Chord progression pattern">Chords</label>
-            <select id="progression">
-                <option value="auto" selected>Auto (from seed)</option>
-                <option value="pop">I-V-vi-IV (Pop)</option>
-                <option value="fifties">I-vi-IV-V (50s)</option>
-                <option value="pachelbel">I-V-vi-iii-IV (Pachelbel)</option>
-                <option value="jazz_ii_V_I">ii-V-I (Jazz)</option>
-                <option value="minor_loop">i-VI-III-VII (Minor)</option>
-                <option value="twelve_bar">12-Bar Blues</option>
-            </select>
-            <label for="bars" data-tip="Length of the loop in bars">Bars</label>
-            <select id="bars">
-                <option value="2">2</option>
-                <option value="4" selected>4</option>
-                <option value="8">8</option>
-            </select>
-            <label for="voice" data-tip="Instrument voice for melody and chords">Voice</label>
-            <select id="voice">
-                <option value="piano" selected>Piano</option>
-                <option value="pad">Synth Pad</option>
-                <option value="pluck">Pluck</option>
-                <option value="bass">Bass</option>
-                <option value="organ">Organ</option>
-                <option value="strings">Strings</option>
-                <option value="marimba">Marimba</option>
-                <option value="bell">Bell</option>
-            </select>
-        </div>
-        <div class="metronome-row">
-            <label for="transpose" data-tip="Shift all notes up or down by semitones">Transpose</label>
-            <button id="transpose-down" type="button" data-tip="Down 1 semitone" class="transpose-btn">−</button>
-            <span id="transpose-display">0</span>
-            <button id="transpose-up" type="button" data-tip="Up 1 semitone" class="transpose-btn">+</button>
-        </div>
-        <div class="metronome-row">
-            <label for="density" data-tip="How many notes per bar">Density</label>
-            <input id="density" type="range" min="0.2" max="1.0" step="0.05" value="0.65" aria-label="Note density">
-            <span id="density-display">65%</span>
-            <label for="swing" data-tip="Groovy off-beat timing feel">Swing</label>
-            <input id="swing" type="range" min="0" max="0.8" step="0.1" value="0" aria-label="Swing amount">
-            <span id="swing-display">0%</span>
-            <label for="velocity" data-tip="Note loudness — soft to loud">Velocity</label>
-            <input id="velocity" type="range" min="0.1" max="1.0" step="0.05" value="0.8" aria-label="Note velocity">
-            <span id="velocity-display">80%</span>
-        </div>
-        <div class="metronome-row">
-            <label for="seed" data-tip="Same seed = same song">Seed</label>
-            <input id="seed" type="number" min="0" max="4294967295" step="1" data-tip="Enter a seed to reproduce a melody">
-            <button id="generate-btn" type="button" data-tip="Roll a new random seed">&#127922; Randomize</button>
-            <button id="share-btn" type="button" data-tip="Copy shareable link">Share</button>
-            <span id="song-info" class="hint" aria-live="polite"></span>
-        </div>
-    </section>
-
-    <section id="save-section" aria-label="Save current song">
-        <div class="metronome-row">
-            <input id="song-name" type="text" placeholder="Name this melody…" data-tip="Give your melody a name">
-            <button id="save-btn" type="button" data-tip="Save to browser storage">Save</button>
-            <span id="save-hint" class="hint" aria-live="polite"></span>
-        </div>
-    </section>
-
-    <section id="history" aria-label="Saved melodies">
-        <div class="history-header">
-            <h2>History <span class="history-badge">saved locally in your browser</span></h2>
-            <button id="clear-history" type="button" data-tip="Delete all saved melodies">Clear all</button>
-        </div>
-        <div id="history-list"></div>
-        <p id="history-empty" class="hint">No saved melodies yet.</p>
-    </section>
-
-    <section id="export" aria-label="Export options">
-        <h2>Export</h2>
-        <div class="metronome-row">
-            <button id="export-midi" type="button" data-tip="Download MIDI — import into any DAW">Export MIDI</button>
-            <button id="export-wav" type="button" data-tip="Render to WAV audio file">Export WAV</button>
-            <button id="export-preview" type="button" data-tip="Quick 10s audio preview clip">Preview Clip</button>
-            <span id="export-status" class="hint" aria-live="polite"></span>
-        </div>
-    </section>
-
-    <section id="gallery" aria-label="Seed gallery">
-        <div class="history-header">
-            <h2>Gallery <span class="history-badge">community seed collection</span></h2>
-        </div>
-        <div id="gallery-list" class="gallery-grid"></div>
-    </section>
+    </footer>
 
     <div id="shortcuts-overlay" class="overlay hidden" role="dialog" aria-label="Keyboard shortcuts">
         <div class="overlay-card">

@@ -1,6 +1,6 @@
 # Architectural Decisions
 
-A compressed log of the load-bearing calls made across phases 1–9. PR descriptions hold the granular rationale; this file is the index for someone arriving cold.
+A compressed log of the load-bearing calls made across phases 1–10. PR descriptions hold the granular rationale; this file is the index for someone arriving cold.
 
 Format follows a stripped-down [ADR](https://adr.github.io/): Context · Decision · Consequences · Alternatives considered.
 
@@ -276,6 +276,113 @@ For MIDI: `@tonejs/midi` is excellent and well-tested. Adding it forces a bundle
 - No attempt to become a full DAW — the differentiator is seed-based procedural generation as a composition starting point.
 
 **Alternatives.** Evolve into a full DAW (rejected — years of work, crowded market). Stay as playground only (rejected — user wants composition workflow).
+
+---
+
+## ADR-016 · Multi-section song structure via sub-seeds
+
+**Context.** Songs looped a single N-bar phrase — no intro, verse, chorus, or outro. The generator was fun for exploration but couldn't produce anything resembling a real song.
+
+**Decision.** `generateSong` accepts a `structure` parameter ('single' | 'short' | 'full'). Multi-section mode chains 4-8 bar generations with contrasting density, velocity, and drum presence per section. Each section gets `mulberry32(seed + sectionIndex)` as its RNG, keeping the experience deterministic and shareable.
+
+**Consequences.** Score canvas renders section boundaries with labels and colored backgrounds. Transport/progress bar reflects total song length. Locked bars still work per-bar globally. The 'single' mode (default) preserves backward compatibility — no existing URLs break.
+
+**Alternatives.** User-configurable per-section parameters (deferred to Phase 2 editor). Fixed song structure only (rejected — short/full gives useful control).
+
+---
+
+## ADR-017 · Melody contour and rhythm templates as generator biases
+
+**Context.** Melody wandered randomly within the scale; rhythm onsets were pure-probability. Users had density and swing but no directional control over musicality.
+
+**Decision.** `generateMelody` accepts a `contour` parameter that multiplies a directional bias onto the existing distance weights. `generateRhythm` accepts a `template` parameter that modifies on-beat vs off-beat probability multipliers. Both default to 'auto' (existing behavior) so no URLs break.
+
+**Consequences.** 5 contour options (ascending, descending, arc, wave, flat) and 4 rhythm templates (straight, syncopated, sparse, driving) provide strong creative control without manual note editing. Composable with density/swing for combined effects.
+
+---
+
+## ADR-018 · Per-track voice selection (melody vs chords)
+
+**Context.** One voice applied globally — chords-as-pluck and melody-as-pluck was limiting. Users wanted timbral contrast between melody and accompaniment.
+
+**Decision.** Split `#voice` into `#voice` (melody) and `#chord-voice`. Added 'epiano' and 'lead' presets to SynthVoice. Chords default to 'pad' for immediate contrast. Bass and drums keep fixed voices.
+
+**Consequences.** Presets can set both voices independently. Gallery save/load includes chord voice. Two-voice system covers the common case without the complexity of full per-track routing.
+
+---
+
+## ADR-019 · Multi-track MIDI Format 1 export
+
+**Context.** MIDI export used Format 0 (single track). DAW users importing the file got one track with all instruments interleaved.
+
+**Decision.** Upgraded to Format 1 with 5 tracks: conductor (tempo), melody (ch 0), chords (ch 1), bass (ch 2), drums (ch 9 GM). Each track has a name meta event.
+
+**Consequences.** DAW import now creates separate tracks automatically. The function signature is unchanged (`songToMidi(song, { bpm })`). The unused `channel` parameter was removed since channels are now fixed per track definition.
+
+---
+
+## ADR-020 · Score canvas note editing with auto-lock
+
+**Context.** The score canvas was read-only (except drag-to-rearrange). Users wanted to click-select, move, resize, and delete notes directly.
+
+**Decision.** Added selection state, pixel-based hit testing with right-edge resize detection, and Backspace/Delete key handling. Edited notes auto-lock their bar via `onBarLock` callback. Cursor changes to 'grab' on notes and 'ew-resize' on edges.
+
+**Consequences.** No undo yet (deferred to Phase 2). Notes can be accidentally moved — auto-lock mitigates by preserving edits through regeneration.
+
+---
+
+## ADR-021 · DAW-style tabbed layout
+
+**Status:** Accepted (Phase 10)
+
+**Context.** The original linear layout (hero → score → generator → mixer → history → export → gallery, all stacked) forced users to scroll constantly between controls and the score canvas. The mixer was a sidebar that crushed the canvas on narrow viewports. Layout shifts occurred when switching between sections.
+
+**Decision.** Restructure the page as a fixed-height DAW-style layout: sticky header, fixed-height score canvas (45vh), tabbed panel area (Generator / Mixer / History / Export / Gallery), and sticky transport footer. Piano is a collapsible drawer toggled from the tab bar. Body is `height: 100vh; overflow: hidden` with internal scrolling only on `#daw-main`.
+
+**Consequences.**
+- Score canvas is always visible — no scrolling away from the visualization.
+- Tabs eliminate layout shifts: switching between Generator and Mixer doesn't move the canvas.
+- Piano is a toggle, not a tab — it slides in below the tab area without replacing tab content.
+- Mobile requires `@media` adjustments (canvas drops to 35vh, generator grid to 2 columns).
+- Old card-based layout and `#main-workspace` grid were removed entirely.
+
+**Alternatives.** Keep linear scroll with anchor links (still requires scrolling). Side-panel mixer (crushed canvas on mobile). Floating panels (overcomplicates vanilla CSS).
+
+---
+
+## ADR-022 · Settings persistence via localStorage
+
+**Status:** Accepted (Phase 10)
+
+**Context.** Users lost all mixer settings (volumes, pan, EQ, reverb, delay, chorus) and the active tab on page reload. Generator settings were partially preserved via URL params (`pushUrlState`), but mixer/effects state was ephemeral.
+
+**Decision.** Serialize all `settingsInputs` (generator + mixer), pan values, transpose, and the active tab name to `localStorage` under key `seedsong-settings`. Save on every input/change event and before unload. On load, restore from localStorage first, then apply URL params as overrides (URL is authoritative for generator params, localStorage for mixer/UI state).
+
+**Consequences.**
+- Mixer volumes, EQ, effects, and active tab survive reloads.
+- URL params (from shared links) override generator settings, ensuring shared URLs are deterministic.
+- The seed from URL takes precedence over localStorage to maintain shareability.
+- No server-side storage needed — all client-side.
+
+**Alternatives.** URL params for everything (URLs become unwieldy with 25+ params). IndexedDB (overkill for key-value settings). Cookie-based (size limits, sent on every request).
+
+---
+
+## ADR-023 · Opacity-based loading screen to prevent FOUC
+
+**Status:** Accepted (Phase 10)
+
+**Context.** The JS module is deferred (`type="module"`), so the browser renders the page with HTML defaults (Generator tab active, default input values, no song) before the module runs. This caused a visible flash of unstyled/wrong content (FOUC) — the wrong tab, wrong melody, and layout shifts.
+
+**Decision.** Set `<body style="opacity:0">` and `<html>` background to `#0f1117` (dark theme base). The module sets `body.style.opacity = '1'` via `requestAnimationFrame` after `loadSettings()` + `regenerateSong()` complete. The body is never visible in an intermediate state.
+
+**Consequences.**
+- Zero FOUC — the page appears fully initialized in one frame.
+- `html` background prevents a white flash during the invisible period.
+- No loader div or overlay needed — simpler DOM.
+- If the module fails to load, the body stays invisible. Acceptable tradeoff for a PWA that caches all assets.
+
+**Alternatives.** `visibility: hidden` (same effect but heavier inheritance chain). Loader overlay with `z-index` (required extra DOM, opacity fade showed intermediate states). Inline synchronous script for settings (would block parsing and delay first paint).
 
 ---
 

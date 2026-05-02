@@ -11,6 +11,28 @@ function distanceWeight(candidate, prev) {
   return 0.1;
 }
 
+function contourBias(candidate, prev, contour, progress) {
+  const dir = candidate - prev;
+  switch (contour) {
+    case 'ascending':
+      return dir > 0 ? 2.0 : dir === 0 ? 0.5 : 0.3;
+    case 'descending':
+      return dir < 0 ? 2.0 : dir === 0 ? 0.5 : 0.3;
+    case 'arc':
+      if (progress < 0.5) return dir > 0 ? 2.0 : 0.4;
+      return dir < 0 ? 2.0 : 0.4;
+    case 'wave': {
+      const phase = Math.sin(progress * Math.PI * 2);
+      if (phase > 0) return dir > 0 ? 1.8 : 0.5;
+      return dir < 0 ? 1.8 : 0.5;
+    }
+    case 'flat':
+      return Math.abs(dir) <= 2 ? 2.5 : 0.2;
+    default:
+      return 1.0;
+  }
+}
+
 function findActiveChord(progression, atBeat) {
   for (const c of progression) {
     if (atBeat >= c.startBeat && atBeat < c.startBeat + c.durationBeats) return c;
@@ -19,7 +41,7 @@ function findActiveChord(progression, atBeat) {
 }
 
 /** @param {() => number} rng @returns {{ midi: number, atBeat: number, durationBeats: number, velocity: number }[]} */
-export function generateMelody(rng, { progression, rhythm, scale, tonic, range = [tonic - 5, tonic + 14] }) {
+export function generateMelody(rng, { progression, rhythm, scale, tonic, range = [tonic - 5, tonic + 14], contour = 'auto' }) {
   const allowed = scaleNotes(tonic, scale, 4).filter(n => n >= range[0] && n <= range[1]);
   if (allowed.length === 0) throw new Error('Empty melody range; check tonic/scale/range');
 
@@ -33,6 +55,7 @@ export function generateMelody(rng, { progression, rhythm, scale, tonic, range =
     const isLast = i === rhythm.length - 1;
     const active = findActiveChord(progression, onset.atBeat);
     const chordPCs = active ? new Set(active.notes.map(pitchClass)) : null;
+    const progress = rhythm.length > 1 ? i / (rhythm.length - 1) : 0;
 
     let candidates = allowed;
     let weights;
@@ -54,6 +77,10 @@ export function generateMelody(rng, { progression, rhythm, scale, tonic, range =
       });
     } else {
       weights = candidates.map(c => distanceWeight(c, prev));
+    }
+
+    if (contour !== 'auto') {
+      weights = weights.map((w, idx) => w * contourBias(candidates[idx], prev, contour, progress));
     }
 
     const next = weighted(rng, candidates, weights);

@@ -1,4 +1,4 @@
-import { initEffects, getReverbSend, getDelaySend } from './Effects.js';
+import { initEffects, getReverbSend, getDelaySend, getChorusSend } from './Effects.js';
 
 let ctx = null;
 let masterGain = null;
@@ -18,8 +18,8 @@ export function getMasterGain() {
   return masterGain;
 }
 
-export { getReverbSend, getDelaySend };
-export { setReverbAmount, setDelayAmount } from './Effects.js';
+export { getReverbSend, getDelaySend, getChorusSend };
+export { setReverbAmount, setDelayAmount, setChorusAmount, setReverbPreset } from './Effects.js';
 
 export function setEQ(band, value) {
   const node = band === 'low' ? eqLow : band === 'mid' ? eqMid : eqHigh;
@@ -79,6 +79,7 @@ export async function init() {
     initEffects(ctx, compressor);
     masterGain.connect(getReverbSend());
     masterGain.connect(getDelaySend());
+    masterGain.connect(getChorusSend());
 
     primeIosUnlock();
   }

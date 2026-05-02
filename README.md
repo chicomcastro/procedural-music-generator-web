@@ -4,16 +4,20 @@
 
 [Try it live](https://chicomcastro.github.io/procedural-music-generator-web/) — no install, no sign-up.
 
-SeedSong generates procedural piano music right in your browser using the Web Audio API. Pick a scale, set a tempo, and let the algorithm compose melodies and chord progressions. Every song is determined by a seed number — share it and anyone can hear the exact same piece.
+SeedSong generates procedural music right in your browser using the Web Audio API. Pick a scale, set a tempo, choose a mood, and let the algorithm compose multi-section songs with melody, chords, bass, and drums. Every song is determined by a seed number — share it and anyone can hear the exact same piece.
 
 ## Features
 
+- **DAW-style layout** — fixed score canvas, tabbed controls (Generator / Mixer / History / Export / Gallery), sticky transport bar
+- **Multi-section songs** — intro, verse, chorus, outro with contrasting energy — not just looping phrases
 - **Playable piano** — click, touch, or use your keyboard (A–J white, W/E/T/Y/U black, Z/X to shift octave)
-- **Procedural generation** — weighted Markov walk over scale tones with chord-tone bias produces musical-sounding loops
-- **Genre presets** — Lo-fi, Jazz, Classical, Blues, Dark, Funk — one click sets tonic, scale, BPM, and bars
+- **Procedural generation** — weighted Markov walk over scale tones with chord-tone bias and selectable contour/rhythm templates
+- **Genre & mood presets** — Lo-fi, Jazz, Classical, Blues, Chill, Energetic, Dreamy — one click sets everything
+- **Full mixer console** — per-track volume, pan, mute/solo, 3-band EQ, reverb presets (room/hall/cathedral), delay, chorus
 - **Seed-based sharing** — same seed = same song. Share a URL and the recipient hears your exact melody with all settings
-- **MIDI + WAV export** — download your song to import into a DAW or use as an audio file
-- **Visualizer** — piano keys glow in real time as the scheduler triggers notes
+- **Multi-track MIDI + WAV export** — Format 1 MIDI with separate tracks per instrument, or render to WAV
+- **Score canvas editing** — click to select notes, drag to move, resize edges, delete with Backspace
+- **Settings persistence** — mixer volumes, EQ, effects, and active tab survive page reloads
 - **Zero dependencies** — vanilla JS, no build step, no npm
 
 ## Run locally
@@ -43,12 +47,12 @@ Vanilla JS with ES modules. No bundler, no framework, no dependencies — by des
 
 ```
 src/js/
-  audio/      AudioContext, sample loading, voices, click
+  audio/      AudioContext, sample loading, voices, effects, click
   theory/     Notes, scales, chords (pure functions)
   scheduler/  Lookahead scheduler + transport
   generate/   Progression, rhythm, melody, song (seedable PRNG)
-  export/     MIDI (Format 0) + WAV (16-bit PCM)
-  ui/         Piano rendering + keyboard input
+  export/     MIDI (Format 1 multi-track) + WAV (16-bit PCM)
+  ui/         Piano, score canvas, history, gallery, theme, shortcuts
 ```
 
 For the reasoning behind the key architectural decisions, see [`docs/decisions.md`](docs/decisions.md).
@@ -64,3 +68,4 @@ For the reasoning behind the key architectural decisions, see [`docs/decisions.m
 - [x] Phase 7 — Visualizer (keys glow as the scheduler triggers notes)
 - [x] Phase 8 — MIDI / WAV export
 - [x] Phase 9 — Product polish (branding, i18n, sharing, presets, responsive, a11y)
+- [x] Phase 10 — DAW layout, multi-section songs, mixer console, settings persistence

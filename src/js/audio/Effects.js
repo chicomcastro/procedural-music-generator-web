@@ -1,7 +1,18 @@
 let reverbSend = null;
 let delaySend = null;
+let chorusSend = null;
 let reverbGain = null;
 let delayGain = null;
+let chorusGain = null;
+let convolver = null;
+let effectsCtx = null;
+let effectsDest = null;
+
+const REVERB_PRESETS = {
+  room:       { duration: 0.8, decay: 3.5 },
+  hall:       { duration: 2.0, decay: 2.5 },
+  cathedral:  { duration: 4.0, decay: 1.8 },
+};
 
 function createConvolver(ctx, duration, decay) {
   const rate = ctx.sampleRate;
@@ -19,9 +30,12 @@ function createConvolver(ctx, duration, decay) {
 }
 
 export function initEffects(ctx, destination) {
+  effectsCtx = ctx;
+  effectsDest = destination;
+
   reverbGain = ctx.createGain();
   reverbGain.gain.value = 0;
-  const convolver = createConvolver(ctx, 2, 2.5);
+  convolver = createConvolver(ctx, 2, 2.5);
   reverbGain.connect(convolver);
   convolver.connect(destination);
 
@@ -41,12 +55,29 @@ export function initEffects(ctx, destination) {
   feedback.connect(delay);
   delayFilter.connect(destination);
 
+  chorusGain = ctx.createGain();
+  chorusGain.gain.value = 0;
+  const chorusDelay = ctx.createDelay(0.05);
+  chorusDelay.delayTime.value = 0.012;
+  const lfo = ctx.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.value = 1.5;
+  const lfoDepth = ctx.createGain();
+  lfoDepth.gain.value = 0.003;
+  lfo.connect(lfoDepth);
+  lfoDepth.connect(chorusDelay.delayTime);
+  lfo.start();
+  chorusGain.connect(chorusDelay);
+  chorusDelay.connect(destination);
+
   reverbSend = reverbGain;
   delaySend = delayGain;
+  chorusSend = chorusGain;
 }
 
 export function getReverbSend() { return reverbSend; }
 export function getDelaySend() { return delaySend; }
+export function getChorusSend() { return chorusSend; }
 
 export function setReverbAmount(val) {
   if (reverbGain) reverbGain.gain.value = val;
@@ -54,4 +85,24 @@ export function setReverbAmount(val) {
 
 export function setDelayAmount(val) {
   if (delayGain) delayGain.gain.value = val;
+}
+
+export function setChorusAmount(val) {
+  if (chorusGain) chorusGain.gain.value = val;
+}
+
+export function setReverbPreset(presetName) {
+  if (!effectsCtx || !effectsDest || !reverbGain) return;
+  const preset = REVERB_PRESETS[presetName];
+  if (!preset) return;
+  const oldConv = convolver;
+  convolver = createConvolver(effectsCtx, preset.duration, preset.decay);
+  reverbGain.disconnect(oldConv);
+  oldConv.disconnect();
+  reverbGain.connect(convolver);
+  convolver.connect(effectsDest);
+}
+
+export function getReverbPresetNames() {
+  return Object.keys(REVERB_PRESETS);
 }

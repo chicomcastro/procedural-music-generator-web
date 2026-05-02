@@ -20,7 +20,7 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.1 · Mood Presets
 
-**Status:** To do
+**Status:** Done
 **Priority:** P0 | **Size:** S
 
 **Context:** The existing genre presets (Lo-fi, Jazz, etc.) proved the concept works — one click transforms the whole feel. But they're genre-locked. Users want emotional/energy-based presets too.
@@ -37,7 +37,7 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.2 · Chord Progression Picker
 
-**Status:** To do
+**Status:** Done
 **Priority:** P0 | **Size:** S
 
 **Context:** Currently the chord progression is randomly selected from 6 hardcoded options in `PROGRESSIONS` (in `src/js/generate/progression.js`). The seed determines which one. Users can't choose or even see which progression is playing.
@@ -55,7 +55,7 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.3 · Song Structure (Sections)
 
-**Status:** To do
+**Status:** Done
 **Priority:** P0 | **Size:** L
 
 **Context:** Songs currently loop a single N-bar phrase forever. Real music has intro, verse, chorus, bridge, outro — sections with contrasting energy and melodic material. This is the single biggest upgrade for making generated music feel "real."
@@ -75,7 +75,7 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.4 · Melody Contour Control
 
-**Status:** To do
+**Status:** Done
 **Priority:** P1 | **Size:** M
 
 **Context:** `melody.js` uses `distanceWeight` to bias note selection toward or away from the previous note. But there's no directional control — melodies wander randomly within the scale.
@@ -93,7 +93,7 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.5 · Rhythm Pattern Templates
 
-**Status:** To do
+**Status:** Done
 **Priority:** P1 | **Size:** M
 
 **Context:** `rhythm.js` generates onset patterns with pure probability based on density. This produces usable but sometimes aimless rhythms. Real music uses recognizable rhythmic archetypes.
@@ -111,7 +111,7 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.6 · Lock/Unlock Bar Ranges
 
-**Status:** To do
+**Status:** Done
 **Priority:** P1 | **Size:** S
 
 **Context:** Users can click individual bars in the score canvas to lock them. With 8+ bars and song sections coming, clicking each bar is tedious. The lock workflow needs to scale.
@@ -128,7 +128,7 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.7 · More Voices + Per-Track Voice
 
-**Status:** To do
+**Status:** Done
 **Priority:** P1 | **Size:** M
 
 **Context:** Currently one voice applies globally (melody, chords, and live piano all use the same voice). `SynthVoice.js` already has piano, pad, pluck, bass, organ, strings, marimba, bell presets. But chords-as-pluck and melody-as-pluck is limiting.
@@ -164,7 +164,7 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.9 · Multi-Track MIDI Export
 
-**Status:** To do
+**Status:** Done
 **Priority:** P0 | **Size:** M
 
 **Context:** Current MIDI export uses Format 0 (single track, all events interleaved). DAW users importing the file get one track with melody, chords, bass, and drums mixed together — tedious to separate.
@@ -182,7 +182,7 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.10 · Score Canvas Note Editing
 
-**Status:** To do
+**Status:** Done
 **Priority:** P1 | **Size:** L
 
 **Context:** The score canvas currently displays notes read-only (with drag-to-rearrange within a bar). Users want to click a note to select it, drag to change pitch/time, and resize to change duration. This bridges Phase 1 into Phase 2.
@@ -222,7 +222,7 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ### 1.12 · Reverb Presets + Chorus Effect
 
-**Status:** To do
+**Status:** Done
 **Priority:** P2 | **Size:** M
 
 **Context:** Current reverb uses a single synthesized impulse response. No chorus/flanger effects. More variety in spatial effects would greatly expand the sonic palette.

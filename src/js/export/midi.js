@@ -17,12 +17,44 @@ function ascii(s) {
   return out;
 }
 
-/** @param {Object} song @param {{ bpm?: number, channel?: number }} [opts] @returns {Uint8Array} Standard MIDI File Format 0 */
-export function songToMidi(song, { bpm = 120, channel = 0 } = {}) {
+function writeUint32(v) {
+  return [(v >>> 24) & 0xFF, (v >>> 16) & 0xFF, (v >>> 8) & 0xFF, v & 0xFF];
+}
+
+function buildTrackNameEvent(name) {
+  const nameBytes = ascii(name);
+  return [...writeVLQ(0), 0xFF, 0x03, ...writeVLQ(nameBytes.length), ...nameBytes];
+}
+
+function buildEndOfTrack() {
+  return [...writeVLQ(0), 0xFF, 0x2F, 0x00];
+}
+
+function wrapTrack(data) {
+  return [...ascii('MTrk'), ...writeUint32(data.length), ...data];
+}
+
+function buildConductorTrack(bpm) {
+  const data = [];
+  // Track name
+  data.push(...buildTrackNameEvent('Tempo'));
+  // Tempo meta event
+  const microsPerQuarter = Math.round(60_000_000 / bpm);
+  data.push(...writeVLQ(0));
+  data.push(0xFF, 0x51, 0x03,
+    (microsPerQuarter >> 16) & 0xFF,
+    (microsPerQuarter >> 8) & 0xFF,
+    microsPerQuarter & 0xFF);
+  // End of track
+  data.push(...buildEndOfTrack());
+  return wrapTrack(data);
+}
+
+function buildNoteTrack(name, channel, events) {
   const ch = channel & 0x0F;
   const evs = [];
 
-  for (const ev of song.events) {
+  for (const ev of events) {
     const onTick = Math.round(ev.atBeat * PPQ);
     const offTick = Math.max(onTick + 1, Math.round((ev.atBeat + ev.durationBeats) * PPQ));
     const vel = Math.max(1, Math.min(127, Math.round((ev.velocity ?? 0.7) * 127)));
@@ -37,45 +69,69 @@ export function songToMidi(song, { bpm = 120, channel = 0 } = {}) {
     return a.kind === 'off' ? -1 : 1;
   });
 
-  const track = [];
+  const data = [];
+  // Track name
+  data.push(...buildTrackNameEvent(name));
+
   let lastTick = 0;
-
-  const microsPerQuarter = Math.round(60_000_000 / bpm);
-  track.push(...writeVLQ(0));
-  track.push(0xFF, 0x51, 0x03,
-    (microsPerQuarter >> 16) & 0xFF,
-    (microsPerQuarter >> 8) & 0xFF,
-    microsPerQuarter & 0xFF);
-
   for (const e of evs) {
     const delta = e.tick - lastTick;
     lastTick = e.tick;
-    track.push(...writeVLQ(delta));
+    data.push(...writeVLQ(delta));
     if (e.kind === 'on') {
-      track.push(0x90 | ch, e.midi, e.vel);
+      data.push(0x90 | ch, e.midi, e.vel);
     } else {
-      track.push(0x80 | ch, e.midi, 0);
+      data.push(0x80 | ch, e.midi, 0);
     }
   }
 
-  track.push(...writeVLQ(0));
-  track.push(0xFF, 0x2F, 0x00);
+  data.push(...buildEndOfTrack());
+  return wrapTrack(data);
+}
 
+/** @param {Object} song @param {{ bpm?: number }} [opts] @returns {Uint8Array} Standard MIDI File Format 1 (multi-track) */
+export function songToMidi(song, { bpm = 120 } = {}) {
+  const trackDefs = [
+    { name: 'Melody', channel: 0, type: 'melody' },
+    { name: 'Chords', channel: 1, type: 'chord' },
+    { name: 'Bass',   channel: 2, type: 'bass' },
+    { name: 'Drums',  channel: 9, type: 'drum' },
+  ];
+
+  // Group events by type
+  const eventsByType = {};
+  for (const ev of song.events) {
+    if (!eventsByType[ev.type]) eventsByType[ev.type] = [];
+    eventsByType[ev.type].push(ev);
+  }
+
+  const nTracks = 5; // conductor + 4 instrument tracks
+
+  // MThd header: Format 1, 5 tracks
   const header = [
     ...ascii('MThd'),
-    0, 0, 0, 6,
-    0, 0,
-    0, 1,
+    ...writeUint32(6),        // header length
+    0, 1,                     // format 1
+    (nTracks >> 8) & 0xFF, nTracks & 0xFF,
     (PPQ >> 8) & 0xFF, PPQ & 0xFF,
   ];
 
-  const trackHeader = [
-    ...ascii('MTrk'),
-    (track.length >>> 24) & 0xFF,
-    (track.length >>> 16) & 0xFF,
-    (track.length >>> 8) & 0xFF,
-    track.length & 0xFF,
+  const tracks = [
+    buildConductorTrack(bpm),
+    ...trackDefs.map(def =>
+      buildNoteTrack(def.name, def.channel, eventsByType[def.type] || [])
+    ),
   ];
 
-  return new Uint8Array([...header, ...trackHeader, ...track]);
+  // Concatenate everything
+  const totalLength = header.length + tracks.reduce((sum, t) => sum + t.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+
+  for (const byte of header) result[offset++] = byte;
+  for (const track of tracks) {
+    for (const byte of track) result[offset++] = byte;
+  }
+
+  return result;
 }

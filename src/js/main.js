@@ -1,4 +1,4 @@
-import { init, getContext, getMasterGain, getReverbSend, getDelaySend, setReverbAmount, setDelayAmount, setEQ, setMasterVolume, getTrackDest, setTrackPan } from './audio/AudioEngine.js';
+import { init, getContext, getMasterGain, getReverbSend, getDelaySend, getChorusSend, setReverbAmount, setDelayAmount, setChorusAmount, setReverbPreset, setEQ, setMasterVolume, getTrackDest, setTrackPan } from './audio/AudioEngine.js';
 import { loadAll, getPlaybackFor } from './audio/SampleLibrary.js';
 import { createVoice } from './audio/Voice.js';
 import { createSynthVoice } from './audio/SynthVoice.js';
@@ -72,13 +72,22 @@ const masterVolInput = document.getElementById('master-vol');
 const masterVolDisplay = document.getElementById('master-vol-display');
 const reverbInput = document.getElementById('reverb');
 const reverbDisplay = document.getElementById('reverb-display');
+const reverbPresetSelect = document.getElementById('reverb-preset');
 const delayInput = document.getElementById('delay');
 const delayDisplay = document.getElementById('delay-display');
+const chorusInput = document.getElementById('chorus');
+const chorusDisplay = document.getElementById('chorus-display');
 const recordBtn = document.getElementById('record-btn');
 const exportPreviewBtn = document.getElementById('export-preview');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
 const exportStatus = document.getElementById('export-status');
+const structureSelect = document.getElementById('structure');
+const contourSelect = document.getElementById('contour');
+const rhythmTemplateSelect = document.getElementById('rhythm-template');
+const lockAllBtn = document.getElementById('lock-all-btn');
+const unlockAllBtn = document.getElementById('unlock-all-btn');
+const invertLockBtn = document.getElementById('invert-lock-btn');
 
 /* ---- State ---- */
 let transposeSemitones = 0;
@@ -95,16 +104,34 @@ const recordedNotes = new Map();
 const recordedEvents = [];
 
 /* ---- Score canvas ---- */
+let lastClickedBar = -1;
 const scoreCanvas = createScoreCanvas(document.getElementById('score-canvas'), {
-  onBarClick(barIndex) {
-    if (lockedBars.has(barIndex)) {
+  onBarClick(barIndex, e) {
+    if (e && e.shiftKey && lastClickedBar >= 0 && currentSong) {
+      const from = Math.min(lastClickedBar, barIndex);
+      const to = Math.max(lastClickedBar, barIndex);
+      for (let b = from; b <= to; b++) {
+        lockedBars.add(b);
+        lockedBarEvents.set(b, getEventsForBar(currentSong, b));
+      }
+    } else if (lockedBars.has(barIndex)) {
       lockedBars.delete(barIndex);
       lockedBarEvents.delete(barIndex);
     } else if (currentSong) {
       lockedBars.add(barIndex);
       lockedBarEvents.set(barIndex, getEventsForBar(currentSong, barIndex));
     }
+    lastClickedBar = barIndex;
     scoreCanvas.setLockedBars(lockedBars);
+    if (currentSong) scoreCanvas.render(currentSong);
+  },
+  onBarLock(barIndex) {
+    if (!currentSong || barIndex < 0 || barIndex >= currentSong.bars) return;
+    lockedBars.add(barIndex);
+    lockedBarEvents.set(barIndex, getEventsForBar(currentSong, barIndex));
+    scoreCanvas.setLockedBars(lockedBars);
+  },
+  onNoteEdited() {
     if (currentSong) scoreCanvas.render(currentSong);
   },
 });
@@ -129,6 +156,7 @@ function applyUrlParams() {
   if (p.has('scale')) scaleSelect.value = p.get('scale');
   if (p.has('bars')) barsSelect.value = p.get('bars');
   if (p.has('voice')) voiceSelect.value = p.get('voice');
+  if (p.has('chordVoice')) chordVoiceSelect.value = p.get('chordVoice');
   if (p.has('density')) densityInput.value = p.get('density');
   if (p.has('swing')) swingInput.value = p.get('swing');
   if (p.has('velocity')) velocityInput.value = p.get('velocity');
@@ -137,6 +165,9 @@ function applyUrlParams() {
     transposeDisplay.textContent = transposeSemitones > 0 ? `+${transposeSemitones}` : String(transposeSemitones);
   }
   if (p.has('progression')) progressionSelect.value = p.get('progression');
+  if (p.has('structure')) structureSelect.value = p.get('structure');
+  if (p.has('contour')) contourSelect.value = p.get('contour');
+  if (p.has('rhythm')) rhythmTemplateSelect.value = p.get('rhythm');
   if (p.has('seed')) seedInput.value = p.get('seed');
   if (p.has('locked')) {
     pendingLockedBars = p.get('locked').split(',').map(Number).filter(n => !isNaN(n));
@@ -161,7 +192,14 @@ async function bootstrap() {
     const ctx = await init();
     await loadAll(ctx);
     ready = true;
-    document.getElementById('hero').classList.add('collapsed');
+    setReverbAmount(Number(reverbInput.value));
+    setDelayAmount(Number(delayInput.value));
+    setChorusAmount(Number(chorusInput.value));
+    setReverbPreset(reverbPresetSelect.value);
+    setEQ('low', Number(eqLowInput.value));
+    setEQ('mid', Number(eqMidInput.value));
+    setEQ('high', Number(eqHighInput.value));
+    setMasterVolume(Number(masterVolInput.value));
   } catch (err) {
     console.error(err);
   } finally {
@@ -170,8 +208,11 @@ async function bootstrap() {
   }
 }
 
+const chordVoiceSelect = document.getElementById('chord-voice');
+
 /* ---- Piano ---- */
 function getSelectedVoice() { return voiceSelect.value; }
+function getChordVoice() { return chordVoiceSelect.value; }
 
 const piano = createPiano(pianoEl, {
   startOctave: 1,
@@ -251,7 +292,7 @@ function scheduleNote(midi, when, durationSec, velocity, evType = 'melody', ev =
   if (evType === 'bass') {
     createSynthVoice(ctx, dest, { midi, velocity: vel, when, duration: durationSec, preset: 'bass' });
   } else {
-    const voice = getSelectedVoice();
+    const voice = evType === 'chord' ? getChordVoice() : getSelectedVoice();
     if (voice === 'piano') {
       const { buffer, playbackRate } = getPlaybackFor(midi);
       createVoice(ctx, dest, { buffer, playbackRate, velocity: vel, when, duration: durationSec, releaseTime: 0.25 });
@@ -330,10 +371,14 @@ function buildShareUrl() {
   url.searchParams.set('bars', barsSelect.value);
   if (progressionSelect.value !== 'auto') url.searchParams.set('progression', progressionSelect.value);
   if (voiceSelect.value !== 'piano') url.searchParams.set('voice', voiceSelect.value);
+  if (chordVoiceSelect.value !== 'pad') url.searchParams.set('chordVoice', chordVoiceSelect.value);
   if (densityInput.value !== '0.65') url.searchParams.set('density', densityInput.value);
   if (swingInput.value !== '0') url.searchParams.set('swing', swingInput.value);
   if (velocityInput.value !== '0.8') url.searchParams.set('velocity', velocityInput.value);
   if (transposeSemitones !== 0) url.searchParams.set('transpose', transposeSemitones);
+  if (structureSelect.value !== 'single') url.searchParams.set('structure', structureSelect.value);
+  if (contourSelect.value !== 'auto') url.searchParams.set('contour', contourSelect.value);
+  if (rhythmTemplateSelect.value !== 'auto') url.searchParams.set('rhythm', rhythmTemplateSelect.value);
   if (lockedBars.size > 0) url.searchParams.set('locked', [...lockedBars].sort((a, b) => a - b).join(','));
   return url.toString();
 }
@@ -361,6 +406,8 @@ function clearLockedBars() {
 function regenerateSong({ keepSeed = false } = {}) {
   const seed = keepSeed && seedInput.value !== '' ? Number(seedInput.value) >>> 0 : randomSeed();
   const progressionPreset = progressionSelect.value === 'auto' ? null : progressionSelect.value;
+  const contour = contourSelect.value === 'auto' ? 'auto' : contourSelect.value;
+  const rhythmTemplate = rhythmTemplateSelect.value === 'auto' ? 'auto' : rhythmTemplateSelect.value;
   const raw = generateSong({
     seed,
     tonic: 60 + Number(tonicSelect.value),
@@ -370,6 +417,9 @@ function regenerateSong({ keepSeed = false } = {}) {
     density: Number(densityInput.value),
     swing: Number(swingInput.value),
     progressionPreset,
+    contour,
+    rhythmTemplate,
+    structure: structureSelect.value,
   });
   currentSong = applyLockedBars(raw);
   if (transposeSemitones !== 0) currentSong.events.forEach(ev => { ev.midi += transposeSemitones; });
@@ -377,7 +427,8 @@ function regenerateSong({ keepSeed = false } = {}) {
   seedInput.value = String(seed);
   const lockInfo = lockedBars.size > 0 ? ` · ${lockedBars.size} locked` : '';
   const progLabel = progressionSelect.value === 'auto' ? currentSong.preset : progressionSelect.value;
-  songInfo.textContent = `seed ${seed} · ${progLabel} · ${currentSong.events.length} notes${lockInfo}`;
+  const sectionInfo = currentSong.sections ? ` · ${currentSong.sections.length} sections` : '';
+  songInfo.textContent = `seed ${seed} · ${progLabel} · ${currentSong.events.length} notes${sectionInfo}${lockInfo}`;
   pushUrlState();
 
   if (pendingLockedBars) {
@@ -400,6 +451,7 @@ function regenerateSong({ keepSeed = false } = {}) {
   setTimeout(() => { generateBtn.classList.remove('flash'); songInfo.classList.remove('flash'); }, 200);
 
   checkUnsaved();
+  saveSettings();
 }
 
 /* ---- Transpose ---- */
@@ -442,12 +494,43 @@ clickModeBtn.addEventListener('click', () => {
   clickModeBtn.title = CLICK_TITLES[mode];
 });
 
-[tonicSelect, scaleSelect, progressionSelect].forEach(sel =>
+[tonicSelect, scaleSelect, progressionSelect, contourSelect, rhythmTemplateSelect, structureSelect].forEach(sel =>
   sel.addEventListener('change', () => { clearActivePreset(); regenerateSong({ keepSeed: true }); })
 );
 
 barsSelect.addEventListener('change', () => { clearActivePreset(); clearLockedBars(); regenerateSong({ keepSeed: true }); });
 voiceSelect.addEventListener('change', () => { pushUrlState(); checkUnsaved(); });
+chordVoiceSelect.addEventListener('change', () => { pushUrlState(); checkUnsaved(); });
+
+lockAllBtn.addEventListener('click', () => {
+  if (!currentSong) return;
+  for (let b = 0; b < currentSong.bars; b++) {
+    lockedBars.add(b);
+    lockedBarEvents.set(b, getEventsForBar(currentSong, b));
+  }
+  scoreCanvas.setLockedBars(lockedBars);
+  scoreCanvas.render(currentSong);
+});
+
+unlockAllBtn.addEventListener('click', () => {
+  clearLockedBars();
+  if (currentSong) scoreCanvas.render(currentSong);
+});
+
+invertLockBtn.addEventListener('click', () => {
+  if (!currentSong) return;
+  for (let b = 0; b < currentSong.bars; b++) {
+    if (lockedBars.has(b)) {
+      lockedBars.delete(b);
+      lockedBarEvents.delete(b);
+    } else {
+      lockedBars.add(b);
+      lockedBarEvents.set(b, getEventsForBar(currentSong, b));
+    }
+  }
+  scoreCanvas.setLockedBars(lockedBars);
+  scoreCanvas.render(currentSong);
+});
 
 densityInput.addEventListener('input', (e) => {
   densityDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
@@ -492,6 +575,15 @@ reverbInput.addEventListener('input', (e) => {
 delayInput.addEventListener('input', (e) => {
   delayDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
   setDelayAmount(Number(e.target.value));
+});
+
+chorusInput.addEventListener('input', (e) => {
+  chorusDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
+  setChorusAmount(Number(e.target.value));
+});
+
+reverbPresetSelect.addEventListener('change', () => {
+  setReverbPreset(reverbPresetSelect.value);
 });
 
 for (const muteBtn of document.querySelectorAll('.mixer-mute')) {
@@ -576,6 +668,7 @@ for (const btn of presetBtns) {
     if (btn.dataset.voice) {
       voiceSelect.value = btn.dataset.voice;
     }
+    chordVoiceSelect.value = btn.dataset.chordVoice || 'pad';
     if (btn.dataset.velocity) {
       velocityInput.value = btn.dataset.velocity;
       velocityDisplay.textContent = `${Math.round(btn.dataset.velocity * 100)}%`;
@@ -590,15 +683,117 @@ for (const btn of presetBtns) {
       delayDisplay.textContent = `${Math.round(btn.dataset.delay * 100)}%`;
       setDelayAmount(Number(btn.dataset.delay));
     }
+    if (btn.dataset.structure) structureSelect.value = btn.dataset.structure;
+    contourSelect.value = btn.dataset.contour || 'auto';
+    rhythmTemplateSelect.value = btn.dataset.rhythm || 'auto';
     clearActivePreset();
     clearLockedBars();
     btn.classList.add('active');
     regenerateSong({ keepSeed: false });
+    saveSettings();
   });
 }
 
+/* ---- Settings persistence ---- */
+const SETTINGS_KEY = 'seedsong-settings';
+
+const settingsInputs = {
+  bpm: bpmInput, tonic: tonicSelect, scale: scaleSelect, bars: barsSelect,
+  beatsPerBar: beatsPerBarSelect, voice: voiceSelect, chordVoice: chordVoiceSelect,
+  density: densityInput, swing: swingInput, velocity: velocityInput,
+  progression: progressionSelect, structure: structureSelect, contour: contourSelect,
+  rhythmTemplate: rhythmTemplateSelect, seed: seedInput,
+  melodyVol: melodyVolInput, chordVol: chordVolInput, bassVol: bassVolInput,
+  drumVol: drumVolInput, clickVol: clickVolInput, masterVol: masterVolInput,
+  reverb: reverbInput, delay: delayInput, chorus: chorusInput,
+  reverbPreset: reverbPresetSelect,
+  eqLow: eqLowInput, eqMid: eqMidInput, eqHigh: eqHighInput,
+};
+
+function saveSettings() {
+  const data = {};
+  for (const [k, el] of Object.entries(settingsInputs)) data[k] = el.value;
+  data.transpose = transposeSemitones;
+  const pans = {};
+  for (const p of document.querySelectorAll('.mixer-pan')) {
+    pans[p.dataset.track] = p.value;
+  }
+  data.pans = pans;
+  const activeTab = document.querySelector('#tab-bar [aria-selected="true"]');
+  if (activeTab) data.activeTab = activeTab.dataset.panel;
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(data)); } catch {}
+}
+
+function loadSettings() {
+  let data;
+  try { data = JSON.parse(localStorage.getItem(SETTINGS_KEY)); } catch {}
+  if (!data) return false;
+  for (const [k, el] of Object.entries(settingsInputs)) {
+    if (data[k] != null) el.value = data[k];
+  }
+  if (data.transpose != null) {
+    transposeSemitones = data.transpose;
+    transposeDisplay.textContent = transposeSemitones > 0 ? `+${transposeSemitones}` : String(transposeSemitones);
+  }
+  if (data.pans) {
+    for (const [track, val] of Object.entries(data.pans)) {
+      const p = document.querySelector(`.mixer-pan[data-track="${track}"]`);
+      if (p) { p.value = val; setTrackPan(track, Number(val)); }
+    }
+  }
+  bpmDisplay.textContent = bpmInput.value;
+  transport.setBpm(Number(bpmInput.value));
+  transport.setBeatsPerBar(Number(beatsPerBarSelect.value));
+  densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
+  swingDisplay.textContent = `${Math.round(swingInput.value * 100)}%`;
+  velocityDisplay.textContent = `${Math.round(velocityInput.value * 100)}%`;
+  melodyVolDisplay.textContent = `${Math.round(melodyVolInput.value * 100)}%`;
+  chordVolDisplay.textContent = `${Math.round(chordVolInput.value * 100)}%`;
+  bassVolDisplay.textContent = `${Math.round(bassVolInput.value * 100)}%`;
+  drumVolDisplay.textContent = `${Math.round(drumVolInput.value * 100)}%`;
+  clickVolDisplay.textContent = `${Math.round(clickVolInput.value * 100)}%`;
+  masterVolDisplay.textContent = `${Math.round(masterVolInput.value * 100)}%`;
+  reverbDisplay.textContent = `${Math.round(reverbInput.value * 100)}%`;
+  delayDisplay.textContent = `${Math.round(delayInput.value * 100)}%`;
+  chorusDisplay.textContent = `${Math.round(chorusInput.value * 100)}%`;
+  const eqFmt = (v) => `${Number(v) > 0 ? '+' : ''}${v}`;
+  eqLowDisplay.textContent = eqFmt(eqLowInput.value);
+  eqMidDisplay.textContent = eqFmt(eqMidInput.value);
+  eqHighDisplay.textContent = eqFmt(eqHighInput.value);
+  if (data.activeTab) {
+    const tabBar = document.getElementById('tab-bar');
+    const tab = tabBar.querySelector(`[data-panel="${data.activeTab}"]`);
+    if (tab) {
+      for (const t of tabBar.querySelectorAll('[role="tab"]')) {
+        t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+      }
+      for (const p of document.querySelectorAll('.tab-panel')) {
+        p.classList.toggle('hidden', p.id !== `panel-${data.activeTab}`);
+      }
+    }
+  }
+  return true;
+}
+
+/* ---- Settings event listeners ---- */
+for (const el of Object.values(settingsInputs)) {
+  el.addEventListener('change', saveSettings);
+  el.addEventListener('input', saveSettings);
+}
+document.querySelectorAll('.mixer-pan').forEach(p => {
+  p.addEventListener('input', saveSettings);
+});
+window.addEventListener('beforeunload', saveSettings);
+
 /* ---- Initial song ---- */
-regenerateSong({ keepSeed: new URLSearchParams(window.location.search).has('seed') });
+{
+  const urlHasSeed = new URLSearchParams(window.location.search).has('seed');
+  loadSettings();
+  if (urlHasSeed) applyUrlParams();
+  regenerateSong({ keepSeed: urlHasSeed || seedInput.value !== '' });
+}
+
+requestAnimationFrame(() => { document.body.style.opacity = '1'; });
 
 /* ---- Player ---- */
 function updatePlayerUI() {
@@ -764,6 +959,7 @@ function currentSnapshot() {
     scale: scaleSelect.value,
     bars: barsSelect.value,
     voice: voiceSelect.value,
+    chordVoice: chordVoiceSelect.value,
     density: densityInput.value,
     swing: swingInput.value,
     velocity: velocityInput.value,
@@ -782,6 +978,7 @@ function loadEntry(e) {
   scaleSelect.value = e.scale;
   barsSelect.value = e.bars;
   voiceSelect.value = e.voice || 'piano';
+  chordVoiceSelect.value = e.chordVoice || 'pad';
   densityInput.value = e.density || '0.65';
   densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
   swingInput.value = e.swing || '0';
@@ -818,6 +1015,37 @@ initShortcuts({
 const tourBtn = document.getElementById('tour-btn');
 tourBtn.addEventListener('click', () => startOnboarding());
 if (shouldShowOnboarding()) startOnboarding();
+
+/* ---- Tab switching ---- */
+const tabBar = document.getElementById('tab-bar');
+tabBar.addEventListener('click', (e) => {
+  const tab = e.target.closest('[role="tab"]');
+  if (!tab) return;
+  const panelId = tab.dataset.panel;
+  if (!panelId) return;
+  for (const t of tabBar.querySelectorAll('[role="tab"]')) {
+    t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+  }
+  for (const p of document.querySelectorAll('.tab-panel')) {
+    p.classList.toggle('hidden', p.id !== `panel-${panelId}`);
+  }
+  saveSettings();
+});
+
+/* ---- Piano drawer toggle ---- */
+const pianoToggle = document.getElementById('piano-toggle');
+const pianoDrawer = document.getElementById('piano-drawer');
+pianoToggle.addEventListener('click', () => {
+  const open = pianoDrawer.classList.toggle('collapsed');
+  pianoToggle.setAttribute('aria-expanded', String(!open));
+});
+
+/* ---- ResizeObserver for score canvas ---- */
+const scoreCanvasEl = document.getElementById('score-canvas');
+const resizeObs = new ResizeObserver(() => {
+  if (currentSong) scoreCanvas.render(currentSong);
+});
+resizeObs.observe(scoreCanvasEl);
 
 /* ---- Visibility resume ---- */
 document.addEventListener('visibilitychange', () => {
