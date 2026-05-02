@@ -5,128 +5,154 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SeedSong — Procedural Music Generator</title>
-    <meta name="description" content="Generate infinite piano melodies from a single seed number. Play, tweak, and export to MIDI or WAV — no install, no sign-up.">
+    <meta name="description" content="Generate infinite melodies from a single seed number. Multi-section songs, full mixer, MIDI/WAV export — no install, no sign-up.">
     <meta property="og:title" content="SeedSong — Procedural Music Generator">
-    <meta property="og:description" content="Generate infinite piano melodies from a single seed. Play, tweak, share, and export to MIDI or WAV.">
+    <meta property="og:description" content="Generate infinite melodies from a single seed. Compose multi-section songs with a DAW-style interface — right in your browser.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://chicomcastro.github.io/procedural-music-generator-web/">
-    <meta name="twitter:card" content="summary">
+    <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="SeedSong — Procedural Music Generator">
-    <meta name="twitter:description" content="Generate infinite piano melodies from a single seed. Play, tweak, share, and export.">
+    <meta name="twitter:description" content="Generate infinite melodies from a single seed. Compose, mix, and export — right in your browser.">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: #1a1a2e;
-            color: #eee;
+            background: #0f1117;
+            color: #e0e0e0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
         }
 
         .hero {
             text-align: center;
-            padding: 80px 24px 60px;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 80px 24px 48px;
+            background: linear-gradient(180deg, #151820 0%, #0f1117 100%);
         }
 
         .hero h1 {
-            font-size: 48px;
-            color: #4a8;
-            letter-spacing: 0.03em;
+            font-size: 52px;
+            color: #5bba6f;
+            letter-spacing: 0.02em;
             margin-bottom: 12px;
         }
 
         .hero .tagline {
             font-size: 22px;
-            opacity: 0.9;
-            max-width: 500px;
+            opacity: 0.85;
+            max-width: 520px;
             margin: 0 auto 8px;
         }
 
         .hero .subtitle {
             font-size: 15px;
-            opacity: 0.5;
+            opacity: 0.45;
             margin-bottom: 32px;
         }
 
         .cta {
             display: inline-block;
-            background: #4a8;
+            background: #5bba6f;
             color: #fff;
             text-decoration: none;
-            padding: 14px 36px;
-            border-radius: 6px;
+            padding: 14px 40px;
+            border-radius: 8px;
             font-size: 18px;
             font-weight: 600;
             transition: transform 100ms, background 150ms;
         }
 
         .cta:hover {
-            background: #3b9;
+            background: #6dca80;
             transform: translateY(-2px);
         }
 
         .cta-hint {
             display: block;
-            margin-top: 10px;
+            margin-top: 12px;
             font-size: 13px;
-            opacity: 0.4;
+            opacity: 0.35;
+        }
+
+        .screenshots {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 48px 24px 0;
+        }
+
+        .screenshots img {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+        }
+
+        .screenshots img + img {
+            margin-top: 24px;
+        }
+
+        .screenshots .caption {
+            text-align: center;
+            font-size: 13px;
+            opacity: 0.35;
+            margin-top: 8px;
         }
 
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 24px;
-            max-width: 900px;
+            gap: 20px;
+            max-width: 960px;
             margin: 0 auto;
-            padding: 60px 24px;
+            padding: 64px 24px;
         }
 
         .feature {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 8px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 10px;
             padding: 24px;
         }
 
         .feature h3 {
-            color: #4a8;
-            font-size: 16px;
+            color: #5bba6f;
+            font-size: 15px;
             margin-bottom: 8px;
         }
 
         .feature p {
             font-size: 14px;
-            opacity: 0.7;
+            opacity: 0.6;
             line-height: 1.5;
         }
 
         .how-it-works {
-            background: rgba(0,0,0,0.2);
-            padding: 60px 24px;
+            background: rgba(255,255,255,0.02);
+            border-top: 1px solid rgba(255,255,255,0.04);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            padding: 64px 24px;
             text-align: center;
         }
 
         .how-it-works h2 {
             font-size: 24px;
-            margin-bottom: 32px;
-            opacity: 0.9;
+            margin-bottom: 36px;
+            opacity: 0.85;
         }
 
         .steps {
             display: flex;
             justify-content: center;
-            gap: 40px;
+            gap: 48px;
             flex-wrap: wrap;
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
         .step {
             flex: 1;
             min-width: 180px;
-            max-width: 220px;
+            max-width: 240px;
         }
 
         .step-number {
@@ -134,7 +160,7 @@
             width: 36px;
             height: 36px;
             line-height: 36px;
-            background: #4a8;
+            background: #5bba6f;
             color: #fff;
             border-radius: 50%;
             font-weight: bold;
@@ -149,20 +175,20 @@
 
         .step p {
             font-size: 13px;
-            opacity: 0.6;
+            opacity: 0.5;
         }
 
         .use-cases {
-            max-width: 700px;
+            max-width: 760px;
             margin: 0 auto;
-            padding: 60px 24px;
+            padding: 64px 24px;
             text-align: center;
         }
 
         .use-cases h2 {
             font-size: 24px;
-            margin-bottom: 24px;
-            opacity: 0.9;
+            margin-bottom: 28px;
+            opacity: 0.85;
         }
 
         .use-case-grid {
@@ -174,18 +200,19 @@
 
         .use-case {
             background: rgba(255,255,255,0.03);
-            border-radius: 6px;
-            padding: 16px;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 8px;
+            padding: 18px;
         }
 
         .use-case strong {
-            color: #4a8;
+            color: #5bba6f;
             font-size: 14px;
         }
 
         .use-case p {
             font-size: 13px;
-            opacity: 0.6;
+            opacity: 0.5;
             margin-top: 4px;
         }
 
@@ -198,17 +225,18 @@
             text-align: center;
             padding: 24px;
             font-size: 13px;
-            opacity: 0.3;
-            border-top: 1px solid rgba(255,255,255,0.06);
+            opacity: 0.25;
+            border-top: 1px solid rgba(255,255,255,0.04);
         }
 
-        footer a { color: #4a8; text-decoration: none; }
+        footer a { color: #5bba6f; text-decoration: none; }
 
         @media (max-width: 600px) {
-            .hero { padding: 48px 16px 40px; }
-            .hero h1 { font-size: 32px; }
+            .hero { padding: 48px 16px 32px; }
+            .hero h1 { font-size: 36px; }
             .hero .tagline { font-size: 18px; }
             .use-case-grid { grid-template-columns: 1fr; }
+            .steps { gap: 32px; }
         }
     </style>
 </head>
@@ -216,36 +244,50 @@
 <body>
     <section class="hero">
         <h1>SeedSong</h1>
-        <p class="tagline">Infinite piano melodies from a single seed number.</p>
-        <p class="subtitle">Generate, play, tweak, share, and export — right in your browser.</p>
+        <p class="tagline">Infinite melodies from a single seed number.</p>
+        <p class="subtitle">Compose multi-section songs, mix, and export — right in your browser.</p>
         <a href="app.html" class="cta">Open the app</a>
         <span class="cta-hint">No install. No sign-up. Works offline.</span>
+    </section>
+
+    <section class="screenshots">
+        <img src="screenshots/generator.png" alt="SeedSong generator view — score canvas showing a multi-section song with genre presets and generator controls" loading="lazy">
+        <img src="screenshots/mixer.png" alt="SeedSong mixer view — per-track volume faders, pan knobs, reverb, delay, chorus, and EQ" loading="lazy">
+        <p class="caption">DAW-style interface with tabbed controls, multi-section score, and full mixer console.</p>
     </section>
 
     <section class="features">
         <div class="feature">
             <h3>Seed-based generation</h3>
-            <p>Every melody is determined by a single number. Same seed, same song — always. Share a seed and anyone hears your exact piece.</p>
+            <p>Every song is determined by a single number. Same seed, same song — always. Share a URL and anyone hears your exact piece.</p>
+        </div>
+        <div class="feature">
+            <h3>Multi-section songs</h3>
+            <p>Intro, verse, chorus, outro — with contrasting energy, density, and dynamics. Not just looping phrases.</p>
+        </div>
+        <div class="feature">
+            <h3>Full mixer console</h3>
+            <p>Per-track volume, pan, mute/solo. Reverb presets, delay, chorus, 3-band EQ. All settings persist across reloads.</p>
+        </div>
+        <div class="feature">
+            <h3>Genre & mood presets</h3>
+            <p>Lo-fi, Jazz, Classical, Blues, Funk, Chill, Energetic, Dreamy — one click sets tonic, scale, tempo, density, and effects.</p>
+        </div>
+        <div class="feature">
+            <h3>Multi-track MIDI + WAV export</h3>
+            <p>Format 1 MIDI with separate tracks per instrument, or render to WAV — all client-side. Import directly into any DAW.</p>
+        </div>
+        <div class="feature">
+            <h3>Score canvas editing</h3>
+            <p>Click to select notes, drag to move, resize edges, delete with Backspace. Lock bars to preserve edits through regeneration.</p>
         </div>
         <div class="feature">
             <h3>Multiple voices</h3>
-            <p>Piano, Synth Pad, Pluck, Bass, Organ, and Strings — switch instruments in one click. Play the keyboard with any voice.</p>
-        </div>
-        <div class="feature">
-            <h3>Genre presets</h3>
-            <p>One-click presets for Lo-fi, Jazz, Classical, Blues, Dark, and Funk — instantly set the right tonic, scale, tempo, and feel.</p>
-        </div>
-        <div class="feature">
-            <h3>MIDI + WAV export</h3>
-            <p>Download your melody as a MIDI file to import into any DAW, or render to a WAV audio file — all client-side.</p>
-        </div>
-        <div class="feature">
-            <h3>Live visualizer</h3>
-            <p>Piano keys glow as notes play, and a piano-roll score shows melody and chord structure in real time.</p>
+            <p>Piano, Synth Pad, Pluck, E-Piano, Lead, Organ, Strings — independent melody and chord voices for timbral contrast.</p>
         </div>
         <div class="feature">
             <h3>Zero dependencies</h3>
-            <p>Pure vanilla JavaScript. No frameworks, no bundlers, no npm. Open source and easy to understand, fork, or extend.</p>
+            <p>Pure vanilla JavaScript. No frameworks, no bundlers, no npm. Open source and easy to fork or extend.</p>
         </div>
     </section>
 
@@ -255,17 +297,17 @@
             <div class="step">
                 <span class="step-number">1</span>
                 <h4>Pick a vibe</h4>
-                <p>Choose a preset or set tonic, scale, and tempo manually.</p>
+                <p>Choose a genre/mood preset, or dial in tonic, scale, contour, and rhythm manually.</p>
             </div>
             <div class="step">
                 <span class="step-number">2</span>
-                <h4>Generate</h4>
-                <p>The algorithm composes a melody with chord progressions using a seedable PRNG.</p>
+                <h4>Generate & tweak</h4>
+                <p>The algorithm composes a full song. Lock bars you like, edit notes, adjust the mix.</p>
             </div>
             <div class="step">
                 <span class="step-number">3</span>
                 <h4>Share or export</h4>
-                <p>Copy the URL to share your song, or export as MIDI/WAV.</p>
+                <p>Copy the URL to share your song, or export as multi-track MIDI or WAV.</p>
             </div>
         </div>
     </section>
@@ -274,16 +316,16 @@
         <h2>Use cases</h2>
         <div class="use-case-grid">
             <div class="use-case">
+                <strong>Composition starting point</strong>
+                <p>Generate ideas, lock what you like, edit the rest. Export to your DAW for further work.</p>
+            </div>
+            <div class="use-case">
                 <strong>Game dev</strong>
-                <p>Generate background music from a seed — deterministic and lightweight.</p>
+                <p>Generate background music from a seed — deterministic, lightweight, royalty-free.</p>
             </div>
             <div class="use-case">
                 <strong>Music education</strong>
-                <p>Explore scales, modes, and chord progressions interactively.</p>
-            </div>
-            <div class="use-case">
-                <strong>Inspiration</strong>
-                <p>Quickly sketch melodic ideas and export to your DAW for further work.</p>
+                <p>Explore scales, modes, chord progressions, and song structure interactively.</p>
             </div>
             <div class="use-case">
                 <strong>Creative coding</strong>
@@ -298,7 +340,7 @@
 
     <footer>
         <a href="https://github.com/chicomcastro/procedural-music-generator-web">GitHub</a>
-        &nbsp;·&nbsp; Built with vanilla JS + Web Audio API
+        &nbsp;&middot;&nbsp; Built with vanilla JS + Web Audio API
     </footer>
 </body>
 
