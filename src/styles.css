@@ -866,7 +866,8 @@ input[type="text"]:focus {
 
 /* ---- Share ---- */
 
-#share-btn {
+#share-btn,
+#share-image-btn {
   background: transparent;
   color: var(--accent);
   border: 1px solid var(--accent);
@@ -878,13 +879,15 @@ input[type="text"]:focus {
   transition: background-color 150ms, color 150ms, transform 150ms;
 }
 
-#share-btn:hover {
+#share-btn:hover,
+#share-image-btn:hover {
   background: var(--accent);
   color: #fff;
   transform: translateY(-1px);
 }
 
-#share-btn.copied {
+#share-btn.copied,
+#share-image-btn.copied {
   background: var(--accent);
   color: #fff;
 }
