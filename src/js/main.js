@@ -41,6 +41,7 @@ const songInfo = document.getElementById('song-info');
 const kbdOctaveDisplay = document.getElementById('kbd-octave');
 const shareBtn = document.getElementById('share-btn');
 const songNameInput = document.getElementById('song-name');
+const progressionSelect = document.getElementById('progression');
 const voiceSelect = document.getElementById('voice');
 const densityInput = document.getElementById('density');
 const densityDisplay = document.getElementById('density-display');
@@ -135,6 +136,7 @@ function applyUrlParams() {
     transposeSemitones = Number(p.get('transpose')) || 0;
     transposeDisplay.textContent = transposeSemitones > 0 ? `+${transposeSemitones}` : String(transposeSemitones);
   }
+  if (p.has('progression')) progressionSelect.value = p.get('progression');
   if (p.has('seed')) seedInput.value = p.get('seed');
   if (p.has('locked')) {
     pendingLockedBars = p.get('locked').split(',').map(Number).filter(n => !isNaN(n));
@@ -326,6 +328,7 @@ function buildShareUrl() {
   url.searchParams.set('tonic', tonicSelect.value);
   url.searchParams.set('scale', scaleSelect.value);
   url.searchParams.set('bars', barsSelect.value);
+  if (progressionSelect.value !== 'auto') url.searchParams.set('progression', progressionSelect.value);
   if (voiceSelect.value !== 'piano') url.searchParams.set('voice', voiceSelect.value);
   if (densityInput.value !== '0.65') url.searchParams.set('density', densityInput.value);
   if (swingInput.value !== '0') url.searchParams.set('swing', swingInput.value);
@@ -357,6 +360,7 @@ function clearLockedBars() {
 
 function regenerateSong({ keepSeed = false } = {}) {
   const seed = keepSeed && seedInput.value !== '' ? Number(seedInput.value) >>> 0 : randomSeed();
+  const progressionPreset = progressionSelect.value === 'auto' ? null : progressionSelect.value;
   const raw = generateSong({
     seed,
     tonic: 60 + Number(tonicSelect.value),
@@ -365,13 +369,15 @@ function regenerateSong({ keepSeed = false } = {}) {
     beatsPerBar: transport.beatsPerBar,
     density: Number(densityInput.value),
     swing: Number(swingInput.value),
+    progressionPreset,
   });
   currentSong = applyLockedBars(raw);
   if (transposeSemitones !== 0) currentSong.events.forEach(ev => { ev.midi += transposeSemitones; });
 
   seedInput.value = String(seed);
   const lockInfo = lockedBars.size > 0 ? ` · ${lockedBars.size} locked` : '';
-  songInfo.textContent = `seed ${seed} · ${currentSong.preset} · ${currentSong.events.length} notes${lockInfo}`;
+  const progLabel = progressionSelect.value === 'auto' ? currentSong.preset : progressionSelect.value;
+  songInfo.textContent = `seed ${seed} · ${progLabel} · ${currentSong.events.length} notes${lockInfo}`;
   pushUrlState();
 
   if (pendingLockedBars) {
@@ -436,7 +442,7 @@ clickModeBtn.addEventListener('click', () => {
   clickModeBtn.title = CLICK_TITLES[mode];
 });
 
-[tonicSelect, scaleSelect].forEach(sel =>
+[tonicSelect, scaleSelect, progressionSelect].forEach(sel =>
   sel.addEventListener('change', () => { clearActivePreset(); regenerateSong({ keepSeed: true }); })
 );
 
@@ -567,6 +573,23 @@ for (const btn of presetBtns) {
     densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
     swingInput.value = btn.dataset.swing || '0';
     swingDisplay.textContent = `${Math.round(swingInput.value * 100)}%`;
+    if (btn.dataset.voice) {
+      voiceSelect.value = btn.dataset.voice;
+    }
+    if (btn.dataset.velocity) {
+      velocityInput.value = btn.dataset.velocity;
+      velocityDisplay.textContent = `${Math.round(btn.dataset.velocity * 100)}%`;
+    }
+    if (btn.dataset.reverb) {
+      reverbInput.value = btn.dataset.reverb;
+      reverbDisplay.textContent = `${Math.round(btn.dataset.reverb * 100)}%`;
+      setReverbAmount(Number(btn.dataset.reverb));
+    }
+    if (btn.dataset.delay) {
+      delayInput.value = btn.dataset.delay;
+      delayDisplay.textContent = `${Math.round(btn.dataset.delay * 100)}%`;
+      setDelayAmount(Number(btn.dataset.delay));
+    }
     clearActivePreset();
     clearLockedBars();
     btn.classList.add('active');

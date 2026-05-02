@@ -225,13 +225,22 @@
     <section id="generator" aria-label="Song generator controls">
         <h2>Generator</h2>
         <div class="metronome-row" id="presets-row">
-            <span class="preset-label">Presets</span>
-            <button class="preset-btn" type="button" data-bpm="72" data-scale="pentatonic_minor" data-tonic="9" data-bars="4" data-time="4" data-density="0.5" data-swing="0.3">Lo-fi</button>
-            <button class="preset-btn" type="button" data-bpm="130" data-scale="mixolydian" data-tonic="7" data-bars="4" data-time="4" data-density="0.7" data-swing="0.4">Jazz</button>
-            <button class="preset-btn" type="button" data-bpm="108" data-scale="major" data-tonic="0" data-bars="8" data-time="4" data-density="0.6" data-swing="0">Classical</button>
-            <button class="preset-btn" type="button" data-bpm="90" data-scale="blues" data-tonic="4" data-bars="4" data-time="4" data-density="0.55" data-swing="0.5">Blues</button>
-            <button class="preset-btn" type="button" data-bpm="140" data-scale="natural_minor" data-tonic="9" data-bars="4" data-time="4" data-density="0.75" data-swing="0">Dark</button>
-            <button class="preset-btn" type="button" data-bpm="150" data-scale="dorian" data-tonic="2" data-bars="4" data-time="4" data-density="0.8" data-swing="0.2">Funk</button>
+            <span class="preset-label">Genre</span>
+            <button class="preset-btn" type="button" data-bpm="72" data-scale="pentatonic_minor" data-tonic="9" data-bars="4" data-time="4" data-density="0.5" data-swing="0.3" data-voice="piano" data-reverb="0.3" data-delay="0.15">Lo-fi</button>
+            <button class="preset-btn" type="button" data-bpm="130" data-scale="mixolydian" data-tonic="7" data-bars="4" data-time="4" data-density="0.7" data-swing="0.4" data-voice="piano" data-reverb="0.2" data-delay="0">Jazz</button>
+            <button class="preset-btn" type="button" data-bpm="108" data-scale="major" data-tonic="0" data-bars="8" data-time="4" data-density="0.6" data-swing="0" data-voice="piano" data-reverb="0.4" data-delay="0">Classical</button>
+            <button class="preset-btn" type="button" data-bpm="90" data-scale="blues" data-tonic="4" data-bars="4" data-time="4" data-density="0.55" data-swing="0.5" data-voice="piano" data-reverb="0.15" data-delay="0.1">Blues</button>
+            <button class="preset-btn" type="button" data-bpm="140" data-scale="natural_minor" data-tonic="9" data-bars="4" data-time="4" data-density="0.75" data-swing="0" data-voice="pluck" data-reverb="0.5" data-delay="0.2">Dark</button>
+            <button class="preset-btn" type="button" data-bpm="150" data-scale="dorian" data-tonic="2" data-bars="4" data-time="4" data-density="0.8" data-swing="0.2" data-voice="pluck" data-reverb="0.1" data-delay="0">Funk</button>
+        </div>
+        <div class="metronome-row" id="mood-presets-row">
+            <span class="preset-label">Mood</span>
+            <button class="preset-btn" type="button" data-bpm="65" data-scale="major" data-tonic="5" data-bars="4" data-time="4" data-density="0.35" data-swing="0.1" data-voice="pad" data-reverb="0.6" data-delay="0.2" data-velocity="0.5">Chill</button>
+            <button class="preset-btn" type="button" data-bpm="170" data-scale="major" data-tonic="7" data-bars="4" data-time="4" data-density="0.9" data-swing="0.15" data-voice="pluck" data-reverb="0.1" data-delay="0">Energetic</button>
+            <button class="preset-btn" type="button" data-bpm="76" data-scale="natural_minor" data-tonic="4" data-bars="4" data-time="3" data-density="0.4" data-swing="0" data-voice="strings" data-reverb="0.5" data-delay="0.1" data-velocity="0.6">Melancholic</button>
+            <button class="preset-btn" type="button" data-bpm="80" data-scale="lydian" data-tonic="5" data-bars="8" data-time="4" data-density="0.3" data-swing="0" data-voice="pad" data-reverb="0.7" data-delay="0.35" data-velocity="0.4">Dreamy</button>
+            <button class="preset-btn" type="button" data-bpm="160" data-scale="phrygian" data-tonic="4" data-bars="4" data-time="4" data-density="0.85" data-swing="0" data-voice="pluck" data-reverb="0.3" data-delay="0" data-velocity="0.95">Aggressive</button>
+            <button class="preset-btn" type="button" data-bpm="95" data-scale="pentatonic_major" data-tonic="7" data-bars="4" data-time="4" data-density="0.5" data-swing="0.3" data-voice="marimba" data-reverb="0.2" data-delay="0.15" data-velocity="0.6">Tropical</button>
         </div>
         <div class="metronome-row">
             <label for="tonic" data-tip="Root note of the scale">Tonic</label>
@@ -261,6 +270,16 @@
                 <option value="pentatonic_major">Pentatonic Major</option>
                 <option value="pentatonic_minor">Pentatonic Minor</option>
                 <option value="blues">Blues</option>
+            </select>
+            <label for="progression" data-tip="Chord progression pattern">Chords</label>
+            <select id="progression">
+                <option value="auto" selected>Auto (from seed)</option>
+                <option value="pop">I-V-vi-IV (Pop)</option>
+                <option value="fifties">I-vi-IV-V (50s)</option>
+                <option value="pachelbel">I-V-vi-iii-IV (Pachelbel)</option>
+                <option value="jazz_ii_V_I">ii-V-I (Jazz)</option>
+                <option value="minor_loop">i-VI-III-VII (Minor)</option>
+                <option value="twelve_bar">12-Bar Blues</option>
             </select>
             <label for="bars" data-tip="Length of the loop in bars">Bars</label>
             <select id="bars">

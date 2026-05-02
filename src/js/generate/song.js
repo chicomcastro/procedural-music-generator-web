@@ -12,10 +12,11 @@ export function generateSong({
   beatsPerBar = 4,
   density = 0.65,
   swing = 0,
+  progressionPreset = null,
 } = {}) {
   const rng = mulberry32(seed);
 
-  const { preset, chords } = generateProgression(rng, { tonic, scale, bars, beatsPerBar });
+  const { preset, chords } = generateProgression(rng, { tonic, scale, bars, beatsPerBar, preset: progressionPreset });
   const rhythm = generateRhythm(rng, { bars, beatsPerBar, density, swing });
   const melody = generateMelody(rng, {
     progression: chords,
