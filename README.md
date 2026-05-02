@@ -6,6 +6,10 @@
 
 SeedSong generates procedural music right in your browser using the Web Audio API. Pick a scale, set a tempo, choose a mood, and let the algorithm compose multi-section songs with melody, chords, bass, and drums. Every song is determined by a seed number — share it and anyone can hear the exact same piece.
 
+![Generator view — score canvas with multi-section song and generator controls](docs/screenshots/generator.png)
+
+![Mixer view — per-track volume faders, pan, effects, and EQ](docs/screenshots/mixer.png)
+
 ## Features
 
 - **DAW-style layout** — fixed score canvas, tabbed controls (Generator / Mixer / History / Export / Gallery), sticky transport bar
