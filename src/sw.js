@@ -1,4 +1,4 @@
-const CACHE_NAME = 'seedsong-v5';
+const CACHE_NAME = 'seedsong-v7';
 
 const ASSETS = [
   './',
@@ -10,6 +10,8 @@ const ASSETS = [
   './js/main.js',
   './js/audio/AudioEngine.js',
   './js/audio/Click.js',
+  './js/audio/DrumSynth.js',
+  './js/audio/Effects.js',
   './js/audio/SampleLibrary.js',
   './js/audio/SynthVoice.js',
   './js/audio/Voice.js',
@@ -26,8 +28,13 @@ const ASSETS = [
   './js/theory/chords.js',
   './js/theory/notes.js',
   './js/theory/scales.js',
+  './js/ui/Gallery.js',
+  './js/ui/History.js',
+  './js/ui/Onboarding.js',
   './js/ui/Piano.js',
   './js/ui/ScoreCanvas.js',
+  './js/ui/Shortcuts.js',
+  './js/ui/Theme.js',
   './sounds/A3.mp3',
   './sounds/Ab3.mp3',
   './sounds/B3.mp3',

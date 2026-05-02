@@ -33,6 +33,7 @@ function snapshotsMatch(a, b) {
 }
 
 export function checkUnsaved() {
+  if (!getSnapshot) return;
   const snap = getSnapshot();
   if (snapshotsMatch(snap, lastSavedSnapshot)) {
     saveHint.textContent = '';
