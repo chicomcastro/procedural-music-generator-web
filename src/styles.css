@@ -597,6 +597,73 @@ kbd {
   color: var(--bg);
 }
 
+/* ---- Track toggle buttons ---- */
+
+.score-track-toggles {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.track-toggle {
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 150ms, color 150ms, border-color 150ms, opacity 150ms;
+  position: relative;
+  padding-left: 20px;
+}
+
+.track-toggle::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0.3;
+}
+
+.track-toggle.active {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+
+.track-toggle.active::before {
+  opacity: 1;
+}
+
+.track-toggle[data-track="melody"]::before {
+  background: var(--melody-color);
+}
+
+.track-toggle[data-track="chord"]::before {
+  background: var(--chord-color);
+}
+
+.track-toggle[data-track="bass"]::before {
+  background: var(--bass-color);
+}
+
+.track-toggle:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+/* ---- Zoom controls ---- */
+
+.score-zoom-controls {
+  display: flex;
+  gap: 3px;
+  margin-left: 4px;
+}
+
 .score-hint {
   margin-top: 6px;
   font-size: 11px;
@@ -952,6 +1019,23 @@ input[type="text"]:focus {
   color: #fff;
 }
 
+.export-track-btn {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-hover);
+  padding: 4px 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: border-color 120ms, color 120ms, background-color 120ms, transform 120ms;
+}
+
+.export-track-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
 /* ---- Share ---- */
 
 #share-btn,
@@ -984,6 +1068,7 @@ input[type="text"]:focus {
 
 #export-midi,
 #export-wav,
+#export-musicxml,
 #export-preview {
   background: var(--accent);
   color: #fff;
@@ -998,6 +1083,7 @@ input[type="text"]:focus {
 
 #export-midi:hover,
 #export-wav:hover,
+#export-musicxml:hover,
 #export-preview:hover {
   background: var(--accent-hover);
   transform: translateY(-1px);
@@ -1006,6 +1092,7 @@ input[type="text"]:focus {
 
 #export-midi:disabled,
 #export-wav:disabled,
+#export-musicxml:disabled,
 #export-preview:disabled {
   opacity: 0.5;
   cursor: default;
@@ -1848,6 +1935,15 @@ input[type="text"]:focus {
     gap: 4px;
   }
 
+  .score-track-toggles {
+    gap: 4px;
+  }
+
+  .track-toggle {
+    font-size: 13px;
+    padding: 3px 10px 3px 20px;
+  }
+
   /* Tabs */
   #tab-bar {
     overflow-x: auto;
@@ -2033,11 +2129,17 @@ input[type="text"]:focus {
   #save-btn,
   #export-midi,
   #export-wav,
+  #export-musicxml,
   #export-preview,
   #share-btn,
   #share-image-btn {
     padding: 8px 14px;
     font-size: 15px;
+  }
+
+  .export-track-btn {
+    font-size: 14px;
+    padding: 4px 10px;
   }
 
   #seed {

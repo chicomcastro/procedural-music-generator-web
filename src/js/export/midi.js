@@ -89,14 +89,18 @@ function buildNoteTrack(name, channel, events) {
   return wrapTrack(data);
 }
 
-/** @param {Object} song @param {{ bpm?: number }} [opts] @returns {Uint8Array} Standard MIDI File Format 1 (multi-track) */
-export function songToMidi(song, { bpm = 120 } = {}) {
-  const trackDefs = [
+/** @param {Object} song @param {{ bpm?: number, tracks?: string[] }} [opts] @returns {Uint8Array} Standard MIDI File Format 1 (multi-track) */
+export function songToMidi(song, { bpm = 120, tracks: trackFilter } = {}) {
+  const allTrackDefs = [
     { name: 'Melody', channel: 0, type: 'melody' },
     { name: 'Chords', channel: 1, type: 'chord' },
     { name: 'Bass',   channel: 2, type: 'bass' },
     { name: 'Drums',  channel: 9, type: 'drum' },
   ];
+
+  const trackDefs = trackFilter
+    ? allTrackDefs.filter(def => trackFilter.includes(def.type))
+    : allTrackDefs;
 
   // Group events by type
   const eventsByType = {};
@@ -105,9 +109,9 @@ export function songToMidi(song, { bpm = 120 } = {}) {
     eventsByType[ev.type].push(ev);
   }
 
-  const nTracks = 5; // conductor + 4 instrument tracks
+  const nTracks = 1 + trackDefs.length; // conductor + instrument tracks
 
-  // MThd header: Format 1, 5 tracks
+  // MThd header: Format 1
   const header = [
     ...ascii('MThd'),
     ...writeUint32(6),        // header length
@@ -116,7 +120,7 @@ export function songToMidi(song, { bpm = 120 } = {}) {
     (PPQ >> 8) & 0xFF, PPQ & 0xFF,
   ];
 
-  const tracks = [
+  const midiTracks = [
     buildConductorTrack(bpm),
     ...trackDefs.map(def =>
       buildNoteTrack(def.name, def.channel, eventsByType[def.type] || [])
@@ -124,12 +128,12 @@ export function songToMidi(song, { bpm = 120 } = {}) {
   ];
 
   // Concatenate everything
-  const totalLength = header.length + tracks.reduce((sum, t) => sum + t.length, 0);
+  const totalLength = header.length + midiTracks.reduce((sum, t) => sum + t.length, 0);
   const result = new Uint8Array(totalLength);
   let offset = 0;
 
   for (const byte of header) result[offset++] = byte;
-  for (const track of tracks) {
+  for (const track of midiTracks) {
     for (const byte of track) result[offset++] = byte;
   }
 

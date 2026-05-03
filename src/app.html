@@ -43,7 +43,17 @@
                 <button id="lock-all-btn" type="button" class="bar-action-btn" title="Lock all bars">Lock All</button>
                 <button id="unlock-all-btn" type="button" class="bar-action-btn" title="Unlock all bars">Unlock All</button>
                 <button id="invert-lock-btn" type="button" class="bar-action-btn" title="Invert locked bars">Invert</button>
+                <div class="score-zoom-controls">
+                    <button id="zoom-in-btn" type="button" class="bar-action-btn" title="Zoom in (Ctrl+wheel)">+</button>
+                    <button id="zoom-out-btn" type="button" class="bar-action-btn" title="Zoom out (Ctrl+wheel)">−</button>
+                    <button id="zoom-reset-btn" type="button" class="bar-action-btn" title="Reset zoom">1:1</button>
+                </div>
                 <span id="song-info" class="hint" aria-live="polite"></span>
+            </div>
+            <div class="score-track-toggles">
+                <button class="track-toggle active" data-track="melody" type="button">Melody</button>
+                <button class="track-toggle active" data-track="chord" type="button">Chords</button>
+                <button class="track-toggle active" data-track="bass" type="button">Bass</button>
             </div>
         </section>
 
@@ -394,14 +404,22 @@
                     <div class="panel-header">
                         <div class="panel-title-group">
                             <span class="panel-title">Export</span>
-                            <span class="panel-badge">MIDI, WAV or preview clip</span>
+                            <span class="panel-badge">MIDI, WAV, MusicXML or preview clip</span>
                         </div>
                         <span id="export-status" class="panel-badge" aria-live="polite"></span>
                     </div>
                     <div class="gen-row">
                         <button id="export-midi" type="button">Export MIDI</button>
                         <button id="export-wav" type="button">Export WAV</button>
+                        <button id="export-musicxml" type="button">Export MusicXML</button>
                         <button id="export-preview" type="button">Preview Clip</button>
+                    </div>
+                    <div class="gen-row" style="margin-top:8px">
+                        <span class="preset-label">MIDI tracks</span>
+                        <button class="export-track-btn" data-track="melody" type="button">Melody</button>
+                        <button class="export-track-btn" data-track="chord" type="button">Chords</button>
+                        <button class="export-track-btn" data-track="bass" type="button">Bass</button>
+                        <button class="export-track-btn" data-track="drum" type="button">Drums</button>
                     </div>
                     <div class="panel-header" style="margin-top:12px">
                         <div class="panel-title-group">

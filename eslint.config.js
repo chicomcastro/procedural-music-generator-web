@@ -31,6 +31,7 @@ export default [
         Audio: 'readonly',
         Event: 'readonly',
         ClipboardItem: 'readonly',
+        TextEncoder: 'readonly',
         Date: 'readonly',
         Map: 'readonly',
         Set: 'readonly',

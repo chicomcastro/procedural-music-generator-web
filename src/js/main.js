@@ -9,6 +9,7 @@ import { createScheduler } from './scheduler/Scheduler.js';
 import { generateSong } from './generate/song.js';
 import { randomSeed } from './generate/rng.js';
 import { songToMidi } from './export/midi.js';
+import { songToMusicXML } from './export/musicxml.js';
 import { renderSongToBuffer, audioBufferToWav } from './export/wav.js';
 import { downloadBlob } from './export/download.js';
 import { createScoreCanvas } from './ui/ScoreCanvas.js';
@@ -81,6 +82,7 @@ const recordBtn = document.getElementById('record-btn');
 const exportPreviewBtn = document.getElementById('export-preview');
 const exportMidiBtn = document.getElementById('export-midi');
 const exportWavBtn = document.getElementById('export-wav');
+const exportMusicXmlBtn = document.getElementById('export-musicxml');
 const exportStatus = document.getElementById('export-status');
 const exportLogList = document.getElementById('export-log-list');
 const exportLogEmpty = document.getElementById('export-log-empty');
@@ -137,6 +139,44 @@ const scoreCanvas = createScoreCanvas(document.getElementById('score-canvas'), {
   onNoteEdited() {
     if (currentSong) scoreCanvas.render(currentSong);
   },
+});
+
+/* ---- Track visibility toggles ---- */
+const trackToggleBtns = document.querySelectorAll('.track-toggle');
+const visibleTrackSet = new Set(['melody', 'chord', 'bass']);
+
+for (const btn of trackToggleBtns) {
+  btn.addEventListener('click', () => {
+    const track = btn.dataset.track;
+    if (visibleTrackSet.has(track)) {
+      visibleTrackSet.delete(track);
+      btn.classList.remove('active');
+    } else {
+      visibleTrackSet.add(track);
+      btn.classList.add('active');
+    }
+    scoreCanvas.setVisibleTracks(new Set(visibleTrackSet));
+    if (currentSong) scoreCanvas.render(currentSong);
+  });
+}
+
+/* ---- Zoom controls ---- */
+const zoomInBtn = document.getElementById('zoom-in-btn');
+const zoomOutBtn = document.getElementById('zoom-out-btn');
+const zoomResetBtn = document.getElementById('zoom-reset-btn');
+
+zoomInBtn.addEventListener('click', () => {
+  const z = scoreCanvas.getZoom();
+  scoreCanvas.setZoom(z.zoomX * 1.3, z.zoomY);
+});
+
+zoomOutBtn.addEventListener('click', () => {
+  const z = scoreCanvas.getZoom();
+  scoreCanvas.setZoom(z.zoomX / 1.3, z.zoomY);
+});
+
+zoomResetBtn.addEventListener('click', () => {
+  scoreCanvas.resetZoom();
 });
 
 function getEventsForBar(song, barIndex) {
@@ -764,6 +804,7 @@ function saveSettings() {
   const data = {};
   for (const [k, el] of Object.entries(settingsInputs)) data[k] = el.value;
   data.transpose = transposeSemitones;
+  data.visibleTracks = [...visibleTrackSet];
   const pans = {};
   for (const p of document.querySelectorAll('.mixer-pan')) {
     pans[p.dataset.track] = p.value;
@@ -784,6 +825,14 @@ function loadSettings() {
   if (data.transpose != null) {
     transposeSemitones = data.transpose;
     transposeDisplay.textContent = transposeSemitones > 0 ? `+${transposeSemitones}` : String(transposeSemitones);
+  }
+  if (data.visibleTracks) {
+    visibleTrackSet.clear();
+    for (const t of data.visibleTracks) visibleTrackSet.add(t);
+    for (const btn of trackToggleBtns) {
+      btn.classList.toggle('active', visibleTrackSet.has(btn.dataset.track));
+    }
+    scoreCanvas.setVisibleTracks(new Set(visibleTrackSet));
   }
   if (data.pans) {
     for (const [track, val] of Object.entries(data.pans)) {
@@ -1027,6 +1076,33 @@ exportPreviewBtn.addEventListener('click', async () => {
   } finally {
     exportPreviewBtn.disabled = false;
   }
+});
+
+/* ---- Per-track MIDI export ---- */
+const TRACK_LABELS = { melody: 'Melody', chord: 'Chords', bass: 'Bass', drum: 'Drums' };
+for (const btn of document.querySelectorAll('.export-track-btn')) {
+  btn.addEventListener('click', () => {
+    if (!currentSong) return;
+    const track = btn.dataset.track;
+    const bytes = songToMidi(currentSong, { bpm: transport.bpm, tracks: [track] });
+    const label = TRACK_LABELS[track] || track;
+    downloadBlob(bytes, `song-${currentSong.seed}-${track}.mid`, 'audio/midi');
+    const sizeStr = `${(bytes.length / 1024).toFixed(1)} KB`;
+    exportStatus.textContent = `MIDI (${label}): ${sizeStr}`;
+    addExportEntry(`MIDI ${label}`, currentSong.seed, sizeStr);
+  });
+}
+
+/* ---- MusicXML export ---- */
+exportMusicXmlBtn.addEventListener('click', () => {
+  if (!currentSong) return;
+  const xmlStr = songToMusicXML(currentSong, { bpm: transport.bpm });
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(xmlStr);
+  downloadBlob(bytes, `song-${currentSong.seed}.musicxml`, 'application/vnd.recordare.musicxml+xml');
+  const sizeStr = `${(bytes.length / 1024).toFixed(1)} KB`;
+  exportStatus.textContent = `MusicXML: ${sizeStr}`;
+  addExportEntry('MusicXML', currentSong.seed, sizeStr);
 });
 
 /* ---- Share ---- */

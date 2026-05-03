@@ -1,12 +1,13 @@
 # SeedSong Product Backlog
 
-Two-phase roadmap to evolve SeedSong from a procedural music playground into an assisted composition tool.
+Three-phase roadmap to evolve SeedSong from a procedural music playground into an assisted composition tool.
 
-**Motivation:** The seed-based generation is the differentiator — no DAW does this. The locked-bars feature was the first step toward composition. This backlog extends that vision: first make exploration richer (Phase 1), then enable composing on top of generated material (Phase 2).
+**Motivation:** The seed-based generation is the differentiator — no DAW does this. The locked-bars feature was the first step toward composition. This backlog extends that vision: first make exploration richer (Phase 1), then enable multi-voice composition and professional export (Phase 2), then build a full arrangement editor (Phase 3).
 
 **Principles:**
 - Phase 1 is backward-compatible with the current single-page app
-- Phase 2 creates a separate entry point (`editor.html`) sharing JS modules
+- Phase 2 extends the app with multi-voice generation and sheet music visualization
+- Phase 3 creates a separate entry point (`editor.html`) sharing JS modules
 - No attempt to become a full DAW — the value is "seed → refine → export"
 - Quick wins first, structural changes after
 
@@ -237,13 +238,163 @@ Evolve the current exploration experience. Same interface, enhanced features.
 
 ---
 
-## Phase 2 — Assisted Composition Tool
+### 1.13 · Canvas Zoom & Piano Keyboard
+
+**Status:** In progress
+**Priority:** P0 | **Size:** M
+
+**Context:** The score canvas shows notes at a fixed zoom level. With longer songs and more sections, it's hard to see individual notes. There's also no pitch reference — users can't tell which note is which without playing it.
+
+**Objective:** Add horizontal and vertical zoom controls (Ctrl+wheel, Shift+wheel, buttons) with pan when zoomed. Render a vertical piano keyboard along the left edge of the canvas showing note names aligned with the pitch axis.
+
+**Implementation notes:**
+- Zoom state: `zoomX`, `zoomY`, `scrollOffsetX`, `scrollOffsetY`
+- Ctrl/Meta+wheel = zoom X, Shift+wheel = zoom Y, plain wheel = scroll when zoomed
+- Piano gutter: increase `pad.left`, draw white/black keys, label C notes
+- Auto-scroll during playback to keep playhead visible
+- Zoom buttons (+, -, 1:1) in score-bar-actions
+- File: `src/js/ui/ScoreCanvas.js`, `src/app.html`
+
+---
+
+### 1.14 · Track Visibility Toggles
+
+**Status:** In progress
+**Priority:** P0 | **Size:** S
+
+**Context:** The canvas shows melody, chords, and bass simultaneously. When analyzing a specific part, the other tracks are visual noise. Users need to isolate individual tracks.
+
+**Objective:** Add toggle buttons to show/hide melody, chords, and bass tracks on the score canvas. Active tracks are highlighted, inactive are hidden from rendering.
+
+**Implementation notes:**
+- `visibleTracks` Set in ScoreCanvas state
+- Toggle buttons with colored indicators matching track colors
+- Persist visibility state in localStorage settings
+- File: `src/js/ui/ScoreCanvas.js`, `src/app.html`, `src/js/main.js`
+
+---
+
+### 1.15 · Per-Track MIDI Export
+
+**Status:** In progress
+**Priority:** P0 | **Size:** S
+
+**Context:** Current MIDI export outputs all tracks in one file. Musicians often want just the melody or just the bass line to import into their DAW on a specific track.
+
+**Objective:** Add buttons to export individual MIDI tracks (melody, chords, bass, drums) as separate files. Reuse existing multi-track MIDI infrastructure with a track filter parameter.
+
+**Implementation notes:**
+- Add optional `tracks` filter to `songToMidi`
+- Per-track export buttons in Export panel
+- Log each export in export log
+- File: `src/js/export/midi.js`, `src/app.html`, `src/js/main.js`
+
+---
+
+### 1.16 · MusicXML Export
+
+**Status:** In progress
+**Priority:** P1 | **Size:** M
+
+**Context:** MusicXML is the standard interchange format for notation software (MuseScore, Finale, Sibelius). Exporting generated songs as MusicXML enables users to import into professional notation tools for further editing, printing, and arrangement.
+
+**Objective:** Export the generated song as a MusicXML file with separate parts for melody, chords, bass, and drums. Include proper pitch, duration, rest, key, time signature, and tempo information.
+
+**Implementation notes:**
+- New file: `src/js/export/musicxml.js`
+- Build XML with template literals (no library)
+- Duration-to-type mapping for standard note values + dotted notes
+- Fill gaps with rests, handle chord voicings with `<chord/>` tag
+- Drums use `<unpitched>` elements and percussion clef
+- File: `src/js/export/musicxml.js`, `src/app.html`, `src/js/main.js`
+
+---
+
+### 1.17 · Unified Panel Headers & Mobile Layout
+
+**Status:** Done
+**Priority:** P1 | **Size:** M
+
+**Context:** Tab panel headers (Mixer, History, Export, Gallery) had inconsistent styling. Mobile layout had horizontal overflow and tiny text.
+
+**Objective:** Standardize all panel headers with `.panel-header` pattern. Add export log with localStorage persistence. Improve mobile responsiveness with scaled-up fonts and transport dropdown.
+
+---
+
+## Phase 2 — Multi-Voice & Sheet Music
+
+Extend the generator with multi-voice (duet) capabilities and sheet music visualization.
+
+---
+
+### 2.1 · Duet / Multi-Voice Generation
+
+**Status:** To do
+**Priority:** P0 | **Size:** XL
+
+**Context:** Currently the generator produces a single melody line. Real compositions often have two or more independent melodic voices (duets, counterpoint). This is the single most requested feature for making SeedSong useful for actual composition.
+
+**Objective:** Allow generating a second melodic voice that complements the first. The second voice should follow counterpoint principles: contrary motion, consonant intervals, independent rhythm while sharing the harmonic framework.
+
+**Implementation notes:**
+- Extend `generateSong` to accept a `voices` parameter (1 or 2)
+- Second voice derives from `seed + offset` for related but independent material
+- Counterpoint rules: prefer 3rds/6ths, avoid parallel 5ths/octaves, contrary motion bias
+- Second voice uses a different octave range and voice preset
+- New track type: `melody2` alongside existing `melody`
+- Canvas renders both melodies with distinct colors
+- Mixer gets a second melody channel (MEL2)
+- Per-voice export in MIDI and MusicXML
+- File: `src/js/generate/melody.js`, `src/js/generate/song.js`, `src/js/audio/AudioEngine.js`
+
+---
+
+### 2.2 · Sheet Music Visualization
+
+**Status:** To do
+**Priority:** P0 | **Size:** XL
+
+**Context:** The piano roll is great for seeing rhythm and pitch patterns, but musicians think in standard notation. A sheet music view would make SeedSong immediately useful for practice, education, and composition.
+
+**Objective:** Render the generated song as standard music notation (treble/bass clef, note heads, stems, beams, rests, bar lines) in a new "Score" tab or as an alternative canvas view.
+
+**Implementation notes:**
+- New canvas-based renderer or SVG-based approach
+- Staff lines, clef symbols, key/time signatures
+- Note head shapes (whole, half, quarter, eighth, sixteenth)
+- Stems, flags, beams for grouped eighth/sixteenth notes
+- Rest symbols for gaps
+- Multiple staves: treble for melody, bass for bass, grand staff option
+- Separate parts view (one staff per instrument)
+- Could use a library like VexFlow or build from scratch
+- File: new `src/js/ui/SheetCanvas.js` or `src/js/ui/SheetMusic.js`
+
+---
+
+### 2.3 · Voice Independence Controls
+
+**Status:** To do
+**Priority:** P1 | **Size:** M
+
+**Context:** With two voices, users need control over how independent the second voice is — from tight harmony (thirds apart) to fully independent counterpoint.
+
+**Objective:** Add controls for voice 2: independence level (locked harmony → free counterpoint), interval preference, rhythm correlation with voice 1.
+
+**Implementation notes:**
+- Independence slider: 0 = parallel thirds, 1 = fully independent
+- Interval preference: select preferred intervals (3rds, 6ths, etc.)
+- Rhythm correlation: how much voice 2's rhythm mirrors voice 1
+- File: `src/js/generate/melody.js`, `src/app.html`
+
+---
+
+## Phase 3 — Assisted Composition Tool
 
 New `editor.html` view for arranging and refining generated material.
 
 ---
 
-### 2.1 · Editor View Scaffold
+### 3.1 · Editor View Scaffold
 
 **Status:** To do
 **Priority:** P0 | **Size:** L
@@ -261,7 +412,7 @@ New `editor.html` view for arranging and refining generated material.
 
 ---
 
-### 2.2 · Per-Section Seed & Parameters
+### 3.2 · Per-Section Seed & Parameters
 
 **Status:** To do
 **Priority:** P0 | **Size:** L
@@ -279,7 +430,7 @@ New `editor.html` view for arranging and refining generated material.
 
 ---
 
-### 2.3 · Piano Roll Note Editor
+### 3.3 · Piano Roll Note Editor
 
 **Status:** To do
 **Priority:** P0 | **Size:** XL
@@ -298,7 +449,7 @@ New `editor.html` view for arranging and refining generated material.
 
 ---
 
-### 2.4 · Undo/Redo History Stack
+### 3.4 · Undo/Redo History Stack
 
 **Status:** To do
 **Priority:** P0 | **Size:** M
@@ -316,7 +467,7 @@ New `editor.html` view for arranging and refining generated material.
 
 ---
 
-### 2.5 · Multi-Track Arrangement
+### 3.5 · Multi-Track Arrangement
 
 **Status:** To do
 **Priority:** P1 | **Size:** XL
@@ -334,7 +485,7 @@ New `editor.html` view for arranging and refining generated material.
 
 ---
 
-### 2.6 · Stem Export (WAV per Track)
+### 3.6 · Stem Export (WAV per Track)
 
 **Status:** To do
 **Priority:** P1 | **Size:** M
@@ -352,7 +503,7 @@ New `editor.html` view for arranging and refining generated material.
 
 ---
 
-### 2.7 · Section Copy/Paste & Variations
+### 3.7 · Section Copy/Paste & Variations
 
 **Status:** To do
 **Priority:** P2 | **Size:** M
@@ -370,7 +521,7 @@ New `editor.html` view for arranging and refining generated material.
 
 ---
 
-### 2.8 · Project Save/Load (JSON)
+### 3.8 · Project Save/Load (JSON)
 
 **Status:** To do
 **Priority:** P1 | **Size:** M
