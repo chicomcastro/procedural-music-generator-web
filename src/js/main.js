@@ -109,6 +109,11 @@ const recordedNotes = new Map();
 const recordedEvents = [];
 
 /* ---- Score canvas ---- */
+const canvasWrap = document.querySelector('.score-canvas-wrap');
+function updateLockedBarsUI() {
+  canvasWrap.classList.toggle('has-locked-bars', lockedBars.size > 0);
+}
+
 let lastClickedBar = -1;
 const scoreCanvas = createScoreCanvas(document.getElementById('score-canvas'), {
   onBarClick(barIndex, e) {
@@ -128,6 +133,7 @@ const scoreCanvas = createScoreCanvas(document.getElementById('score-canvas'), {
     }
     lastClickedBar = barIndex;
     scoreCanvas.setLockedBars(lockedBars);
+    updateLockedBarsUI();
     if (currentSong) scoreCanvas.render(currentSong);
   },
   onBarLock(barIndex) {
@@ -135,6 +141,7 @@ const scoreCanvas = createScoreCanvas(document.getElementById('score-canvas'), {
     lockedBars.add(barIndex);
     lockedBarEvents.set(barIndex, getEventsForBar(currentSong, barIndex));
     scoreCanvas.setLockedBars(lockedBars);
+    updateLockedBarsUI();
   },
   onNoteEdited() {
     if (currentSong) scoreCanvas.render(currentSong);
@@ -444,6 +451,7 @@ function clearLockedBars() {
   lockedBars.clear();
   lockedBarEvents.clear();
   scoreCanvas.setLockedBars(lockedBars);
+  updateLockedBarsUI();
 }
 
 function regenerateSong({ keepSeed = false } = {}) {
@@ -482,6 +490,7 @@ function regenerateSong({ keepSeed = false } = {}) {
       }
     }
     scoreCanvas.setLockedBars(lockedBars);
+    updateLockedBarsUI();
     pendingLockedBars = null;
   }
 
@@ -597,6 +606,7 @@ lockAllBtn.addEventListener('click', () => {
     lockedBarEvents.set(b, getEventsForBar(currentSong, b));
   }
   scoreCanvas.setLockedBars(lockedBars);
+  updateLockedBarsUI();
   scoreCanvas.render(currentSong);
 });
 
@@ -617,6 +627,7 @@ invertLockBtn.addEventListener('click', () => {
     }
   }
   scoreCanvas.setLockedBars(lockedBars);
+  updateLockedBarsUI();
   scoreCanvas.render(currentSong);
 });
 
@@ -1016,11 +1027,34 @@ clearExportLogBtn.addEventListener('click', () => {
 
 renderExportLog();
 
+/* ---- Export track selector ---- */
+const ALL_EXPORT_TRACKS = ['melody', 'chord', 'bass', 'drum'];
+
+function getSelectedExportTracks() {
+  const checks = document.querySelectorAll('.export-track-check input[type="checkbox"]');
+  const selected = [];
+  for (const cb of checks) {
+    if (cb.checked) selected.push(cb.value);
+  }
+  return selected;
+}
+
+document.getElementById('export-select-all').addEventListener('click', () => {
+  const checks = document.querySelectorAll('.export-track-check input[type="checkbox"]');
+  const allChecked = [...checks].every(cb => cb.checked);
+  for (const cb of checks) cb.checked = !allChecked;
+});
+
 /* ---- Export ---- */
 exportMidiBtn.addEventListener('click', () => {
   if (!currentSong) return;
-  const bytes = songToMidi(currentSong, { bpm: transport.bpm });
-  downloadBlob(bytes, `song-${currentSong.seed}.mid`, 'audio/midi');
+  const tracks = getSelectedExportTracks();
+  if (tracks.length === 0) { exportStatus.textContent = 'Select at least one track'; return; }
+  const opts = { bpm: transport.bpm };
+  if (tracks.length < ALL_EXPORT_TRACKS.length) opts.tracks = tracks;
+  const bytes = songToMidi(currentSong, opts);
+  const suffix = tracks.length < ALL_EXPORT_TRACKS.length ? `-${tracks.join('+')}` : '';
+  downloadBlob(bytes, `song-${currentSong.seed}${suffix}.mid`, 'audio/midi');
   const sizeStr = `${(bytes.length / 1024).toFixed(1)} KB`;
   exportStatus.textContent = `MIDI: ${sizeStr}`;
   addExportEntry('MIDI', currentSong.seed, sizeStr);
@@ -1028,15 +1062,21 @@ exportMidiBtn.addEventListener('click', () => {
 
 exportWavBtn.addEventListener('click', async () => {
   if (!currentSong) return;
+  const tracks = getSelectedExportTracks();
+  if (tracks.length === 0) { exportStatus.textContent = 'Select at least one track'; return; }
   await bootstrap();
   if (!ready) return;
   exportStatus.textContent = 'Rendering…';
   exportWavBtn.disabled = true;
   exportMidiBtn.disabled = true;
   try {
-    const buf = await renderSongToBuffer(currentSong, transport, { voice: getSelectedVoice() });
+    const songForExport = tracks.length < ALL_EXPORT_TRACKS.length
+      ? { ...currentSong, events: currentSong.events.filter(ev => tracks.includes(ev.type)) }
+      : currentSong;
+    const buf = await renderSongToBuffer(songForExport, transport, { voice: getSelectedVoice() });
     const wav = audioBufferToWav(buf);
-    downloadBlob(wav, `song-${currentSong.seed}.wav`, 'audio/wav');
+    const suffix = tracks.length < ALL_EXPORT_TRACKS.length ? `-${tracks.join('+')}` : '';
+    downloadBlob(wav, `song-${currentSong.seed}${suffix}.wav`, 'audio/wav');
     const sizeStr = `${(wav.length / 1024 / 1024).toFixed(2)} MB`;
     exportStatus.textContent = `WAV: ${sizeStr}`;
     addExportEntry('WAV', currentSong.seed, sizeStr);
@@ -1051,14 +1091,19 @@ exportWavBtn.addEventListener('click', async () => {
 
 exportPreviewBtn.addEventListener('click', async () => {
   if (!currentSong) return;
+  const tracks = getSelectedExportTracks();
+  if (tracks.length === 0) { exportStatus.textContent = 'Select at least one track'; return; }
   await bootstrap();
   if (!ready) return;
   exportStatus.textContent = 'Rendering preview…';
   exportPreviewBtn.disabled = true;
   try {
+    const filteredEvents = tracks.length < ALL_EXPORT_TRACKS.length
+      ? currentSong.events.filter(ev => tracks.includes(ev.type))
+      : currentSong.events;
     const previewSong = {
       ...currentSong,
-      events: currentSong.events.filter(ev => ev.atBeat < currentSong.beatsPerBar * 2),
+      events: filteredEvents.filter(ev => ev.atBeat < currentSong.beatsPerBar * 2),
       bars: Math.min(2, currentSong.bars),
       lengthBeats: currentSong.beatsPerBar * Math.min(2, currentSong.bars),
     };
@@ -1078,28 +1123,18 @@ exportPreviewBtn.addEventListener('click', async () => {
   }
 });
 
-/* ---- Per-track MIDI export ---- */
-const TRACK_LABELS = { melody: 'Melody', chord: 'Chords', bass: 'Bass', drum: 'Drums' };
-for (const btn of document.querySelectorAll('.export-track-btn')) {
-  btn.addEventListener('click', () => {
-    if (!currentSong) return;
-    const track = btn.dataset.track;
-    const bytes = songToMidi(currentSong, { bpm: transport.bpm, tracks: [track] });
-    const label = TRACK_LABELS[track] || track;
-    downloadBlob(bytes, `song-${currentSong.seed}-${track}.mid`, 'audio/midi');
-    const sizeStr = `${(bytes.length / 1024).toFixed(1)} KB`;
-    exportStatus.textContent = `MIDI (${label}): ${sizeStr}`;
-    addExportEntry(`MIDI ${label}`, currentSong.seed, sizeStr);
-  });
-}
-
 /* ---- MusicXML export ---- */
 exportMusicXmlBtn.addEventListener('click', () => {
   if (!currentSong) return;
-  const xmlStr = songToMusicXML(currentSong, { bpm: transport.bpm });
+  const tracks = getSelectedExportTracks();
+  if (tracks.length === 0) { exportStatus.textContent = 'Select at least one track'; return; }
+  const opts = { bpm: transport.bpm };
+  if (tracks.length < ALL_EXPORT_TRACKS.length) opts.tracks = tracks;
+  const xmlStr = songToMusicXML(currentSong, opts);
   const encoder = new TextEncoder();
   const bytes = encoder.encode(xmlStr);
-  downloadBlob(bytes, `song-${currentSong.seed}.musicxml`, 'application/vnd.recordare.musicxml+xml');
+  const suffix = tracks.length < ALL_EXPORT_TRACKS.length ? `-${tracks.join('+')}` : '';
+  downloadBlob(bytes, `song-${currentSong.seed}${suffix}.musicxml`, 'application/vnd.recordare.musicxml+xml');
   const sizeStr = `${(bytes.length / 1024).toFixed(1)} KB`;
   exportStatus.textContent = `MusicXML: ${sizeStr}`;
   addExportEntry('MusicXML', currentSong.seed, sizeStr);

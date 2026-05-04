@@ -204,6 +204,53 @@ export function createScoreCanvas(canvas, options = {}) {
     render(lastSong);
   }, { passive: false });
 
+  /* ---- Pinch-to-zoom (touch) ---- */
+  let pinchStartDist = 0;
+  let pinchStartZoomX = 1;
+  let pinchStartZoomY = 1;
+  let pinchCenterX = 0;
+  let pinchCenterY = 0;
+
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const t0 = e.touches[0], t1 = e.touches[1];
+      pinchStartDist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      pinchStartZoomX = zoomX;
+      pinchStartZoomY = zoomY;
+      const rect = canvas.getBoundingClientRect();
+      pinchCenterX = (t0.clientX + t1.clientX) / 2 - rect.left;
+      pinchCenterY = (t0.clientY + t1.clientY) / 2 - rect.top;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && pinchStartDist > 0) {
+      e.preventDefault();
+      const t0 = e.touches[0], t1 = e.touches[1];
+      const dist = Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY);
+      const scale = dist / pinchStartDist;
+
+      const oldZoomX = zoomX;
+      const oldZoomY = zoomY;
+      zoomX = clampZoom(pinchStartZoomX * scale);
+      zoomY = clampZoom(pinchStartZoomY * scale);
+
+      const relX = pinchCenterX - PIANO_GUTTER + scrollOffsetX;
+      scrollOffsetX = Math.max(0, relX * (zoomX / oldZoomX) - (pinchCenterX - PIANO_GUTTER));
+      const l = getLayout();
+      const relY = pinchCenterY - l.pad.top + scrollOffsetY;
+      scrollOffsetY = Math.max(0, relY * (zoomY / oldZoomY) - (pinchCenterY - l.pad.top));
+
+      clampScrollOffsets();
+      render(lastSong);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', () => {
+    pinchStartDist = 0;
+  });
+
   function clampScrollOffsets() {
     if (!lastSong) return;
     const l = getLayout();
@@ -330,13 +377,13 @@ export function createScoreCanvas(canvas, options = {}) {
     ctx.clip();
 
     for (let midi = minMidi; midi <= maxMidi; midi++) {
-      const ky = pad.top + scaledH - ((midi - minMidi) / midiRange) * scaledH - noteH / 2 - scrollOffsetY;
+      const ky = Math.round(pad.top + scaledH - ((midi - minMidi) / midiRange) * scaledH - noteH / 2 - scrollOffsetY);
       if (ky + noteH < pad.top || ky > pad.top + h) continue;
 
       const black = isBlackKey(midi);
       ctx.fillStyle = black
         ? (isLight ? '#2d2d2d' : '#1a1a1a')
-        : (isLight ? '#f0f0f0' : '#333');
+        : (isLight ? '#f0f0f0' : '#888');
       ctx.fillRect(0, ky, gutterRight, noteH);
 
       // key border
@@ -372,10 +419,10 @@ export function createScoreCanvas(canvas, options = {}) {
     ctx.rect(pad.left, pad.top, w, h);
     ctx.clip();
 
-    /* ---- C-note guide lines across full width ---- */
+    /* ---- C-note guide lines across full width (at boundary between B and C) ---- */
     for (let midi = minMidi; midi <= maxMidi; midi++) {
       if (midi % 12 !== 0) continue;
-      const gy = yMidi(midi) + noteH / 2;
+      const gy = Math.round(yMidi(midi) + noteH);
       if (gy < pad.top || gy > pad.top + h) continue;
       ctx.strokeStyle = `rgba(${gridBase},0.08)`;
       ctx.lineWidth = 1;
@@ -396,11 +443,11 @@ export function createScoreCanvas(canvas, options = {}) {
       ctx.fillRect(bx, pad.top, bw, h);
     }
 
-    /* ---- Grid lines ---- */
+    /* ---- Grid lines (pixel-snapped to match note positions) ---- */
     ctx.strokeStyle = `rgba(${gridBase},0.06)`;
     ctx.lineWidth = 1;
     for (let b = 0; b <= totalBeats; b++) {
-      const bx = xBeat(b);
+      const bx = Math.round(xBeat(b));
       if (bx < pad.left || bx > pad.left + w) continue;
       ctx.beginPath();
       ctx.moveTo(bx, pad.top);
@@ -410,7 +457,7 @@ export function createScoreCanvas(canvas, options = {}) {
 
     ctx.strokeStyle = `rgba(${gridBase},0.15)`;
     for (let b = 0; b <= totalBeats; b += song.beatsPerBar) {
-      const bx = xBeat(b);
+      const bx = Math.round(xBeat(b));
       if (bx < pad.left || bx > pad.left + w) continue;
       ctx.beginPath();
       ctx.moveTo(bx, pad.top);
@@ -447,9 +494,9 @@ export function createScoreCanvas(canvas, options = {}) {
     const pitchEvents = allPitchEvents.filter(e => visibleTracks.has(e.type));
 
     for (const ev of pitchEvents) {
-      const nx = xBeat(ev.atBeat);
-      const ny = yMidi(ev.midi);
-      const nw = Math.max(beatW * ev.durationBeats - 1, 2);
+      const nx = Math.round(xBeat(ev.atBeat));
+      const ny = Math.round(yMidi(ev.midi));
+      const nw = Math.max(Math.round(beatW * ev.durationBeats) - 1, 2);
 
       // Skip notes entirely outside viewport
       if (nx + nw < pad.left || nx > pad.left + w) continue;

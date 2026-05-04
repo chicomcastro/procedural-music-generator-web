@@ -213,16 +213,20 @@ function fillRestGap(gapBeats) {
 
 /**
  * @param {Object} song
- * @param {{ bpm?: number }} [opts]
+ * @param {{ bpm?: number, tracks?: string[] }} [opts]
  * @returns {string} MusicXML document string
  */
-export function songToMusicXML(song, { bpm = 120 } = {}) {
-  const partDefs = [
+export function songToMusicXML(song, { bpm = 120, tracks: trackFilter } = {}) {
+  const allPartDefs = [
     { id: 'P1', name: 'Melody', type: 'melody', drum: false },
     { id: 'P2', name: 'Chords', type: 'chord',  drum: false },
     { id: 'P3', name: 'Bass',   type: 'bass',   drum: false },
     { id: 'P4', name: 'Drums',  type: 'drum',   drum: true },
   ];
+
+  const partDefs = trackFilter
+    ? allPartDefs.filter(def => trackFilter.includes(def.type))
+    : allPartDefs;
 
   const eventsByType = {};
   for (const ev of song.events) {
