@@ -111,7 +111,7 @@ function getThemeColors() {
   const s = getComputedStyle(document.documentElement);
   return {
     melody: s.getPropertyValue('--melody-color').trim(),
-    melody2: s.getPropertyValue('--melody-color').trim(), // same as melody for now
+    melody2: s.getPropertyValue('--melody2-color').trim(),
     chord: s.getPropertyValue('--chord-color').trim(),
     bass: s.getPropertyValue('--bass-color').trim(),
     accent: s.getPropertyValue('--accent').trim(),
@@ -353,17 +353,8 @@ export function createSheetMusic(canvas, _options = {}) {
           .filter(e => e.atBeat >= measureStartBeat && e.atBeat < measureEndBeat)
           .sort((a, b) => a.atBeat - b.atBeat);
 
-        for (const ev of trebleInMeasure) {
-          const beatInMeasure = ev.atBeat - measureStartBeat;
-          const nx = mx + (beatInMeasure / beatsPerBar) * measureW + 10;
-          const pos = midiToStaffPos(ev.midi, 'treble');
-          const ny = staffPosToY(pos, trebleTopY);
-          const dur = quantizeDuration(Math.min(ev.durationBeats, measureEndBeat - ev.atBeat));
-          const acc = needsAccidental(ev.midi, fifths, measureAccTreble);
-          const color = ev.type === 'melody2' ? colors.melody2 : colors.melody;
-          const stemUp = pos < 6;
-          drawNote(ctx, nx, ny, dur, stemUp, acc, color, noteColor, pos, trebleTopY);
-        }
+        renderStaffNotes(ctx, trebleInMeasure, measureStartBeat, measureEndBeat, beatsPerBar,
+          mx, measureW, 'treble', trebleTopY, fifths, measureAccTreble, colors, noteColor);
 
         // Render notes - bass
         const measureAccBass = new Map();
@@ -371,17 +362,8 @@ export function createSheetMusic(canvas, _options = {}) {
           .filter(e => e.atBeat >= measureStartBeat && e.atBeat < measureEndBeat)
           .sort((a, b) => a.atBeat - b.atBeat);
 
-        for (const ev of bassInMeasure) {
-          const beatInMeasure = ev.atBeat - measureStartBeat;
-          const nx = mx + (beatInMeasure / beatsPerBar) * measureW + 10;
-          const pos = midiToStaffPos(ev.midi, 'bass');
-          const ny = staffPosToY(pos, bassTopY);
-          const dur = quantizeDuration(Math.min(ev.durationBeats, measureEndBeat - ev.atBeat));
-          const acc = needsAccidental(ev.midi, fifths, measureAccBass);
-          const color = ev.type === 'chord' ? colors.chord : colors.bass;
-          const stemUp = pos < 6;
-          drawNote(ctx, nx, ny, dur, stemUp, acc, color, noteColor, pos, bassTopY);
-        }
+        renderStaffNotes(ctx, bassInMeasure, measureStartBeat, measureEndBeat, beatsPerBar,
+          mx, measureW, 'bass', bassTopY, fifths, measureAccBass, colors, noteColor);
 
         // Measure number
         if (mi === 0 || measureIndex % 4 === 0) {
@@ -391,6 +373,76 @@ export function createSheetMusic(canvas, _options = {}) {
           ctx.textBaseline = 'bottom';
           ctx.fillText(String(measureIndex + 1), mx + 2, trebleTopY - 3);
         }
+      }
+    }
+  }
+
+  /**
+   * Render notes for one staff in a measure, grouping eighth/sixteenth notes into beams.
+   */
+  function renderStaffNotes(ctx, events, measureStartBeat, measureEndBeat, beatsPerBar,
+    mx, measureW, clef, staffTopY, fifths, measureAcc, colors, noteColor) {
+
+    // Build note data with positions
+    const noteData = [];
+    for (const ev of events) {
+      const beatInMeasure = ev.atBeat - measureStartBeat;
+      const nx = mx + (beatInMeasure / beatsPerBar) * measureW + 10;
+      const pos = midiToStaffPos(ev.midi, clef);
+      const ny = staffPosToY(pos, staffTopY);
+      const dur = quantizeDuration(Math.min(ev.durationBeats, measureEndBeat - ev.atBeat));
+      const isDotted = dur === 3 || dur === 1.5 || dur === 0.75;
+      const baseDur = isDotted ? dur / 1.5 : dur;
+      const acc = needsAccidental(ev.midi, fifths, measureAcc);
+      const color = ev.type === 'melody2' ? colors.melody2
+        : ev.type === 'melody' ? colors.melody
+        : ev.type === 'chord' ? colors.chord : colors.bass;
+      const stemUp = pos < 6;
+      noteData.push({ ev, x: nx, y: ny, pos, dur, baseDur, acc, color, stemUp, beatInMeasure });
+    }
+
+    // Group beamable notes (eighth/sixteenth) by beat
+    const beamGroups = [];
+    let currentGroup = [];
+    let currentBeat = -1;
+
+    for (const n of noteData) {
+      if (n.baseDur <= 0.5) {
+        const beat = Math.floor(n.beatInMeasure);
+        if (beat !== currentBeat && currentGroup.length > 0) {
+          beamGroups.push([...currentGroup]);
+          currentGroup = [];
+        }
+        currentGroup.push(n);
+        currentBeat = beat;
+      } else {
+        if (currentGroup.length > 0) {
+          beamGroups.push([...currentGroup]);
+          currentGroup = [];
+          currentBeat = -1;
+        }
+      }
+    }
+    if (currentGroup.length > 0) beamGroups.push(currentGroup);
+
+    // Mark beamed notes
+    const beamedSet = new Set();
+    for (const group of beamGroups) {
+      if (group.length >= 2) {
+        for (const n of group) beamedSet.add(n);
+      }
+    }
+
+    // Draw non-beamed notes
+    for (const n of noteData) {
+      const isBeamed = beamedSet.has(n);
+      drawNote(ctx, n.x, n.y, n.dur, n.stemUp, n.acc, n.color, noteColor, n.pos, staffTopY, isBeamed);
+    }
+
+    // Draw beams
+    for (const group of beamGroups) {
+      if (group.length >= 2) {
+        drawBeam(ctx, group, staffTopY, group[0].color);
       }
     }
   }
@@ -493,16 +545,18 @@ export function createSheetMusic(canvas, _options = {}) {
     ctx.fillText(bottomNum, x, line4Y);
   }
 
-  function drawNote(ctx, x, y, duration, stemUp, accidental, trackColor, noteColor, staffPos, staffTopY) {
-    const filled = duration <= 1;   // quarter and shorter = filled
-    const hasStem = duration < 4;   // whole = no stem
+  function drawNote(ctx, x, y, duration, stemUp, accidental, trackColor, noteColor, staffPos, staffTopY, beamGroup) {
+    // Base duration (without dot): 4->whole, 2->half, 1->quarter, 0.5->eighth, 0.25->16th
+    // Dotted: 3->dotted half, 1.5->dotted quarter, 0.75->dotted eighth
+    const isDotted = duration === 3 || duration === 1.5 || duration === 0.75;
+    const baseDur = isDotted ? duration / 1.5 : duration;
+    const filled = baseDur <= 1;
+    const hasStem = baseDur < 4;
     const hw = NOTE_HEAD_W / 2;
     const hh = NOTE_HEAD_H / 2;
 
-    // Draw ledger lines if needed
     drawLedgerLines(ctx, x, staffPos, staffTopY, noteColor);
 
-    // Draw accidental
     if (accidental) {
       ctx.fillStyle = noteColor;
       ctx.font = '12px serif';
@@ -515,49 +569,109 @@ export function createSheetMusic(canvas, _options = {}) {
     // Note head
     ctx.save();
     ctx.translate(x, y);
-    ctx.rotate(-0.15); // slight tilt
+    ctx.rotate(-0.15);
     ctx.beginPath();
-    ctx.ellipse(0, 0, hw, hh, 0, 0, Math.PI * 2);
-
-    if (filled) {
+    if (baseDur >= 4) {
+      // Whole note: wider, thinner oval with hollow center
+      ctx.ellipse(0, 0, hw * 1.2, hh, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = trackColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else if (filled) {
+      ctx.ellipse(0, 0, hw, hh, 0, 0, Math.PI * 2);
       ctx.fillStyle = trackColor;
       ctx.fill();
     } else {
+      // Half note: open head
+      ctx.ellipse(0, 0, hw, hh, 0, 0, Math.PI * 2);
       ctx.strokeStyle = trackColor;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.8;
       ctx.stroke();
     }
     ctx.restore();
+
+    // Dot
+    if (isDotted) {
+      ctx.fillStyle = trackColor;
+      ctx.beginPath();
+      const dotY = staffPos % 2 === 0 ? y - STAFF_SPACING / 4 : y;
+      ctx.arc(x + hw + 4, dotY, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Stem
     if (hasStem) {
       ctx.strokeStyle = trackColor;
       ctx.lineWidth = 1.2;
+      const sx = stemUp ? x + hw : x - hw;
+      const sy1 = y;
+      const sy2 = stemUp ? y - STEM_LENGTH : y + STEM_LENGTH;
       ctx.beginPath();
-      if (stemUp) {
-        ctx.moveTo(x + hw, y);
-        ctx.lineTo(x + hw, y - STEM_LENGTH);
-      } else {
-        ctx.moveTo(x - hw, y);
-        ctx.lineTo(x - hw, y + STEM_LENGTH);
-      }
+      ctx.moveTo(sx, sy1);
+      ctx.lineTo(sx, sy2);
       ctx.stroke();
 
-      // Flags for eighth and sixteenth
-      if (duration <= 0.5) {
-        const flagCount = duration <= 0.25 ? 2 : 1;
+      // Flags (only if not beamed)
+      if (baseDur <= 0.5 && !beamGroup) {
+        const flagCount = baseDur <= 0.25 ? 2 : 1;
         for (let f = 0; f < flagCount; f++) {
-          const fy = stemUp ? y - STEM_LENGTH + f * 6 : y + STEM_LENGTH - f * 6;
+          const fy = stemUp ? sy2 + f * 7 : sy2 - f * 7;
           const dir = stemUp ? 1 : -1;
-          const fx = stemUp ? x + hw : x - hw;
           ctx.strokeStyle = trackColor;
-          ctx.lineWidth = 1.2;
+          ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.moveTo(fx, fy);
-          ctx.quadraticCurveTo(fx + 8, fy + dir * 4, fx + 6, fy + dir * 10);
+          ctx.moveTo(sx, fy);
+          ctx.quadraticCurveTo(sx + 10, fy + dir * 5, sx + 7, fy + dir * 12);
           ctx.stroke();
         }
       }
+    }
+  }
+
+  /**
+   * Draw beam lines connecting a group of notes.
+   */
+  function drawBeam(ctx, notes, staffTopY, trackColor) {
+    if (notes.length < 2) return;
+    const hw = NOTE_HEAD_W / 2;
+    const stemUp = notes[0].stemUp;
+    const beamY = stemUp
+      ? Math.min(...notes.map(n => n.y)) - STEM_LENGTH
+      : Math.max(...notes.map(n => n.y)) + STEM_LENGTH;
+
+    // Draw stems to beam
+    ctx.strokeStyle = trackColor;
+    ctx.lineWidth = 1.2;
+    for (const n of notes) {
+      const sx = stemUp ? n.x + hw : n.x - hw;
+      ctx.beginPath();
+      ctx.moveTo(sx, n.y);
+      ctx.lineTo(sx, beamY);
+      ctx.stroke();
+    }
+
+    // Primary beam
+    const firstX = stemUp ? notes[0].x + hw : notes[0].x - hw;
+    const lastX = stemUp ? notes[notes.length - 1].x + hw : notes[notes.length - 1].x - hw;
+    ctx.strokeStyle = trackColor;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(firstX, beamY);
+    ctx.lineTo(lastX, beamY);
+    ctx.stroke();
+
+    // Secondary beam for sixteenth notes
+    const sixteenths = notes.filter(n => n.baseDur <= 0.25);
+    if (sixteenths.length >= 2) {
+      const dir = stemUp ? 1 : -1;
+      const secY = beamY + dir * 4;
+      const secFirstX = stemUp ? sixteenths[0].x + hw : sixteenths[0].x - hw;
+      const secLastX = stemUp ? sixteenths[sixteenths.length - 1].x + hw : sixteenths[sixteenths.length - 1].x - hw;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(secFirstX, secY);
+      ctx.lineTo(secLastX, secY);
+      ctx.stroke();
     }
   }
 
