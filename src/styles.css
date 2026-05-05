@@ -16,6 +16,7 @@
   --chord-color: rgba(74, 170, 136, 0.35);
   --locked-bg: rgba(74, 170, 136, 0.08);
   --bass-color: rgba(100, 149, 237, 0.5);
+  --melody2-color: rgba(199, 125, 255, 0.75);
   --key-white: #f0f0f0;
   --key-black: #1a1a1a;
   --danger: #f85149;
@@ -41,6 +42,7 @@
   --chord-color: rgba(45, 166, 114, 0.3);
   --locked-bg: rgba(45, 166, 114, 0.08);
   --bass-color: rgba(70, 120, 200, 0.5);
+  --melody2-color: rgba(155, 89, 182, 0.7);
   --key-white: #ffffff;
   --key-black: #2d2d2d;
   --danger: #cf222e;
@@ -176,6 +178,10 @@ button {
   background-color: #c2d8f5;
 }
 
+.key.glow.glow-melody2 {
+  background-color: #e0c2f5;
+}
+
 .key.black.glow {
   background-color: #6a5818;
 }
@@ -186,6 +192,10 @@ button {
 
 .key.black.glow.glow-bass {
   background-color: #1a3a5c;
+}
+
+.key.black.glow.glow-melody2 {
+  background-color: #4a1a5c;
 }
 
 .key.playing {
@@ -625,6 +635,52 @@ kbd {
   color: #fff;
 }
 
+/* ---- Sheet music canvas ---- */
+
+#sheet-music-canvas {
+  width: 100%;
+  height: 45vh;
+  min-height: 200px;
+  display: block;
+  border-radius: 8px;
+}
+
+/* ---- Score view toggle ---- */
+
+.score-view-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.score-view-btn {
+  font-size: 11px;
+  padding: 3px 12px;
+  border: none;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background-color 150ms, color 150ms;
+}
+
+.score-view-btn:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
+.score-view-btn:hover {
+  color: var(--text-primary);
+}
+
+.score-view-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 .score-bar-actions {
   display: flex;
   align-items: center;
@@ -687,6 +743,28 @@ kbd {
 
 .track-toggle[data-track="bass"]::before {
   background: var(--bass-color);
+}
+
+.track-toggle[data-track="melody2"]::before {
+  background: var(--melody2-color);
+}
+
+/* ---- Duet visibility ---- */
+
+.duet-only {
+  display: none !important;
+}
+
+.duet-enabled .duet-only {
+  display: flex !important;
+}
+
+.duet-enabled .duet-only.export-track-check {
+  display: flex !important;
+}
+
+.duet-enabled .duet-only.mixer-channel {
+  display: flex !important;
 }
 
 .track-toggle:hover {
@@ -1981,6 +2059,16 @@ input[type="text"]:focus {
   #score-canvas {
     height: 35vh;
     min-height: 150px;
+  }
+
+  #sheet-music-canvas {
+    height: 35vh;
+    min-height: 150px;
+  }
+
+  .score-view-btn {
+    font-size: 13px;
+    padding: 4px 12px;
   }
 
   .score-bar-actions {

@@ -92,10 +92,11 @@ function buildNoteTrack(name, channel, events) {
 /** @param {Object} song @param {{ bpm?: number, tracks?: string[] }} [opts] @returns {Uint8Array} Standard MIDI File Format 1 (multi-track) */
 export function songToMidi(song, { bpm = 120, tracks: trackFilter } = {}) {
   const allTrackDefs = [
-    { name: 'Melody', channel: 0, type: 'melody' },
-    { name: 'Chords', channel: 1, type: 'chord' },
-    { name: 'Bass',   channel: 2, type: 'bass' },
-    { name: 'Drums',  channel: 9, type: 'drum' },
+    { name: 'Melody',   channel: 0, type: 'melody' },
+    { name: 'Melody 2', channel: 3, type: 'melody2' },
+    { name: 'Chords',   channel: 1, type: 'chord' },
+    { name: 'Bass',     channel: 2, type: 'bass' },
+    { name: 'Drums',    channel: 9, type: 'drum' },
   ];
 
   const trackDefs = trackFilter

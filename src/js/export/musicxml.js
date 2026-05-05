@@ -218,10 +218,11 @@ function fillRestGap(gapBeats) {
  */
 export function songToMusicXML(song, { bpm = 120, tracks: trackFilter } = {}) {
   const allPartDefs = [
-    { id: 'P1', name: 'Melody', type: 'melody', drum: false },
-    { id: 'P2', name: 'Chords', type: 'chord',  drum: false },
-    { id: 'P3', name: 'Bass',   type: 'bass',   drum: false },
-    { id: 'P4', name: 'Drums',  type: 'drum',   drum: true },
+    { id: 'P1', name: 'Melody',   type: 'melody',  drum: false },
+    { id: 'P5', name: 'Melody 2', type: 'melody2', drum: false },
+    { id: 'P2', name: 'Chords',   type: 'chord',   drum: false },
+    { id: 'P3', name: 'Bass',     type: 'bass',     drum: false },
+    { id: 'P4', name: 'Drums',    type: 'drum',     drum: true },
   ];
 
   const partDefs = trackFilter

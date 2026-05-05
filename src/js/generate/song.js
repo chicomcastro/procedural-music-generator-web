@@ -2,6 +2,7 @@ import { mulberry32, randomSeed } from './rng.js';
 import { generateProgression } from './progression.js';
 import { generateRhythm } from './rhythm.js';
 import { generateMelody } from './melody.js';
+import { generateCounterpoint } from './counterpoint.js';
 
 function generateDrums(rng, { bars, beatsPerBar, density, beatOffset = 0 }) {
   const events = [];
@@ -54,6 +55,7 @@ function generateSectionEvents(rng, {
   tonic, scale, bars, beatsPerBar, density, swing,
   progressionPreset, contour, rhythmTemplate,
   beatOffset = 0, noDrums = false, velocityScale = 1,
+  duet = false, duetMode = 'parallel_thirds', duetIndependence = 0.5,
 }) {
   const { preset, chords } = generateProgression(rng, { tonic, scale, bars, beatsPerBar, preset: progressionPreset });
   const rhythm = generateRhythm(rng, { bars, beatsPerBar, density, swing, template: rhythmTemplate });
@@ -81,6 +83,22 @@ function generateSectionEvents(rng, {
       durationBeats: m.durationBeats,
       velocity: m.velocity * velocityScale,
     });
+  }
+
+  if (duet) {
+    const melody2 = generateCounterpoint(rng, {
+      melody, progression: chords, scale, tonic,
+      mode: duetMode, independence: duetIndependence,
+    });
+    for (const m of melody2) {
+      events.push({
+        type: 'melody2',
+        midi: m.midi,
+        atBeat: m.atBeat + beatOffset,
+        durationBeats: m.durationBeats,
+        velocity: m.velocity * velocityScale,
+      });
+    }
   }
 
   for (const c of chords) {
@@ -141,12 +159,16 @@ export function generateSong({
   contour = 'auto',
   rhythmTemplate = 'auto',
   structure = 'single',
+  duet = false,
+  duetMode = 'parallel_thirds',
+  duetIndependence = 0.5,
 } = {}) {
   if (structure === 'single') {
     const rng = mulberry32(seed);
     const result = generateSectionEvents(rng, {
       tonic, scale, bars, beatsPerBar, density, swing,
       progressionPreset, contour, rhythmTemplate,
+      duet, duetMode, duetIndependence,
     });
     result.events.sort((a, b) => a.atBeat - b.atBeat);
     return {
@@ -178,6 +200,7 @@ export function generateSong({
       beatOffset,
       noDrums: def.noDrums,
       velocityScale: def.velocityScale,
+      duet, duetMode, duetIndependence,
     });
 
     if (i === 0) firstPreset = result.preset;

@@ -13,6 +13,7 @@ import { songToMusicXML } from './export/musicxml.js';
 import { renderSongToBuffer, audioBufferToWav } from './export/wav.js';
 import { downloadBlob } from './export/download.js';
 import { createScoreCanvas } from './ui/ScoreCanvas.js';
+import { createSheetMusic } from './ui/SheetMusic.js';
 import { playDrumHit } from './audio/DrumSynth.js';
 import { initTheme } from './ui/Theme.js';
 import { initShortcuts } from './ui/Shortcuts.js';
@@ -93,6 +94,12 @@ const rhythmTemplateSelect = document.getElementById('rhythm-template');
 const lockAllBtn = document.getElementById('lock-all-btn');
 const unlockAllBtn = document.getElementById('unlock-all-btn');
 const invertLockBtn = document.getElementById('invert-lock-btn');
+const duetEnabledInput = document.getElementById('duet-enabled');
+const duetModeSelect = document.getElementById('duet-mode');
+const duetIndependenceInput = document.getElementById('duet-independence');
+const duetIndependenceDisplay = document.getElementById('duet-independence-display');
+const melody2VolInput = document.getElementById('melody2-vol');
+const melody2VolDisplay = document.getElementById('melody2-vol-display');
 
 /* ---- State ---- */
 let transposeSemitones = 0;
@@ -164,6 +171,7 @@ for (const btn of trackToggleBtns) {
     }
     scoreCanvas.setVisibleTracks(new Set(visibleTrackSet));
     if (currentSong) scoreCanvas.render(currentSong);
+    if (activeView === 'sheetmusic' && currentSong) renderSheetMusic();
   });
 }
 
@@ -185,6 +193,42 @@ zoomOutBtn.addEventListener('click', () => {
 zoomResetBtn.addEventListener('click', () => {
   scoreCanvas.resetZoom();
 });
+
+/* ---- Sheet Music view ---- */
+const scoreCanvasEl = document.getElementById('score-canvas');
+const sheetMusicCanvasEl = document.getElementById('sheet-music-canvas');
+const sheetMusic = createSheetMusic(sheetMusicCanvasEl);
+const viewPianoRollBtn = document.getElementById('view-pianoroll');
+const viewSheetMusicBtn = document.getElementById('view-sheetmusic');
+let activeView = 'pianoroll';
+
+viewPianoRollBtn.addEventListener('click', () => {
+  activeView = 'pianoroll';
+  scoreCanvasEl.style.display = '';
+  sheetMusicCanvasEl.style.display = 'none';
+  viewPianoRollBtn.classList.add('active');
+  viewSheetMusicBtn.classList.remove('active');
+  if (currentSong) scoreCanvas.render(currentSong);
+});
+
+viewSheetMusicBtn.addEventListener('click', () => {
+  activeView = 'sheetmusic';
+  scoreCanvasEl.style.display = 'none';
+  sheetMusicCanvasEl.style.display = '';
+  viewPianoRollBtn.classList.remove('active');
+  viewSheetMusicBtn.classList.add('active');
+  if (currentSong) renderSheetMusic();
+});
+
+function renderSheetMusic() {
+  sheetMusic.setVisibleTracks(new Set(visibleTrackSet));
+  sheetMusic.render(currentSong, {
+    bpm: transport.bpm,
+    beatsPerBar: Number(beatsPerBarSelect.value),
+    tonic: Number(document.getElementById('tonic').value),
+    scale: document.getElementById('scale').value,
+  });
+}
 
 function getEventsForBar(song, barIndex) {
   const start = barIndex * song.beatsPerBar;
@@ -221,6 +265,16 @@ function applyUrlParams() {
   if (p.has('seed')) seedInput.value = p.get('seed');
   if (p.has('locked')) {
     pendingLockedBars = p.get('locked').split(',').map(Number).filter(n => !isNaN(n));
+  }
+  if (p.has('duet')) {
+    duetEnabledInput.checked = p.get('duet') === '1';
+    document.getElementById('daw-main').classList.toggle('duet-enabled', duetEnabledInput.checked);
+    if (duetEnabledInput.checked) visibleTrackSet.add('melody2');
+  }
+  if (p.has('duetMode')) duetModeSelect.value = p.get('duetMode');
+  if (p.has('duetIndependence')) {
+    duetIndependenceInput.value = p.get('duetIndependence');
+    duetIndependenceDisplay.textContent = `${Math.round(duetIndependenceInput.value * 100)}%`;
   }
   bpmDisplay.textContent = bpmInput.value;
   densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
@@ -335,14 +389,15 @@ function scheduleNote(midi, when, durationSec, velocity, evType = 'melody', ev =
 
   const trackVol = evType === 'chord' ? Number(chordVolInput.value)
     : evType === 'bass' ? Number(bassVolInput.value)
+    : evType === 'melody2' ? Number(melody2VolInput.value)
     : Number(melodyVolInput.value);
   const vel = velocity * Number(velocityInput.value) * trackVol;
-  const dest = getTrackDest(evType === 'chord' ? 'chord' : evType === 'bass' ? 'bass' : 'melody');
+  const dest = getTrackDest(evType === 'melody2' ? 'melody2' : evType === 'chord' ? 'chord' : evType === 'bass' ? 'bass' : 'melody');
 
   if (evType === 'bass') {
     createSynthVoice(ctx, dest, { midi, velocity: vel, when, duration: durationSec, preset: 'bass' });
   } else {
-    const voice = evType === 'chord' ? getChordVoice() : getSelectedVoice();
+    const voice = evType === 'chord' ? getChordVoice() : evType === 'melody2' ? getSelectedVoice() : getSelectedVoice();
     if (voice === 'piano') {
       const { buffer, playbackRate } = getPlaybackFor(midi);
       createVoice(ctx, dest, { buffer, playbackRate, velocity: vel, when, duration: durationSec, releaseTime: 0.25 });
@@ -406,6 +461,7 @@ function onBeat(beat, when) {
     scheduleSongAtBeat(beatInSong, when);
     scoreCanvas.setPlayhead(beatInSong);
     scoreCanvas.render(currentSong);
+    if (activeView === 'sheetmusic') sheetMusic.setPlayhead(beatInSong);
     updateProgress(beatInSong);
   }
 }
@@ -429,6 +485,11 @@ function buildShareUrl() {
   if (structureSelect.value !== 'single') url.searchParams.set('structure', structureSelect.value);
   if (contourSelect.value !== 'auto') url.searchParams.set('contour', contourSelect.value);
   if (rhythmTemplateSelect.value !== 'auto') url.searchParams.set('rhythm', rhythmTemplateSelect.value);
+  if (duetEnabledInput.checked) {
+    url.searchParams.set('duet', '1');
+    url.searchParams.set('duetMode', duetModeSelect.value);
+    if (duetIndependenceInput.value !== '0.5') url.searchParams.set('duetIndependence', duetIndependenceInput.value);
+  }
   if (lockedBars.size > 0) url.searchParams.set('locked', [...lockedBars].sort((a, b) => a - b).join(','));
   return url.toString();
 }
@@ -471,6 +532,9 @@ function regenerateSong({ keepSeed = false } = {}) {
     contour,
     rhythmTemplate,
     structure: structureSelect.value,
+    duet: duetEnabledInput.checked,
+    duetMode: duetModeSelect.value,
+    duetIndependence: Number(duetIndependenceInput.value),
   });
   currentSong = applyLockedBars(raw);
   if (transposeSemitones !== 0) currentSong.events.forEach(ev => { ev.midi += transposeSemitones; });
@@ -495,6 +559,7 @@ function regenerateSong({ keepSeed = false } = {}) {
   }
 
   scoreCanvas.render(currentSong);
+  if (activeView === 'sheetmusic') renderSheetMusic();
   timeDisplay.textContent = `0:00 / ${formatTime(currentSong.lengthBeats * transport.beatDuration)}`;
   progressFill.style.width = '0%';
 
@@ -599,6 +664,35 @@ barsSelect.addEventListener('change', () => { clearActivePreset(); clearLockedBa
 voiceSelect.addEventListener('change', () => { pushUrlState(); checkUnsaved(); });
 chordVoiceSelect.addEventListener('change', () => { pushUrlState(); checkUnsaved(); });
 
+/* ---- Duet controls ---- */
+duetEnabledInput.addEventListener('change', () => {
+  document.getElementById('daw-main').classList.toggle('duet-enabled', duetEnabledInput.checked);
+  if (duetEnabledInput.checked) {
+    visibleTrackSet.add('melody2');
+    const m2Btn = document.querySelector('.track-toggle[data-track="melody2"]');
+    if (m2Btn) m2Btn.classList.add('active');
+    scoreCanvas.setVisibleTracks(new Set(visibleTrackSet));
+  } else {
+    visibleTrackSet.delete('melody2');
+    const m2Btn = document.querySelector('.track-toggle[data-track="melody2"]');
+    if (m2Btn) m2Btn.classList.remove('active');
+    scoreCanvas.setVisibleTracks(new Set(visibleTrackSet));
+  }
+  clearActivePreset();
+  regenerateSong({ keepSeed: true });
+});
+
+duetModeSelect.addEventListener('change', () => {
+  clearActivePreset();
+  regenerateSong({ keepSeed: true });
+});
+
+duetIndependenceInput.addEventListener('input', (e) => {
+  duetIndependenceDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
+  clearActivePreset();
+  regenerateSong({ keepSeed: true });
+});
+
 lockAllBtn.addEventListener('click', () => {
   if (!currentSong) return;
   for (let b = 0; b < currentSong.bars; b++) {
@@ -658,7 +752,7 @@ for (const [input, display, band] of [[eqLowInput, eqLowDisplay, 'low'], [eqMidI
   });
 }
 
-for (const [input, display] of [[melodyVolInput, melodyVolDisplay], [chordVolInput, chordVolDisplay], [bassVolInput, bassVolDisplay], [drumVolInput, drumVolDisplay], [clickVolInput, clickVolDisplay], [masterVolInput, masterVolDisplay]]) {
+for (const [input, display] of [[melodyVolInput, melodyVolDisplay], [melody2VolInput, melody2VolDisplay], [chordVolInput, chordVolDisplay], [bassVolInput, bassVolDisplay], [drumVolInput, drumVolDisplay], [clickVolInput, clickVolDisplay], [masterVolInput, masterVolDisplay]]) {
   input.addEventListener('input', (e) => {
     display.textContent = `${Math.round(e.target.value * 100)}%`;
   });
@@ -809,12 +903,15 @@ const settingsInputs = {
   reverb: reverbInput, delay: delayInput, chorus: chorusInput,
   reverbPreset: reverbPresetSelect,
   eqLow: eqLowInput, eqMid: eqMidInput, eqHigh: eqHighInput,
+  duetMode: duetModeSelect, duetIndependence: duetIndependenceInput,
+  melody2Vol: melody2VolInput,
 };
 
 function saveSettings() {
   const data = {};
   for (const [k, el] of Object.entries(settingsInputs)) data[k] = el.value;
   data.transpose = transposeSemitones;
+  data.duet = duetEnabledInput.checked;
   data.visibleTracks = [...visibleTrackSet];
   const pans = {};
   for (const p of document.querySelectorAll('.mixer-pan')) {
@@ -837,6 +934,11 @@ function loadSettings() {
     transposeSemitones = data.transpose;
     transposeDisplay.textContent = transposeSemitones > 0 ? `+${transposeSemitones}` : String(transposeSemitones);
   }
+  if (data.duet != null) {
+    duetEnabledInput.checked = data.duet;
+    document.getElementById('daw-main').classList.toggle('duet-enabled', data.duet);
+    if (data.duet) visibleTrackSet.add('melody2');
+  }
   if (data.visibleTracks) {
     visibleTrackSet.clear();
     for (const t of data.visibleTracks) visibleTrackSet.add(t);
@@ -858,6 +960,8 @@ function loadSettings() {
   swingDisplay.textContent = `${Math.round(swingInput.value * 100)}%`;
   velocityDisplay.textContent = `${Math.round(velocityInput.value * 100)}%`;
   melodyVolDisplay.textContent = `${Math.round(melodyVolInput.value * 100)}%`;
+  melody2VolDisplay.textContent = `${Math.round(melody2VolInput.value * 100)}%`;
+  duetIndependenceDisplay.textContent = `${Math.round(duetIndependenceInput.value * 100)}%`;
   chordVolDisplay.textContent = `${Math.round(chordVolInput.value * 100)}%`;
   bassVolDisplay.textContent = `${Math.round(bassVolInput.value * 100)}%`;
   drumVolDisplay.textContent = `${Math.round(drumVolInput.value * 100)}%`;
@@ -1028,7 +1132,7 @@ clearExportLogBtn.addEventListener('click', () => {
 renderExportLog();
 
 /* ---- Export track selector ---- */
-const ALL_EXPORT_TRACKS = ['melody', 'chord', 'bass', 'drum'];
+const ALL_EXPORT_TRACKS = ['melody', 'melody2', 'chord', 'bass', 'drum'];
 
 function getSelectedExportTracks() {
   const checks = document.querySelectorAll('.export-track-check input[type="checkbox"]');
@@ -1262,7 +1366,6 @@ pianoToggle.addEventListener('click', () => {
 });
 
 /* ---- ResizeObserver for score canvas ---- */
-const scoreCanvasEl = document.getElementById('score-canvas');
 const resizeObs = new ResizeObserver(() => {
   if (currentSong) scoreCanvas.render(currentSong);
 });

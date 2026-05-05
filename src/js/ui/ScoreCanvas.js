@@ -287,6 +287,7 @@ export function createScoreCanvas(canvas, options = {}) {
     const s = getComputedStyle(document.documentElement);
     return {
       melody: s.getPropertyValue('--melody-color').trim(),
+      melody2: s.getPropertyValue('--melody2-color').trim(),
       chord: s.getPropertyValue('--chord-color').trim(),
       bass: s.getPropertyValue('--bass-color').trim(),
       locked: s.getPropertyValue('--locked-bg').trim(),
@@ -502,7 +503,7 @@ export function createScoreCanvas(canvas, options = {}) {
       if (nx + nw < pad.left || nx > pad.left + w) continue;
       if (ny + noteH < pad.top || ny > pad.top + h) continue;
 
-      ctx.fillStyle = ev.type === 'chord' ? colors.chord : ev.type === 'bass' ? colors.bass : colors.melody;
+      ctx.fillStyle = ev.type === 'melody2' ? colors.melody2 : ev.type === 'chord' ? colors.chord : ev.type === 'bass' ? colors.bass : colors.melody;
       ctx.beginPath();
       ctx.roundRect(nx, ny, nw, noteH, 2);
       ctx.fill();

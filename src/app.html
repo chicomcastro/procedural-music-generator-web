@@ -40,6 +40,7 @@
         <section id="score-section" aria-label="Score visualization">
             <div class="score-canvas-wrap">
                 <canvas id="score-canvas" aria-label="Song score piano roll"></canvas>
+                <canvas id="sheet-music-canvas" aria-label="Sheet music notation" style="display:none"></canvas>
                 <div class="score-float-left" id="lock-controls">
                     <button id="lock-all-btn" type="button" class="score-float-btn" title="Lock all bars">Lock All</button>
                     <button id="unlock-all-btn" type="button" class="score-float-btn" title="Unlock all bars">Unlock All</button>
@@ -52,10 +53,15 @@
                 </div>
             </div>
             <div class="score-bar-actions">
+                <div class="score-view-toggle">
+                    <button id="view-pianoroll" type="button" class="score-view-btn active">Piano Roll</button>
+                    <button id="view-sheetmusic" type="button" class="score-view-btn">Sheet Music</button>
+                </div>
                 <div class="score-track-toggles">
                     <button class="track-toggle active" data-track="melody" type="button">Melody</button>
                     <button class="track-toggle active" data-track="chord" type="button">Chords</button>
                     <button class="track-toggle active" data-track="bass" type="button">Bass</button>
+                    <button class="track-toggle active duet-only" data-track="melody2" type="button">Melody 2</button>
                 </div>
                 <span id="song-info" class="hint" aria-live="polite"></span>
             </div>
@@ -200,6 +206,29 @@
                                 <button id="transpose-up" type="button" class="transpose-btn">+</button>
                             </div>
                         </div>
+                        <div class="gen-field">
+                            <label for="duet-enabled">Duet</label>
+                            <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                                <input id="duet-enabled" type="checkbox"> Enable
+                            </label>
+                        </div>
+                        <div class="gen-field duet-only">
+                            <label for="duet-mode">Counterpoint</label>
+                            <select id="duet-mode">
+                                <option value="parallel_thirds" selected>Parallel 3rds</option>
+                                <option value="parallel_sixths">Parallel 6ths</option>
+                                <option value="contrary">Contrary</option>
+                                <option value="call_response">Call &amp; Response</option>
+                                <option value="free">Free</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="gen-sliders duet-only" style="margin-bottom:0">
+                        <div class="gen-slider">
+                            <label for="duet-independence">Independence</label>
+                            <input id="duet-independence" type="range" min="0" max="1" step="0.1" value="0.5">
+                            <span id="duet-independence-display">50%</span>
+                        </div>
                     </div>
                     <div class="gen-sliders">
                         <div class="gen-slider">
@@ -260,6 +289,22 @@
                                 <div class="mixer-btn-row">
                                     <button class="mixer-mute" type="button" aria-label="Mute melody">M</button>
                                     <button class="mixer-solo" type="button" aria-label="Solo melody">S</button>
+                                </div>
+                            </div>
+                            <div class="mixer-channel duet-only" data-ch="melody2">
+                                <span class="mixer-ch-label">ML2</span>
+                                <div class="mixer-pan-wrap">
+                                    <span class="mixer-pan-label">L</span>
+                                    <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="melody2" aria-label="Melody 2 pan">
+                                    <span class="mixer-pan-label">R</span>
+                                </div>
+                                <div class="mixer-fader-wrap">
+                                    <input id="melody2-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.85" aria-label="Melody 2 volume">
+                                </div>
+                                <span id="melody2-vol-display" class="mixer-val">85%</span>
+                                <div class="mixer-btn-row">
+                                    <button class="mixer-mute" type="button" aria-label="Mute melody 2">M</button>
+                                    <button class="mixer-solo" type="button" aria-label="Solo melody 2">S</button>
                                 </div>
                             </div>
                             <div class="mixer-channel" data-ch="chord">
@@ -418,6 +463,7 @@
                         <label class="export-track-check"><input type="checkbox" value="chord" checked> Chords</label>
                         <label class="export-track-check"><input type="checkbox" value="bass" checked> Bass</label>
                         <label class="export-track-check"><input type="checkbox" value="drum" checked> Drums</label>
+                        <label class="export-track-check duet-only"><input type="checkbox" value="melody2" checked> Melody 2</label>
                         <button id="export-select-all" type="button" class="export-all-btn">All</button>
                     </div>
                     <div class="gen-row">
