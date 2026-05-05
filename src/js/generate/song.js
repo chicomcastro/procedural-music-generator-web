@@ -87,8 +87,9 @@ function generateSectionEvents(rng, {
 
   if (duet) {
     const melody2 = generateCounterpoint(rng, {
-      melody, progression: chords, scale, tonic,
+      melody, scale, tonic,
       mode: duetMode, independence: duetIndependence,
+      bars, beatsPerBar, density, swing, rhythmTemplate,
     });
     for (const m of melody2) {
       events.push({
