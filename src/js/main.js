@@ -41,6 +41,8 @@ const seedInput = document.getElementById('seed');
 const songInfo = document.getElementById('song-info');
 const kbdOctaveDisplay = document.getElementById('kbd-octave');
 const shareBtn = document.getElementById('share-btn');
+const scoreRandomizeBtn = document.getElementById('score-randomize-btn');
+const scoreShareBtn = document.getElementById('score-share-btn');
 const songNameInput = document.getElementById('song-name');
 const progressionSelect = document.getElementById('progression');
 const voiceSelect = document.getElementById('voice');
@@ -681,7 +683,12 @@ function regenerateSong({ keepSeed = false } = {}) {
 
   generateBtn.classList.add('flash');
   songInfo.classList.add('flash');
-  setTimeout(() => { generateBtn.classList.remove('flash'); songInfo.classList.remove('flash'); }, 200);
+  if (scoreRandomizeBtn) scoreRandomizeBtn.classList.add('flash');
+  setTimeout(() => {
+    generateBtn.classList.remove('flash');
+    songInfo.classList.remove('flash');
+    if (scoreRandomizeBtn) scoreRandomizeBtn.classList.remove('flash');
+  }, 350);
 
   checkUnsaved();
   saveSettings();
@@ -1363,6 +1370,22 @@ exportMusicXmlBtn.addEventListener('click', () => {
 /* ---- Share ---- */
 shareBtn.addEventListener('click', async () => {
   const url = buildShareUrl();
+  const seed = currentSong?.seed ?? seedInput.value;
+  const shareData = {
+    title: 'SeedSong',
+    text: `🎵 Listen to this melody from seed ${seed}`,
+    url,
+  };
+
+  if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+    try {
+      await navigator.share(shareData);
+      return;
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+    }
+  }
+
   try {
     await navigator.clipboard.writeText(url);
     shareBtn.textContent = 'Copied!';
@@ -1373,6 +1396,9 @@ shareBtn.addEventListener('click', async () => {
     setTimeout(() => { shareBtn.textContent = 'Share'; }, 1500);
   }
 });
+
+if (scoreRandomizeBtn) scoreRandomizeBtn.addEventListener('click', () => generateBtn.click());
+if (scoreShareBtn) scoreShareBtn.addEventListener('click', () => shareBtn.click());
 
 const shareImageBtn = document.getElementById('share-image-btn');
 shareImageBtn.addEventListener('click', async () => {
