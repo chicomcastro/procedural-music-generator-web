@@ -718,6 +718,76 @@ kbd {
 
 /* ---- Score ---- */
 
+.score-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  min-height: 32px;
+}
+
+.score-toolbar-info {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.score-toolbar-info.flash {
+  opacity: 1;
+}
+
+.score-toolbar-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.score-icon-btn {
+  background: var(--bg-card);
+  color: var(--accent);
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 150ms, border-color 150ms, color 150ms, transform 150ms;
+  padding: 0;
+}
+
+.score-icon-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.score-icon-btn:active {
+  transform: translateY(0);
+}
+
+.score-icon-btn.flash {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  animation: icon-flash 350ms ease-out;
+}
+
+@keyframes icon-flash {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
 .score-canvas-wrap {
   position: relative;
 }
@@ -825,12 +895,11 @@ kbd {
 
 .score-bar-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  margin-top: 6px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 8px;
   flex-shrink: 0;
-  flex-wrap: wrap;
   min-width: 0;
 }
 
@@ -1222,21 +1291,7 @@ input[type="text"]:focus {
   background: #5cb85c;
 }
 
-#song-info {
-  font-family: monospace;
-  font-size: 11px;
-  opacity: 0.45;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-  flex: 1;
-  text-align: right;
-}
-
-#song-info.flash {
-  opacity: 0.8;
-}
+/* #song-info now lives inside .score-toolbar; styles defined there */
 
 /* ---- Presets ---- */
 
@@ -2469,8 +2524,13 @@ input[type="text"]:focus {
     font-size: 14px;
   }
 
-  #song-info {
-    font-size: 14px;
+  .score-toolbar-info {
+    font-size: 13px;
+  }
+
+  .score-icon-btn {
+    width: 40px;
+    height: 40px;
   }
 
   .history-item {
