@@ -2294,20 +2294,35 @@ input[type="text"]:focus {
     font-size: 14px;
   }
 
+  .gen-actions-row {
+    gap: 8px;
+  }
+
   .gen-seed-group {
-    flex: 1;
+    flex: 1 0 100%;
     min-width: 0;
+    padding: 6px 12px;
   }
 
   .gen-seed-group #seed {
     width: 100%;
     flex: 1;
     min-width: 0;
+    font-size: 14px;
+  }
+
+  #generate-btn {
+    flex: 1 1 auto;
   }
 
   .gen-actions-save #song-name {
+    flex: 1 1 100%;
     width: 100%;
     min-width: 0;
+  }
+
+  .gen-actions-save #save-btn {
+    flex: 0 0 auto;
   }
 
   .preset-btn {
@@ -2335,19 +2350,27 @@ input[type="text"]:focus {
 
   /* Transport */
   #transport-bar {
-    gap: 10px;
-    padding: 12px 12px;
+    column-gap: 8px;
+    row-gap: 8px;
+    padding: 10px 12px 12px;
     flex-shrink: 0;
     position: relative;
-    min-height: 68px;
+    flex-wrap: wrap;
+    min-height: 0;
   }
 
   .transport-left {
     gap: 8px;
+    flex: 1;
+    min-width: 0;
   }
 
   .transport-center {
-    gap: 12px;
+    order: 2;
+    flex: 1 0 100%;
+    width: 100%;
+    gap: 10px;
+    min-width: 0;
   }
 
   #play-pause,
@@ -2377,19 +2400,20 @@ input[type="text"]:focus {
     width: 40px;
     height: 40px;
     font-size: 22px;
+    flex-shrink: 0;
   }
 
   .progress-bar {
-    height: 8px;
-    border-radius: 4px;
+    height: 10px;
+    border-radius: 5px;
   }
 
   .progress-fill {
-    border-radius: 4px;
+    border-radius: 5px;
   }
 
   .time-display {
-    font-size: 14px;
+    font-size: 13px;
     min-width: auto;
   }
 
