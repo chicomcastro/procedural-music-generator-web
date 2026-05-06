@@ -2335,13 +2335,22 @@ input[type="text"]:focus {
   }
 
   .score-float-btn {
-    font-size: 16px;
-    padding: 8px 16px;
-    min-width: 44px;
-    min-height: 44px;
+    font-size: 14px;
+    padding: 6px 12px;
+    min-height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Move lock controls to the top so they don't collide with zoom on mobile */
+  .score-float-left {
+    bottom: auto;
+    top: 8px;
+    left: 8px;
+    flex-wrap: wrap;
+    max-width: calc(100% - 16px);
+    opacity: 1;
   }
 
   .score-float-right {
