@@ -34,7 +34,7 @@ const STEPS = [
     activateTab: 'generator',
   },
   {
-    target: '.gen-seed-row',
+    target: '.gen-section-actions',
     title: 'Seed & Sharing',
     text: 'The seed is the DNA of your song — same seed = same song. Randomize to explore, Share to copy a URL that recreates the exact piece. Save to keep it in your history.',
     position: 'top',

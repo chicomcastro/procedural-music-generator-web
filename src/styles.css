@@ -472,6 +472,47 @@ kbd {
   color: var(--text-secondary);
 }
 
+.gen-section {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.gen-section:first-child {
+  padding-top: 0;
+}
+
+.gen-section:last-child {
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+
+.gen-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 10px 0;
+  line-height: 1;
+}
+
+.gen-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.gen-section-header .gen-section-title {
+  margin: 0;
+}
+
+.gen-section-presets .gen-row:last-child {
+  margin-bottom: 0;
+}
+
 .gen-row {
   display: flex;
   align-items: center;
@@ -482,15 +523,18 @@ kbd {
 
 .gen-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 8px;
-  margin-bottom: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.gen-grid + .gen-sliders {
+  margin-top: 12px;
 }
 
 .gen-field {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .gen-field label {
@@ -515,15 +559,14 @@ kbd {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 10px;
 }
 
 .gen-slider {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
-  min-width: 140px;
+  min-width: 180px;
 }
 
 .gen-slider label {
@@ -533,6 +576,7 @@ kbd {
   letter-spacing: 0.04em;
   color: var(--text-secondary);
   white-space: nowrap;
+  min-width: 56px;
 }
 
 .gen-slider input[type="range"] {
@@ -540,8 +584,100 @@ kbd {
   min-width: 60px;
 }
 
-.gen-seed-row {
-  margin-bottom: 0;
+/* Duet section toggling */
+.gen-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.gen-toggle input[type="checkbox"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.gen-section-duet .duet-controls {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 240ms ease, opacity 200ms ease;
+}
+
+.duet-enabled .gen-section-duet .duet-controls {
+  max-height: 400px;
+  opacity: 1;
+}
+
+.gen-section-duet .duet-controls .gen-grid {
+  margin-bottom: 12px;
+}
+
+/* Action section */
+.gen-section-actions {
+  padding-top: 16px;
+}
+
+.gen-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gen-actions-row + .gen-actions-row {
+  margin-top: 10px;
+}
+
+.gen-seed-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  padding: 4px 10px 4px 12px;
+}
+
+.gen-seed-group label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.gen-seed-group #seed {
+  border: none;
+  background: transparent;
+  padding: 4px 0;
+  width: 130px;
+  font-family: monospace;
+}
+
+.gen-seed-group #seed:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.gen-seed-group:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.gen-actions-save {
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+}
+
+.gen-actions-save #song-name {
+  flex: 1;
+  min-width: 160px;
 }
 
 /* ---- Mixer header ---- */
@@ -2124,13 +2260,26 @@ input[type="text"]:focus {
   }
 
   /* Generator */
+  .gen-section {
+    padding: 12px 0;
+  }
+
+  .gen-section-title {
+    font-size: 12px;
+  }
+
   .gen-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 8px;
   }
 
   .gen-sliders {
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+  }
+
+  .gen-slider {
+    min-width: 0;
   }
 
   .gen-row {
@@ -2138,11 +2287,27 @@ input[type="text"]:focus {
   }
 
   .gen-field label {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   select {
     font-size: 14px;
+  }
+
+  .gen-seed-group {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .gen-seed-group #seed {
+    width: 100%;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .gen-actions-save #song-name {
+    width: 100%;
+    min-width: 0;
   }
 
   .preset-btn {
@@ -2170,28 +2335,37 @@ input[type="text"]:focus {
 
   /* Transport */
   #transport-bar {
-    gap: 8px;
-    padding: 8px 10px;
+    gap: 10px;
+    padding: 12px 12px;
     flex-shrink: 0;
     position: relative;
+    min-height: 68px;
+  }
+
+  .transport-left {
+    gap: 8px;
+  }
+
+  .transport-center {
+    gap: 12px;
   }
 
   #play-pause,
   #stop-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
   }
 
   #record-btn {
-    width: 30px;
-    height: 30px;
-    font-size: 12px;
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
   }
 
   .transport-btn {
-    width: 30px;
-    height: 30px;
+    width: 40px;
+    height: 40px;
   }
 
   .transport-right {
@@ -2200,10 +2374,22 @@ input[type="text"]:focus {
 
   .transport-more-btn {
     display: flex;
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+  }
+
+  .progress-bar {
+    height: 8px;
+    border-radius: 4px;
+  }
+
+  .progress-fill {
+    border-radius: 4px;
   }
 
   .time-display {
-    font-size: 13px;
+    font-size: 14px;
     min-width: auto;
   }
 
