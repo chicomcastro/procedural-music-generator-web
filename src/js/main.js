@@ -1363,6 +1363,22 @@ exportMusicXmlBtn.addEventListener('click', () => {
 /* ---- Share ---- */
 shareBtn.addEventListener('click', async () => {
   const url = buildShareUrl();
+  const seed = currentSong?.seed ?? seedInput.value;
+  const shareData = {
+    title: 'SeedSong',
+    text: `🎵 Listen to this melody from seed ${seed}`,
+    url,
+  };
+
+  if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+    try {
+      await navigator.share(shareData);
+      return;
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+    }
+  }
+
   try {
     await navigator.clipboard.writeText(url);
     shareBtn.textContent = 'Copied!';
