@@ -13,7 +13,6 @@ import { songToMusicXML } from './export/musicxml.js';
 import { renderSongToBuffer, audioBufferToWav } from './export/wav.js';
 import { downloadBlob } from './export/download.js';
 import { createScoreCanvas } from './ui/ScoreCanvas.js';
-import { createSheetMusic } from './ui/SheetMusic.js';
 import { playDrumHit } from './audio/DrumSynth.js';
 import { initTheme } from './ui/Theme.js';
 import { initShortcuts } from './ui/Shortcuts.js';
@@ -171,7 +170,7 @@ for (const btn of trackToggleBtns) {
     }
     scoreCanvas.setVisibleTracks(new Set(visibleTrackSet));
     if (currentSong) scoreCanvas.render(currentSong);
-    if (activeView === 'sheetmusic' && currentSong) renderSheetMusic();
+    if (activeView === 'sheetmusic' && currentSong) { renderSheetMusic(); }
   });
 }
 
@@ -194,41 +193,99 @@ zoomResetBtn.addEventListener('click', () => {
   scoreCanvas.resetZoom();
 });
 
-/* ---- Sheet Music view ---- */
+/* ---- Sheet Music view (OSMD) ---- */
 const scoreCanvasEl = document.getElementById('score-canvas');
-const sheetMusicCanvasEl = document.getElementById('sheet-music-canvas');
-const sheetMusic = createSheetMusic(sheetMusicCanvasEl);
+const osmdContainer = document.getElementById('osmd-container');
 const viewPianoRollBtn = document.getElementById('view-pianoroll');
 const viewSheetMusicBtn = document.getElementById('view-sheetmusic');
 let activeView = 'pianoroll';
+let osmdInstance = null;
+let osmdLoading = false;
+
+async function loadOSMD() {
+  if (window.opensheetmusicdisplay) return;
+  if (osmdLoading) return;
+  osmdLoading = true;
+  await new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.6/build/opensheetmusicdisplay.min.js';
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  osmdLoading = false;
+}
+
+function getOSMD() {
+  if (osmdInstance) return osmdInstance;
+  if (!window.opensheetmusicdisplay) return null;
+  osmdInstance = new window.opensheetmusicdisplay.OpenSheetMusicDisplay(osmdContainer, {
+    backend: 'svg',
+    autoResize: true,
+    drawTitle: false,
+    drawSubtitle: false,
+    drawComposer: false,
+    drawLyricist: false,
+    drawPartNames: true,
+    drawPartAbbreviations: false,
+    drawMeasureNumbers: true,
+    drawTimeSignatures: true,
+    drawKeySignatures: true,
+  });
+  return osmdInstance;
+}
+
+function getSelectedExportTracksForSheet() {
+  const tracks = [];
+  for (const t of visibleTrackSet) {
+    if (t === 'melody' || t === 'melody2' || t === 'chord' || t === 'bass' || t === 'drum') {
+      tracks.push(t);
+    }
+  }
+  return tracks.length > 0 ? tracks : undefined;
+}
+
+async function renderSheetMusic() {
+  if (!currentSong) return;
+  await loadOSMD();
+  const osmd = getOSMD();
+  if (!osmd) return;
+  const tracks = getSelectedExportTracksForSheet();
+  const xmlStr = songToMusicXML(currentSong, {
+    bpm: transport.bpm,
+    tracks,
+  });
+  await osmd.load(xmlStr);
+  osmd.render();
+  applyOSMDTheme();
+}
+
+function applyOSMDTheme() {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  if (!isLight) {
+    osmdContainer.style.filter = 'invert(1) hue-rotate(180deg)';
+  } else {
+    osmdContainer.style.filter = '';
+  }
+}
 
 viewPianoRollBtn.addEventListener('click', () => {
   activeView = 'pianoroll';
   scoreCanvasEl.style.display = '';
-  sheetMusicCanvasEl.style.display = 'none';
+  osmdContainer.style.display = 'none';
   viewPianoRollBtn.classList.add('active');
   viewSheetMusicBtn.classList.remove('active');
   if (currentSong) scoreCanvas.render(currentSong);
 });
 
-viewSheetMusicBtn.addEventListener('click', () => {
+viewSheetMusicBtn.addEventListener('click', async () => {
   activeView = 'sheetmusic';
   scoreCanvasEl.style.display = 'none';
-  sheetMusicCanvasEl.style.display = '';
+  osmdContainer.style.display = '';
   viewPianoRollBtn.classList.remove('active');
   viewSheetMusicBtn.classList.add('active');
-  if (currentSong) renderSheetMusic();
+  await renderSheetMusic();
 });
-
-function renderSheetMusic() {
-  sheetMusic.setVisibleTracks(new Set(visibleTrackSet));
-  sheetMusic.render(currentSong, {
-    bpm: transport.bpm,
-    beatsPerBar: Number(beatsPerBarSelect.value),
-    tonic: Number(document.getElementById('tonic').value),
-    scale: document.getElementById('scale').value,
-  });
-}
 
 function getEventsForBar(song, barIndex) {
   const start = barIndex * song.beatsPerBar;
@@ -239,7 +296,10 @@ function getEventsForBar(song, barIndex) {
 }
 
 /* ---- Theme ---- */
-initTheme(() => { if (currentSong) scoreCanvas.render(currentSong); });
+initTheme(() => {
+  if (currentSong) scoreCanvas.render(currentSong);
+  if (activeView === 'sheetmusic') applyOSMDTheme();
+});
 
 /* ---- URL params ---- */
 function applyUrlParams() {
@@ -461,7 +521,7 @@ function onBeat(beat, when) {
     scheduleSongAtBeat(beatInSong, when);
     scoreCanvas.setPlayhead(beatInSong);
     scoreCanvas.render(currentSong);
-    if (activeView === 'sheetmusic') sheetMusic.setPlayhead(beatInSong);
+    // OSMD doesn't support real-time playhead cursor without its playback module
     updateProgress(beatInSong);
   }
 }

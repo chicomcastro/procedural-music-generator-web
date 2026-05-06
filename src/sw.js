@@ -1,4 +1,4 @@
-const CACHE_NAME = 'seedsong-v44';
+const CACHE_NAME = 'seedsong-v45';
 
 const ASSETS = [
   './',
@@ -37,7 +37,6 @@ const ASSETS = [
   './js/ui/Onboarding.js',
   './js/ui/Piano.js',
   './js/ui/ScoreCanvas.js',
-  './js/ui/SheetMusic.js',
   './js/ui/Shortcuts.js',
   './js/ui/Theme.js',
   './sounds/A3.mp3',
