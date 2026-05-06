@@ -896,11 +896,15 @@ kbd {
 .score-bar-actions {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 8px;
   margin-top: 8px;
   flex-shrink: 0;
   min-width: 0;
+}
+
+.score-bar-actions > * {
+  width: auto;
 }
 
 /* ---- Track toggle buttons ---- */
