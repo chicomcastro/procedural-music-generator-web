@@ -50,7 +50,7 @@ function buildPitchXml(midi) {
   return xml;
 }
 
-function buildNoteXml(midi, durationBeats, isChord, isRest, isDrum) {
+function buildNoteXml(midi, durationBeats, isChord, isRest, isDrum, beam) {
   const qDur = quantizeDuration(durationBeats);
   const info = DURATION_TYPE_MAP[qDur];
   if (!info) return '';
@@ -70,11 +70,12 @@ function buildNoteXml(midi, durationBeats, isChord, isRest, isDrum) {
   xml += `          <duration>${info.divisions}</duration>\n`;
   xml += `          <type>${info.type}</type>\n`;
   if (info.dot) xml += '          <dot/>\n';
+  if (beam) xml += `          <beam number="1">${beam}</beam>\n`;
   xml += '        </note>\n';
   return xml;
 }
 
-function buildMeasureAttributes(beatsPerBar, isDrum) {
+function buildMeasureAttributes(beatsPerBar, isDrum, clefSign) {
   const beatType = beatsPerBar === 6 ? 8 : 4;
   const beats = beatsPerBar;
   let xml = '        <attributes>\n';
@@ -83,11 +84,19 @@ function buildMeasureAttributes(beatsPerBar, isDrum) {
   xml += `          <time>\n            <beats>${beats}</beats>\n            <beat-type>${beatType}</beat-type>\n          </time>\n`;
   if (isDrum) {
     xml += '          <clef>\n            <sign>percussion</sign>\n          </clef>\n';
+  } else if (clefSign === 'F') {
+    xml += '          <clef>\n            <sign>F</sign>\n            <line>4</line>\n          </clef>\n';
   } else {
     xml += '          <clef>\n            <sign>G</sign>\n            <line>2</line>\n          </clef>\n';
   }
   xml += '        </attributes>\n';
   return xml;
+}
+
+function detectClef(events) {
+  if (events.length === 0) return 'G';
+  const avgMidi = events.reduce((s, e) => s + e.midi, 0) / events.length;
+  return avgMidi < 55 ? 'F' : 'G';
 }
 
 function buildTempoDirection(bpm) {
@@ -102,72 +111,85 @@ function buildTempoDirection(bpm) {
         </direction>\n`;
 }
 
-function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstPart) {
+function snapToGrid(beat, grid) {
+  return Math.round(beat / grid) * grid;
+}
+
+function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstPart, clefSign) {
+  const GRID = 0.25;
   let xml = '';
 
   for (let bar = 0; bar < totalBars; bar++) {
     const barStart = bar * beatsPerBar;
     const barEnd = barStart + beatsPerBar;
 
-    // Gather events for this bar, sorted by beat
     const barEvents = events
       .filter(ev => ev.atBeat >= barStart && ev.atBeat < barEnd)
-      .map(ev => ({
-        ...ev,
-        localBeat: ev.atBeat - barStart,
-        // Truncate duration at bar boundary
-        durationBeats: Math.min(ev.durationBeats, barEnd - ev.atBeat),
-      }))
+      .map(ev => {
+        const snappedLocal = snapToGrid(ev.atBeat - barStart, GRID);
+        const snappedDur = snapToGrid(Math.min(ev.durationBeats, barEnd - ev.atBeat), GRID) || GRID;
+        return { ...ev, localBeat: Math.min(snappedLocal, beatsPerBar - GRID), durationBeats: snappedDur };
+      })
       .sort((a, b) => a.localBeat - b.localBeat || a.midi - b.midi);
 
     xml += `      <measure number="${bar + 1}">\n`;
 
     if (bar === 0) {
-      xml += buildMeasureAttributes(beatsPerBar, isDrum);
+      xml += buildMeasureAttributes(beatsPerBar, isDrum, clefSign);
       if (isFirstPart) {
         xml += buildTempoDirection(bpm);
       }
     }
 
     if (barEvents.length === 0) {
-      // Whole-bar rest
-      const restDur = quantizeDuration(beatsPerBar);
-      const info = DURATION_TYPE_MAP[restDur];
-      if (info) {
-        xml += '        <note>\n          <rest measure="yes"/>\n';
-        xml += `          <duration>${beatsPerBar * DIVISIONS}</duration>\n`;
-        xml += '        </note>\n';
-      }
+      xml += '        <note>\n          <rest measure="yes"/>\n';
+      xml += `          <duration>${beatsPerBar * DIVISIONS}</duration>\n`;
+      xml += '        </note>\n';
     } else {
-      // Group events by beat position for chord detection
-      let currentBeat = 0;
-
-      // Collect unique beat positions
+      let usedBeats = 0;
       const beatPositions = [...new Set(barEvents.map(ev => ev.localBeat))].sort((a, b) => a - b);
 
+      const slots = [];
       for (const beatPos of beatPositions) {
-        // Fill gap with rest if needed
-        if (beatPos > currentBeat + 0.001) {
-          const gapBeats = beatPos - currentBeat;
-          xml += fillRestGap(gapBeats);
+        const notesAtBeat = barEvents.filter(ev => Math.abs(ev.localBeat - beatPos) < 0.001);
+        const noteDur = quantizeDuration(notesAtBeat[0].durationBeats);
+        slots.push({ beatPos, notes: notesAtBeat, dur: noteDur });
+      }
+
+      const beamable = (dur) => dur <= 0.5;
+      for (let si = 0; si < slots.length; si++) {
+        const slot = slots[si];
+        if (slot.beatPos > usedBeats + 0.001) {
+          xml += fillRestGap(slot.beatPos - usedBeats);
+          usedBeats = slot.beatPos;
         }
 
-        const notesAtBeat = barEvents.filter(ev => Math.abs(ev.localBeat - beatPos) < 0.001);
+        const cappedDur = Math.min(slot.dur, beatsPerBar - usedBeats);
+        const finalDur = quantizeDuration(cappedDur);
+        const beatGroup = Math.floor(slot.beatPos);
+
+        let beam = null;
+        if (beamable(finalDur) && !isDrum) {
+          const prevAdj = si > 0 && Math.abs(slots[si - 1].beatPos + quantizeDuration(Math.min(slots[si - 1].dur, beatsPerBar)) - slot.beatPos) < 0.001;
+          const prevBeamable = prevAdj && beamable(slots[si - 1].dur) && Math.floor(slots[si - 1].beatPos) === beatGroup;
+          const nextAdj = si < slots.length - 1 && Math.abs(slot.beatPos + finalDur - slots[si + 1].beatPos) < 0.001;
+          const nextBeamable = nextAdj && beamable(slots[si + 1].dur) && Math.floor(slots[si + 1].beatPos) === beatGroup;
+          if (prevBeamable && nextBeamable) beam = 'continue';
+          else if (!prevBeamable && nextBeamable) beam = 'begin';
+          else if (prevBeamable && !nextBeamable) beam = 'end';
+        }
+
         let isFirst = true;
-        for (const ev of notesAtBeat) {
-          xml += buildNoteXml(ev.midi, ev.durationBeats, !isFirst, false, isDrum);
+        for (const ev of slot.notes) {
+          xml += buildNoteXml(ev.midi, finalDur, !isFirst, false, isDrum, isFirst ? beam : null);
           isFirst = false;
         }
 
-        // Advance current beat by the first note's quantized duration
-        const firstDur = quantizeDuration(notesAtBeat[0].durationBeats);
-        currentBeat = beatPos + firstDur;
+        usedBeats += finalDur;
       }
 
-      // Fill trailing rest
-      if (currentBeat < beatsPerBar - 0.001) {
-        const gapBeats = beatsPerBar - currentBeat;
-        xml += fillRestGap(gapBeats);
+      if (usedBeats < beatsPerBar - 0.001) {
+        xml += fillRestGap(beatsPerBar - usedBeats);
       }
     }
 
@@ -260,8 +282,9 @@ export function songToMusicXML(song, { bpm = 120, tracks: trackFilter } = {}) {
   for (let i = 0; i < partDefs.length; i++) {
     const part = partDefs[i];
     const partEvents = eventsByType[part.type] || [];
+    const clefSign = part.drum ? 'percussion' : detectClef(partEvents);
     xml += `  <part id="${part.id}">\n`;
-    xml += buildPartMeasures(partEvents, beatsPerBar, totalBars, part.drum, bpm, i === 0);
+    xml += buildPartMeasures(partEvents, beatsPerBar, totalBars, part.drum, bpm, i === 0, clefSign);
     xml += '  </part>\n';
   }
 

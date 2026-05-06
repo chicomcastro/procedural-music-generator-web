@@ -258,6 +258,58 @@ async function renderSheetMusic() {
   await osmd.load(xmlStr);
   osmd.render();
   applyOSMDTheme();
+  try {
+    osmd.cursor.show();
+    osmd.cursor.reset();
+    osmdLastBeat = -1;
+    osmdBeatMap = buildCursorBeatMap();
+  } catch (_) { /* cursor may not be available */ }
+}
+
+let osmdLastBeat = -1;
+
+function buildCursorBeatMap() {
+  if (!osmdInstance) return [];
+  const map = [];
+  try {
+    const cursor = osmdInstance.cursor;
+    cursor.reset();
+    const maxSteps = 2000;
+    for (let s = 0; s < maxSteps; s++) {
+      const it = cursor.iterator;
+      if (!it || it.endReached) break;
+      const ts = it.currentTimeStamp;
+      const beat = ts.RealValue * 4;
+      map.push(beat);
+      cursor.next();
+    }
+    cursor.reset();
+  } catch (_) { /* ignore */ }
+  return map;
+}
+
+let osmdBeatMap = [];
+
+function updateOSMDCursor(beatInSong) {
+  if (activeView !== 'sheetmusic' || !osmdInstance) return;
+  if (!currentSong) return;
+  const beat = Math.floor(beatInSong);
+  if (beat === osmdLastBeat) return;
+  osmdLastBeat = beat;
+
+  if (osmdBeatMap.length === 0) osmdBeatMap = buildCursorBeatMap();
+
+  let targetIdx = 0;
+  for (let i = 0; i < osmdBeatMap.length; i++) {
+    if (osmdBeatMap[i] <= beatInSong + 0.001) targetIdx = i;
+    else break;
+  }
+
+  try {
+    const cursor = osmdInstance.cursor;
+    cursor.reset();
+    for (let i = 0; i < targetIdx; i++) cursor.next();
+  } catch (_) { /* ignore cursor errors */ }
 }
 
 function applyOSMDTheme() {
@@ -269,10 +321,13 @@ function applyOSMDTheme() {
   }
 }
 
+const zoomControls = document.querySelector('.score-float-right');
+
 viewPianoRollBtn.addEventListener('click', () => {
   activeView = 'pianoroll';
   scoreCanvasEl.style.display = '';
   osmdContainer.style.display = 'none';
+  if (zoomControls) zoomControls.style.display = '';
   viewPianoRollBtn.classList.add('active');
   viewSheetMusicBtn.classList.remove('active');
   if (currentSong) scoreCanvas.render(currentSong);
@@ -282,6 +337,7 @@ viewSheetMusicBtn.addEventListener('click', async () => {
   activeView = 'sheetmusic';
   scoreCanvasEl.style.display = 'none';
   osmdContainer.style.display = '';
+  if (zoomControls) zoomControls.style.display = 'none';
   viewPianoRollBtn.classList.remove('active');
   viewSheetMusicBtn.classList.add('active');
   await renderSheetMusic();
@@ -521,7 +577,7 @@ function onBeat(beat, when) {
     scheduleSongAtBeat(beatInSong, when);
     scoreCanvas.setPlayhead(beatInSong);
     scoreCanvas.render(currentSong);
-    // OSMD doesn't support real-time playhead cursor without its playback module
+    updateOSMDCursor(beatInSong);
     updateProgress(beatInSong);
   }
 }

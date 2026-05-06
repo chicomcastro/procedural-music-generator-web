@@ -30,12 +30,17 @@ export function generateRhythm(rng, { bars = 4, beatsPerBar = 4, density = 0.65,
     let atBeat = s / 2;
     if (!onBeat && swing > 0) atBeat += swing * 0.5;
 
-    onsets.push({
-      atBeat,
-      durationBeats: 0.5,
-      isDownbeat,
-      onBeat,
-    });
+    onsets.push({ atBeat, durationBeats: 0, isDownbeat, onBeat });
+  }
+
+  const totalBeats = bars * beatsPerBar;
+  for (let i = 0; i < onsets.length; i++) {
+    const nextBeat = i < onsets.length - 1 ? onsets[i + 1].atBeat : totalBeats;
+    const gap = nextBeat - onsets[i].atBeat;
+    const legato = 0.6 + rng() * 0.35;
+    const raw = gap * legato;
+    const snapped = Math.round(raw * 2) / 2;
+    onsets[i].durationBeats = Math.max(0.5, Math.min(snapped, 4));
   }
 
   return onsets;
