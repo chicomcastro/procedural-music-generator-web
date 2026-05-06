@@ -2273,11 +2273,18 @@ input[type="text"]:focus {
   }
 
   .score-bar-actions {
-    gap: 4px;
+    gap: 14px;
+    margin-top: 14px;
+    padding-bottom: 8px;
   }
 
   .score-track-toggles {
-    gap: 4px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .score-view-btn {
+    padding: 8px 16px;
   }
 
   .track-toggle {
