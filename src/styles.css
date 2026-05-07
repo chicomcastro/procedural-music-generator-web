@@ -267,6 +267,7 @@ kbd {
   min-height: 200px;
   display: block;
   border-radius: 8px;
+  touch-action: none;
 }
 
 /* ---- Tab system ---- */
