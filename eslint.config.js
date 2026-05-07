@@ -23,6 +23,7 @@ export default [
         Uint8Array: 'readonly',
         Float32Array: 'readonly',
         Blob: 'readonly',
+        FileReader: 'readonly',
         fetch: 'readonly',
         history: 'readonly',
         requestAnimationFrame: 'readonly',

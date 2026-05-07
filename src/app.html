@@ -34,6 +34,13 @@
     </div>
 
     <header id="hero">
+        <button id="sidebar-toggle" type="button" class="hero-menu-btn" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+        </button>
         <div class="hero-title-group">
             <h1>SeedSong<span id="unsaved-dot" class="unsaved-dot" hidden aria-label="Unsaved changes" title="Unsaved changes"></span></h1>
             <p class="tagline">Infinite piano melodies from a single seed number.</p>
@@ -45,7 +52,42 @@
         </div>
     </header>
 
-    <main id="daw-main">
+    <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
+    <aside id="sidebar" class="sidebar" aria-label="Main navigation">
+        <div class="sidebar-header">
+            <span class="sidebar-logo">SeedSong</span>
+            <button id="sidebar-close" type="button" class="sidebar-close" aria-label="Close menu">&times;</button>
+        </div>
+        <nav class="sidebar-nav">
+            <a class="sidebar-link active" data-view="generator" href="#/generator">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span>Generator</span>
+            </a>
+            <a class="sidebar-link" data-view="explore" href="#/explore">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></svg>
+                <span>Explore</span>
+                <span class="sidebar-badge">New</span>
+            </a>
+            <a class="sidebar-link" data-view="compose" href="#/compose">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="6" height="12" rx="1"/><rect x="11" y="9" width="6" height="9" rx="1"/><rect x="19" y="6" width="2" height="12" rx="1"/></svg>
+                <span>Compose</span>
+                <span class="sidebar-badge sidebar-badge-soon">Beta</span>
+            </a>
+            <a class="sidebar-link" data-view="learn" href="#/learn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                <span>Learn</span>
+                <span class="sidebar-badge sidebar-badge-soon">Beta</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <a class="sidebar-link sidebar-link-small" href="https://github.com/chicomcastro/procedural-music-generator-web" target="_blank" rel="noopener">
+                <span>GitHub ↗</span>
+            </a>
+        </div>
+    </aside>
+
+    <main id="daw-main" class="view-host" data-active-view="generator">
+        <section class="app-view" id="view-generator" data-view="generator" aria-label="Generator view">
         <section id="score-section" aria-label="Score visualization">
             <div class="score-toolbar">
                 <span id="song-info" class="score-toolbar-info" aria-live="polite"></span>
@@ -582,6 +624,163 @@
                 </section>
             </div>
         </div>
+        </section>
+
+        <section class="app-view hidden" id="view-explore" data-view="explore" aria-label="Explore view">
+            <div class="explore-shell">
+                <header class="explore-head">
+                    <div>
+                        <h2 class="view-title">Explore</h2>
+                        <p class="view-sub">Swipe through procedural seeds. Like what you love. We'll learn your taste.</p>
+                    </div>
+                    <div class="explore-stats" id="explore-stats">
+                        <span class="explore-stat"><b id="explore-count-liked">0</b> liked</span>
+                        <span class="explore-stat"><b id="explore-count-skipped">0</b> skipped</span>
+                        <button id="explore-wrapped-btn" type="button" class="view-cta-secondary">Your Wrapped</button>
+                    </div>
+                </header>
+
+                <div class="feed-stage">
+                    <div class="feed-card" id="feed-card">
+                        <div class="feed-card-canvas-wrap">
+                            <canvas id="feed-canvas" class="feed-canvas" aria-label="Seed preview"></canvas>
+                            <button id="feed-play" type="button" class="feed-play" aria-label="Play preview">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                            </button>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="feed-seed" id="feed-seed">seed —</div>
+                            <div class="feed-tags" id="feed-tags"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feed-actions">
+                    <button id="feed-skip" type="button" class="feed-action feed-action-skip" aria-label="Skip">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                    <button id="feed-save" type="button" class="feed-action feed-action-save" aria-label="Save to Generator">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    </button>
+                    <button id="feed-like" type="button" class="feed-action feed-action-like" aria-label="Like">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    </button>
+                </div>
+
+                <p class="hint feed-hint">Use <kbd>←</kbd> skip, <kbd>↑</kbd> save, <kbd>→</kbd> like, <kbd>Space</kbd> play</p>
+            </div>
+
+            <div class="wrapped-overlay overlay hidden" id="wrapped-overlay" role="dialog" aria-modal="true" aria-labelledby="wrapped-title">
+                <div class="overlay-card wrapped-card">
+                    <h2 id="wrapped-title">Your SeedSong Wrapped</h2>
+                    <div id="wrapped-body"></div>
+                    <button id="wrapped-close" type="button">Close</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="app-view hidden" id="view-compose" data-view="compose" aria-label="Compose view">
+            <div class="compose-shell">
+                <header class="view-head">
+                    <div>
+                        <h2 class="view-title">Compose</h2>
+                        <p class="view-sub">Arrange sections into a full song. Each block has its own seed and parameters.</p>
+                    </div>
+                    <div class="view-actions">
+                        <button id="compose-play" type="button" class="view-cta" disabled>
+                            <span class="compose-play-icon" aria-hidden="true">▶</span>
+                            <span id="compose-play-label">Play composition</span>
+                        </button>
+                        <button id="compose-add" type="button" class="view-cta-secondary">+ Add section</button>
+                        <button id="compose-clear" type="button" class="view-cta-secondary">Clear</button>
+                    </div>
+                </header>
+
+                <div class="compose-status" id="compose-status" hidden>
+                    <span id="compose-status-text">Playing</span>
+                    <span class="compose-status-time" id="compose-status-time">0:00</span>
+                </div>
+
+                <div id="compose-timeline" class="compose-timeline" role="list" aria-label="Section timeline"></div>
+
+                <p class="hint compose-empty" id="compose-empty">No sections yet — tap <strong>+ Add section</strong> to start arranging.</p>
+
+                <div class="compose-roadmap">
+                    <h3>Coming next</h3>
+                    <ul>
+                        <li><span class="status-dot status-todo"></span>Multi-track lanes (melody / harmony / bass)</li>
+                        <li><span class="status-dot status-todo"></span>Drag-to-reorder sections</li>
+                        <li><span class="status-dot status-todo"></span>Stem export (WAV per track)</li>
+                        <li><span class="status-dot status-todo"></span>Undo/redo history</li>
+                        <li><span class="status-dot status-todo"></span>Project save/load (.seedsong file)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="app-view hidden" id="view-learn" data-view="learn" aria-label="Learn view">
+            <div class="learn-shell">
+                <header class="view-head">
+                    <div>
+                        <h2 class="view-title">Learn</h2>
+                        <p class="view-sub">Bite-sized music theory grounded in procedural examples you can hear instantly.</p>
+                    </div>
+                    <div class="view-actions">
+                        <span class="learn-progress-label">Progress</span>
+                        <div class="learn-progress-bar"><div id="learn-progress-fill"></div></div>
+                        <span id="learn-progress-pct" class="learn-progress-pct">0%</span>
+                    </div>
+                </header>
+
+                <div id="learn-continue" class="learn-continue" hidden>
+                    <div class="learn-continue-body">
+                        <span class="learn-continue-eyebrow">Continue where you left off</span>
+                        <h3 id="learn-continue-title" class="learn-continue-title">—</h3>
+                        <p id="learn-continue-desc" class="learn-continue-desc">—</p>
+                    </div>
+                    <button id="learn-continue-btn" type="button" class="view-cta">Resume</button>
+                </div>
+
+                <div id="learn-modules" class="learn-modules"></div>
+
+                <div id="learn-exercise-overlay" class="exercise-overlay overlay hidden" role="dialog" aria-modal="true" aria-labelledby="exercise-title">
+                    <div class="overlay-card exercise-card">
+                        <header class="exercise-head">
+                            <span class="exercise-progress" id="exercise-progress">1 / 7</span>
+                            <button id="exercise-close" type="button" class="exercise-close" aria-label="Close exercise">&times;</button>
+                        </header>
+                        <span class="learn-card-tag" id="exercise-tag"></span>
+                        <h2 id="exercise-title" class="exercise-title">—</h2>
+                        <p id="exercise-desc" class="exercise-desc">—</p>
+                        <div class="exercise-controls">
+                            <button id="exercise-play" type="button" class="exercise-play-btn" aria-label="Play example">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                            </button>
+                            <button id="exercise-record" type="button" class="exercise-record-btn" aria-label="Record yourself" title="Record yourself">
+                                <span class="exercise-record-dot"></span>
+                                <span class="exercise-record-label">Record</span>
+                            </button>
+                        </div>
+                        <p id="exercise-record-hint" class="exercise-record-hint hint">Tap record to capture your attempt — we'll save the audio locally.</p>
+                        <audio id="exercise-recording" controls hidden></audio>
+                        <footer class="exercise-foot">
+                            <button id="exercise-skip" type="button" class="view-cta-secondary">Skip</button>
+                            <button id="exercise-done" type="button" class="view-cta">Mark done →</button>
+                        </footer>
+                    </div>
+                </div>
+
+                <div class="learn-roadmap">
+                    <h3>Coming next</h3>
+                    <ul>
+                        <li><span class="status-dot status-todo"></span>Play-along sheet music with note detection</li>
+                        <li><span class="status-dot status-todo"></span>Solo &amp; duet exercises with feedback</li>
+                        <li><span class="status-dot status-todo"></span>Streak tracking and shareable progress</li>
+                        <li><span class="status-dot status-todo"></span>User-authored exercises</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
     </main>
 
     <div id="piano-drawer" class="collapsed">
