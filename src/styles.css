@@ -139,12 +139,51 @@ button {
   }
 }
 
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 6px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.sidebar-logo {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+.sidebar-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: none;
+}
+
+.sidebar-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex: 1;
-  margin-top: 56px; /* clear hero */
+}
+
+@media (max-width: 900px) {
+  .sidebar-close {
+    display: block;
+  }
 }
 
 .sidebar-link {

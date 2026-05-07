@@ -68,6 +68,8 @@ export function initSidebar() {
   }
 
   toggle.addEventListener('click', toggleSidebar);
+  const closeBtn = document.getElementById('sidebar-close');
+  if (closeBtn) closeBtn.addEventListener('click', close);
   if (backdrop) backdrop.addEventListener('click', close);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && sidebar.classList.contains('open') && isMobile()) close();
