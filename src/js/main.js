@@ -736,15 +736,36 @@ const transportDropdown = document.getElementById('transport-dropdown');
 const bpmMobile = document.getElementById('bpm-mobile');
 const bpmMobileDisplay = document.getElementById('bpm-mobile-display');
 const beatsPerBarMobile = document.getElementById('beats-per-bar-mobile');
+const bpmPill = document.getElementById('transport-bpm-pill');
+const timePill = document.getElementById('transport-time-pill');
+const bpmPillDisplay = document.getElementById('bpm-pill-display');
+const timePillDisplay = document.getElementById('time-pill-display');
+
+const TIME_SIG_LABELS = { '2': '2/4', '3': '3/4', '4': '4/4', '6': '6/8' };
+
+function syncTransportPills() {
+  if (bpmPillDisplay) bpmPillDisplay.textContent = String(bpmInput.value);
+  if (timePillDisplay) timePillDisplay.textContent = TIME_SIG_LABELS[beatsPerBarSelect.value] || `${beatsPerBarSelect.value}/4`;
+}
+syncTransportPills();
+
+function openTransportDropdown() {
+  if (!transportDropdown) return;
+  transportDropdown.classList.add('visible');
+  if (bpmMobile) {
+    bpmMobile.value = bpmInput.value;
+    bpmMobileDisplay.textContent = bpmInput.value;
+  }
+  if (beatsPerBarMobile) beatsPerBarMobile.value = beatsPerBarSelect.value;
+}
 
 if (transportMoreBtn && transportDropdown) {
   transportMoreBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    transportDropdown.classList.toggle('visible');
     if (transportDropdown.classList.contains('visible')) {
-      bpmMobile.value = bpmInput.value;
-      bpmMobileDisplay.textContent = bpmInput.value;
-      beatsPerBarMobile.value = beatsPerBarSelect.value;
+      transportDropdown.classList.remove('visible');
+    } else {
+      openTransportDropdown();
     }
   });
 
@@ -754,6 +775,7 @@ if (transportMoreBtn && transportDropdown) {
     bpmMobileDisplay.textContent = String(v);
     bpmInput.value = v;
     bpmDisplay.textContent = String(v);
+    syncTransportPills();
     pushUrlState();
     clearActivePreset();
     checkUnsaved();
@@ -762,16 +784,30 @@ if (transportMoreBtn && transportDropdown) {
   beatsPerBarMobile.addEventListener('change', () => {
     beatsPerBarSelect.value = beatsPerBarMobile.value;
     transport.setBeatsPerBar(Number(beatsPerBarMobile.value));
+    syncTransportPills();
     clearLockedBars();
     regenerateSong({ keepSeed: true });
   });
 
   document.addEventListener('click', (e) => {
-    if (!transportDropdown.contains(e.target) && e.target !== transportMoreBtn) {
+    if (
+      !transportDropdown.contains(e.target)
+      && e.target !== transportMoreBtn
+      && e.target !== bpmPill
+      && e.target !== timePill
+      && !bpmPill?.contains(e.target)
+      && !timePill?.contains(e.target)
+    ) {
       transportDropdown.classList.remove('visible');
     }
   });
 }
+
+if (bpmPill) bpmPill.addEventListener('click', (e) => { e.stopPropagation(); openTransportDropdown(); bpmMobile?.focus(); });
+if (timePill) timePill.addEventListener('click', (e) => { e.stopPropagation(); openTransportDropdown(); beatsPerBarMobile?.focus(); });
+
+bpmInput.addEventListener('input', syncTransportPills);
+beatsPerBarSelect.addEventListener('change', syncTransportPills);
 
 const CLICK_TITLES = ['Click track: off', 'Click track: all beats', 'Click track: downbeat only'];
 clickModeBtn.addEventListener('click', () => {
@@ -999,6 +1035,7 @@ for (const btn of presetBtns) {
     beatsPerBarSelect.value = btn.dataset.time;
     if (beatsPerBarMobile) beatsPerBarMobile.value = btn.dataset.time;
     transport.setBeatsPerBar(Number(btn.dataset.time));
+    syncTransportPills();
     tonicSelect.value = btn.dataset.tonic;
     scaleSelect.value = btn.dataset.scale;
     barsSelect.value = btn.dataset.bars;
@@ -1102,6 +1139,7 @@ function loadSettings() {
   bpmDisplay.textContent = bpmInput.value;
   transport.setBpm(Number(bpmInput.value));
   transport.setBeatsPerBar(Number(beatsPerBarSelect.value));
+  syncTransportPills();
   densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
   swingDisplay.textContent = `${Math.round(swingInput.value * 100)}%`;
   velocityDisplay.textContent = `${Math.round(velocityInput.value * 100)}%`;
@@ -1471,6 +1509,7 @@ function currentSnapshot() {
 function loadEntry(e) {
   bpmInput.value = e.bpm;
   bpmDisplay.textContent = e.bpm;
+  syncTransportPills();
   transport.setBpm(Number(e.bpm));
   beatsPerBarSelect.value = e.time;
   transport.setBeatsPerBar(Number(e.time));
