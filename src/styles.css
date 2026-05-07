@@ -860,11 +860,12 @@ kbd {
 /* ---- Score view toggle ---- */
 
 .score-view-toggle {
-  display: flex;
+  display: inline-flex;
   gap: 0;
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
+  margin-bottom: 10px;
 }
 
 .score-view-btn {
