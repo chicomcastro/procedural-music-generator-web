@@ -42,6 +42,7 @@ const songInfo = document.getElementById('song-info');
 const kbdOctaveDisplay = document.getElementById('kbd-octave');
 const shareBtn = document.getElementById('share-btn');
 const scoreRandomizeBtn = document.getElementById('score-randomize-btn');
+const scoreVariationBtn = document.getElementById('score-variation-btn');
 const scoreShareBtn = document.getElementById('score-share-btn');
 const songNameInput = document.getElementById('song-name');
 const progressionSelect = document.getElementById('progression');
@@ -735,15 +736,36 @@ const transportDropdown = document.getElementById('transport-dropdown');
 const bpmMobile = document.getElementById('bpm-mobile');
 const bpmMobileDisplay = document.getElementById('bpm-mobile-display');
 const beatsPerBarMobile = document.getElementById('beats-per-bar-mobile');
+const bpmPill = document.getElementById('transport-bpm-pill');
+const timePill = document.getElementById('transport-time-pill');
+const bpmPillDisplay = document.getElementById('bpm-pill-display');
+const timePillDisplay = document.getElementById('time-pill-display');
+
+const TIME_SIG_LABELS = { '2': '2/4', '3': '3/4', '4': '4/4', '6': '6/8' };
+
+function syncTransportPills() {
+  if (bpmPillDisplay) bpmPillDisplay.textContent = String(bpmInput.value);
+  if (timePillDisplay) timePillDisplay.textContent = TIME_SIG_LABELS[beatsPerBarSelect.value] || `${beatsPerBarSelect.value}/4`;
+}
+syncTransportPills();
+
+function openTransportDropdown() {
+  if (!transportDropdown) return;
+  transportDropdown.classList.add('visible');
+  if (bpmMobile) {
+    bpmMobile.value = bpmInput.value;
+    bpmMobileDisplay.textContent = bpmInput.value;
+  }
+  if (beatsPerBarMobile) beatsPerBarMobile.value = beatsPerBarSelect.value;
+}
 
 if (transportMoreBtn && transportDropdown) {
   transportMoreBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    transportDropdown.classList.toggle('visible');
     if (transportDropdown.classList.contains('visible')) {
-      bpmMobile.value = bpmInput.value;
-      bpmMobileDisplay.textContent = bpmInput.value;
-      beatsPerBarMobile.value = beatsPerBarSelect.value;
+      transportDropdown.classList.remove('visible');
+    } else {
+      openTransportDropdown();
     }
   });
 
@@ -753,6 +775,7 @@ if (transportMoreBtn && transportDropdown) {
     bpmMobileDisplay.textContent = String(v);
     bpmInput.value = v;
     bpmDisplay.textContent = String(v);
+    syncTransportPills();
     pushUrlState();
     clearActivePreset();
     checkUnsaved();
@@ -761,16 +784,30 @@ if (transportMoreBtn && transportDropdown) {
   beatsPerBarMobile.addEventListener('change', () => {
     beatsPerBarSelect.value = beatsPerBarMobile.value;
     transport.setBeatsPerBar(Number(beatsPerBarMobile.value));
+    syncTransportPills();
     clearLockedBars();
     regenerateSong({ keepSeed: true });
   });
 
   document.addEventListener('click', (e) => {
-    if (!transportDropdown.contains(e.target) && e.target !== transportMoreBtn) {
+    if (
+      !transportDropdown.contains(e.target)
+      && e.target !== transportMoreBtn
+      && e.target !== bpmPill
+      && e.target !== timePill
+      && !bpmPill?.contains(e.target)
+      && !timePill?.contains(e.target)
+    ) {
       transportDropdown.classList.remove('visible');
     }
   });
 }
+
+if (bpmPill) bpmPill.addEventListener('click', (e) => { e.stopPropagation(); openTransportDropdown(); bpmMobile?.focus(); });
+if (timePill) timePill.addEventListener('click', (e) => { e.stopPropagation(); openTransportDropdown(); beatsPerBarMobile?.focus(); });
+
+bpmInput.addEventListener('input', syncTransportPills);
+beatsPerBarSelect.addEventListener('change', syncTransportPills);
 
 const CLICK_TITLES = ['Click track: off', 'Click track: all beats', 'Click track: downbeat only'];
 clickModeBtn.addEventListener('click', () => {
@@ -967,6 +1004,28 @@ for (const panInput of document.querySelectorAll('.mixer-pan')) {
 const presetBtns = document.querySelectorAll('.preset-btn');
 function clearActivePreset() { presetBtns.forEach(b => b.classList.remove('active')); }
 
+// Auto-generate tooltips on each preset showing the parameters it applies
+function buildPresetTip(btn) {
+  const d = btn.dataset;
+  const parts = [];
+  if (d.bpm) parts.push(`${d.bpm} BPM`);
+  if (d.tonic && d.scale) {
+    const tOpt = tonicSelect.querySelector(`option[value="${d.tonic}"]`);
+    const sOpt = scaleSelect.querySelector(`option[value="${d.scale}"]`);
+    parts.push(`${tOpt ? tOpt.textContent : d.tonic} ${sOpt ? sOpt.textContent : d.scale}`);
+  }
+  if (d.bars && d.time) parts.push(`${d.bars} bars · ${d.time}/4`);
+  if (d.voice) parts.push(d.voice);
+  if (d.density) parts.push(`density ${Math.round(d.density * 100)}%`);
+  if (d.swing && d.swing !== '0') parts.push(`swing ${Math.round(d.swing * 100)}%`);
+  return parts.join(' · ');
+}
+presetBtns.forEach(btn => {
+  const tip = buildPresetTip(btn);
+  btn.setAttribute('title', tip);
+  btn.setAttribute('data-tip', tip);
+});
+
 for (const btn of presetBtns) {
   btn.addEventListener('click', () => {
     bpmInput.value = btn.dataset.bpm;
@@ -976,6 +1035,7 @@ for (const btn of presetBtns) {
     beatsPerBarSelect.value = btn.dataset.time;
     if (beatsPerBarMobile) beatsPerBarMobile.value = btn.dataset.time;
     transport.setBeatsPerBar(Number(btn.dataset.time));
+    syncTransportPills();
     tonicSelect.value = btn.dataset.tonic;
     scaleSelect.value = btn.dataset.scale;
     barsSelect.value = btn.dataset.bars;
@@ -1079,6 +1139,7 @@ function loadSettings() {
   bpmDisplay.textContent = bpmInput.value;
   transport.setBpm(Number(bpmInput.value));
   transport.setBeatsPerBar(Number(beatsPerBarSelect.value));
+  syncTransportPills();
   densityDisplay.textContent = `${Math.round(densityInput.value * 100)}%`;
   swingDisplay.textContent = `${Math.round(swingInput.value * 100)}%`;
   velocityDisplay.textContent = `${Math.round(velocityInput.value * 100)}%`;
@@ -1399,6 +1460,16 @@ shareBtn.addEventListener('click', async () => {
 
 if (scoreRandomizeBtn) scoreRandomizeBtn.addEventListener('click', () => generateBtn.click());
 if (scoreShareBtn) scoreShareBtn.addEventListener('click', () => shareBtn.click());
+if (scoreVariationBtn) {
+  scoreVariationBtn.addEventListener('click', () => {
+    const current = Number(seedInput.value) >>> 0;
+    const next = (current + 1) >>> 0;
+    seedInput.value = String(next);
+    clearActivePreset();
+    regenerateSong({ keepSeed: true });
+    saveSettings();
+  });
+}
 
 const shareImageBtn = document.getElementById('share-image-btn');
 shareImageBtn.addEventListener('click', async () => {
@@ -1438,6 +1509,7 @@ function currentSnapshot() {
 function loadEntry(e) {
   bpmInput.value = e.bpm;
   bpmDisplay.textContent = e.bpm;
+  syncTransportPills();
   transport.setBpm(Number(e.bpm));
   beatsPerBarSelect.value = e.time;
   transport.setBeatsPerBar(Number(e.time));
@@ -1478,13 +1550,83 @@ initShortcuts({
   onRandomize: () => generateBtn.click(),
 });
 
+/* ---- Mixer mobile sub-tabs ---- */
+const mixerSubtabs = document.querySelectorAll('.mixer-subtab');
+const mixerConsole = document.querySelector('.mixer-console');
+if (mixerConsole) mixerConsole.dataset.activeSection = 'tracks';
+mixerSubtabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    const section = tab.dataset.section;
+    mixerSubtabs.forEach(t => {
+      const active = t === tab;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    if (mixerConsole) mixerConsole.dataset.activeSection = section;
+  });
+});
+
 /* ---- Onboarding ---- */
 const tourBtn = document.getElementById('tour-btn');
 tourBtn.addEventListener('click', () => startOnboarding());
 if (shouldShowOnboarding()) startOnboarding();
 
+/* ---- PWA install prompt ---- */
+const INSTALL_DISMISSED_KEY = 'seedsong-install-dismissed';
+let deferredInstallPrompt = null;
+const installBanner = document.getElementById('install-banner');
+const installAcceptBtn = document.getElementById('install-accept');
+const installDismissBtn = document.getElementById('install-dismiss');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  if (localStorage.getItem(INSTALL_DISMISSED_KEY) === '1') return;
+  deferredInstallPrompt = e;
+  if (installBanner) installBanner.hidden = false;
+});
+
+if (installAcceptBtn) {
+  installAcceptBtn.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    try {
+      await deferredInstallPrompt.userChoice;
+    } catch {}
+    deferredInstallPrompt = null;
+    if (installBanner) installBanner.hidden = true;
+  });
+}
+
+if (installDismissBtn) {
+  installDismissBtn.addEventListener('click', () => {
+    localStorage.setItem(INSTALL_DISMISSED_KEY, '1');
+    if (installBanner) installBanner.hidden = true;
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  if (installBanner) installBanner.hidden = true;
+});
+
 /* ---- Tab switching ---- */
 const tabBar = document.getElementById('tab-bar');
+function activateTab(panelId) {
+  const tab = tabBar.querySelector(`[role="tab"][data-panel="${panelId}"]`);
+  if (!tab) return;
+  for (const t of tabBar.querySelectorAll('[role="tab"]')) {
+    t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+  }
+  for (const p of document.querySelectorAll('.tab-panel')) {
+    p.classList.toggle('hidden', p.id !== `panel-${panelId}`);
+  }
+  saveSettings();
+}
+
+document.addEventListener('click', (e) => {
+  const cta = e.target.closest('[data-go-to-tab]');
+  if (cta) activateTab(cta.dataset.goToTab);
+});
+
 tabBar.addEventListener('click', (e) => {
   const tab = e.target.closest('[role="tab"]');
   if (!tab) return;
