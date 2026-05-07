@@ -659,10 +659,13 @@ function regenerateSong({ keepSeed = false } = {}) {
   if (transposeSemitones !== 0) currentSong.events.forEach(ev => { ev.midi += transposeSemitones; });
 
   seedInput.value = String(seed);
-  const lockInfo = lockedBars.size > 0 ? ` · ${lockedBars.size} locked` : '';
   const progLabel = progressionSelect.value === 'auto' ? currentSong.preset : progressionSelect.value;
-  const sectionInfo = currentSong.sections ? ` · ${currentSong.sections.length} sections` : '';
-  songInfo.textContent = `seed ${seed} · ${progLabel} · ${currentSong.events.length} notes${sectionInfo}${lockInfo}`;
+  const metaParts = [];
+  if (progLabel) metaParts.push(progLabel);
+  metaParts.push(`${currentSong.events.length} notes`);
+  if (currentSong.sections) metaParts.push(`${currentSong.sections.length} sections`);
+  if (lockedBars.size > 0) metaParts.push(`${lockedBars.size} locked`);
+  songInfo.innerHTML = `<span class="song-info-seed">seed ${seed}</span><span class="song-info-meta">${metaParts.join(' · ')}</span>`;
   pushUrlState();
 
   if (pendingLockedBars) {
