@@ -2296,6 +2296,78 @@ input[type="text"]:focus {
   top: 16px;
 }
 
+/* ---- PWA install banner ---- */
+.install-banner {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 6px 8px 6px 16px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25), 0 0 0 4px var(--accent-glow);
+  z-index: 150;
+  font-size: 13px;
+  max-width: calc(100vw - 24px);
+}
+
+.install-banner[hidden] { display: none; }
+
+.install-banner-text {
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.install-banner-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.install-banner-btn:hover {
+  background: var(--accent-hover);
+}
+
+.install-banner-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.install-banner-close:hover {
+  color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+  .install-banner {
+    top: auto;
+    bottom: calc(100% + 8px); /* Avoid transport bar; recalculated via JS-free CSS using top */
+    bottom: 88px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: none;
+  }
+  .install-banner-text { font-size: 14px; }
+}
+
 /* ---- Responsive ---- */
 
 

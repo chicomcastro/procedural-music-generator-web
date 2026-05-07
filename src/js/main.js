@@ -1555,6 +1555,43 @@ const tourBtn = document.getElementById('tour-btn');
 tourBtn.addEventListener('click', () => startOnboarding());
 if (shouldShowOnboarding()) startOnboarding();
 
+/* ---- PWA install prompt ---- */
+const INSTALL_DISMISSED_KEY = 'seedsong-install-dismissed';
+let deferredInstallPrompt = null;
+const installBanner = document.getElementById('install-banner');
+const installAcceptBtn = document.getElementById('install-accept');
+const installDismissBtn = document.getElementById('install-dismiss');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  if (localStorage.getItem(INSTALL_DISMISSED_KEY) === '1') return;
+  deferredInstallPrompt = e;
+  if (installBanner) installBanner.hidden = false;
+});
+
+if (installAcceptBtn) {
+  installAcceptBtn.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    try {
+      await deferredInstallPrompt.userChoice;
+    } catch {}
+    deferredInstallPrompt = null;
+    if (installBanner) installBanner.hidden = true;
+  });
+}
+
+if (installDismissBtn) {
+  installDismissBtn.addEventListener('click', () => {
+    localStorage.setItem(INSTALL_DISMISSED_KEY, '1');
+    if (installBanner) installBanner.hidden = true;
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  if (installBanner) installBanner.hidden = true;
+});
+
 /* ---- Tab switching ---- */
 const tabBar = document.getElementById('tab-bar');
 tabBar.addEventListener('click', (e) => {
