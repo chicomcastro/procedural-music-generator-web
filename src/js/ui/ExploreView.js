@@ -25,19 +25,92 @@ let isPlaying = false;
 let activeOscillators = [];
 let stopHandle = null;
 
-function generateRandomCandidate() {
-  const r = Math.random;
-  const params = {
-    seed: randomSeed(),
-    scale: pick(SCALES, r),
-    tonic: Math.floor(r() * 12),
-    bpm: pick(BPMS, r),
-    voice: pick(VOICES, r),
-    bars: 4,
-    beatsPerBar: 4,
-    density: 0.4 + r() * 0.45,
-    swing: r() < 0.4 ? Math.round(r() * 4) / 10 : 0,
+/* ---- "More like this" ---- */
+function topOfMap(map) {
+  let best = null, bestN = -1;
+  for (const [k, v] of Object.entries(map)) {
+    if (v > bestN) { best = k; bestN = v; }
+  }
+  return { key: best, count: bestN };
+}
+
+function getLikedTaste() {
+  const liked = readFeedback().filter(e => e.action === 'like' || e.action === 'save');
+  if (liked.length < 2) return null;
+  const scaleMap = {}, tonicMap = {}, voiceMap = {};
+  let densitySum = 0, swingSum = 0, bpmSum = 0;
+  for (const e of liked) {
+    scaleMap[e.scale] = (scaleMap[e.scale] || 0) + 1;
+    tonicMap[e.tonic] = (tonicMap[e.tonic] || 0) + 1;
+    voiceMap[e.voice] = (voiceMap[e.voice] || 0) + 1;
+    densitySum += e.density;
+    swingSum += e.swing;
+    bpmSum += e.bpm;
+  }
+  return {
+    scales: scaleMap,
+    tonics: tonicMap,
+    voices: voiceMap,
+    avgDensity: densitySum / liked.length,
+    avgSwing: swingSum / liked.length,
+    avgBpm: bpmSum / liked.length,
+    topScale: topOfMap(scaleMap).key,
+    topVoice: topOfMap(voiceMap).key,
   };
+}
+
+function pickWeighted(map, fallbackArr, exploreChance = 0.35) {
+  if (Math.random() < exploreChance) return fallbackArr[Math.floor(Math.random() * fallbackArr.length)];
+  const entries = Object.entries(map);
+  if (entries.length === 0) return fallbackArr[Math.floor(Math.random() * fallbackArr.length)];
+  const total = entries.reduce((a, [, n]) => a + n, 0);
+  let pickPoint = Math.random() * total;
+  for (const [k, n] of entries) {
+    pickPoint -= n;
+    if (pickPoint <= 0) {
+      // Coerce numeric keys back to numbers for tonic
+      return /^\d+$/.test(k) ? Number(k) : k;
+    }
+  }
+  return entries[0][0];
+}
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function generateRandomCandidate() {
+  const taste = getLikedTaste();
+  let params;
+  if (taste) {
+    // Bias toward favourites with some exploration
+    const scale = pickWeighted(taste.scales, SCALES);
+    const tonic = pickWeighted(taste.tonics, [...Array(12).keys()]);
+    const voice = pickWeighted(taste.voices, VOICES);
+    // BPM jitter around average, density nudged toward avg
+    const bpm = clamp(Math.round(taste.avgBpm + (Math.random() - 0.5) * 24), 60, 180);
+    const density = clamp(taste.avgDensity + (Math.random() - 0.5) * 0.25, 0.25, 0.95);
+    const swing = Math.random() < 0.35 ? clamp(taste.avgSwing + (Math.random() - 0.5) * 0.2, 0, 0.7) : 0;
+    params = {
+      seed: randomSeed(),
+      scale, tonic: typeof tonic === 'number' ? tonic : Number(tonic),
+      bpm, voice,
+      bars: 4, beatsPerBar: 4,
+      density, swing,
+      affinity: true,
+    };
+  } else {
+    const r = Math.random;
+    params = {
+      seed: randomSeed(),
+      scale: pick(SCALES, r),
+      tonic: Math.floor(r() * 12),
+      bpm: pick(BPMS, r),
+      voice: pick(VOICES, r),
+      bars: 4, beatsPerBar: 4,
+      density: 0.4 + r() * 0.45,
+      swing: r() < 0.4 ? Math.round(r() * 4) / 10 : 0,
+      affinity: false,
+    };
+  }
   const song = generateSong({
     seed: params.seed,
     tonic: 60 + (params.tonic - 0),
@@ -158,7 +231,9 @@ function loadNextCard() {
   const tagsEl = document.getElementById('feed-tags');
   if (tagsEl) {
     const swingTag = candidate.params.swing > 0 ? `<span class="feed-tag">${Math.round(candidate.params.swing * 100)}% swing</span>` : '';
+    const affinityTag = candidate.params.affinity ? `<span class="feed-tag feed-tag-affinity" title="Picked based on what you liked">★ for you</span>` : '';
     tagsEl.innerHTML = `
+      ${affinityTag}
       <span class="feed-tag">${TONIC_LABELS[candidate.params.tonic]} ${candidate.params.scale.replace('_', ' ')}</span>
       <span class="feed-tag">${candidate.params.bpm} BPM</span>
       <span class="feed-tag">${candidate.params.voice}</span>
@@ -212,13 +287,18 @@ function topOf(map) {
   return { key: best, count: bestN };
 }
 
+let lastWrappedSummary = null;
+
 function renderWrapped() {
   const all = readFeedback();
   const liked = all.filter(e => e.action === 'like');
   const body = document.getElementById('wrapped-body');
+  const actions = document.getElementById('wrapped-actions');
   if (!body) return;
   if (liked.length < 3) {
     body.innerHTML = `<p class="wrapped-empty">Like at least 3 seeds to unlock your Wrapped. You're ${liked.length}/3 there.</p>`;
+    if (actions) actions.hidden = true;
+    lastWrappedSummary = null;
     return;
   }
   const scale = {}, tonic = {}, voice = {}, bpmBucket = {};
@@ -239,6 +319,16 @@ function renderWrapped() {
   const avgDensity = Math.round((densitySum / liked.length) * 100);
   const avgSwing = Math.round((swingSum / liked.length) * 100);
 
+  lastWrappedSummary = {
+    total: liked.length,
+    scale: topScale.key.replace('_', ' '),
+    key: TONIC_LABELS[topTonic.key],
+    voice: topVoice.key,
+    tempo: topBpm.key,
+    density: avgDensity,
+    swing: avgSwing,
+  };
+
   body.innerHTML = `
     <div class="wrapped-stat"><span class="wrapped-stat-label">Total liked</span><span class="wrapped-stat-value">${liked.length}</span></div>
     <div class="wrapped-stat"><span class="wrapped-stat-label">Favourite scale</span><span class="wrapped-stat-value">${topScale.key.replace('_', ' ')} (${topScale.count})</span></div>
@@ -248,6 +338,128 @@ function renderWrapped() {
     <div class="wrapped-stat"><span class="wrapped-stat-label">Avg density</span><span class="wrapped-stat-value">${avgDensity}%</span></div>
     <div class="wrapped-stat"><span class="wrapped-stat-label">Avg swing</span><span class="wrapped-stat-value">${avgSwing}%</span></div>
   `;
+  if (actions) actions.hidden = false;
+}
+
+function renderWrappedImage() {
+  if (!lastWrappedSummary) return null;
+  const dpr = window.devicePixelRatio || 1;
+  const W = 1080;
+  const H = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // Background gradient
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, '#0f1f2a');
+  grad.addColorStop(0.5, '#142f44');
+  grad.addColorStop(1, '#0a1a26');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Accent glow blobs
+  ctx.fillStyle = 'rgba(74, 200, 168, 0.18)';
+  ctx.beginPath(); ctx.arc(W * 0.18, H * 0.22, 280, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(232, 167, 53, 0.12)';
+  ctx.beginPath(); ctx.arc(W * 0.85, H * 0.85, 320, 0, Math.PI * 2); ctx.fill();
+
+  // Header
+  ctx.fillStyle = '#4a8';
+  ctx.font = '700 38px -apple-system, "Segoe UI", sans-serif';
+  ctx.fillText('SeedSong', 70, 110);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  ctx.font = '500 18px -apple-system, sans-serif';
+  ctx.fillText('Your Wrapped', 70, 140);
+
+  // Title
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '800 76px -apple-system, "Segoe UI", sans-serif';
+  ctx.fillText('My musical taste', 70, 280);
+
+  // Stats grid
+  const stats = [
+    { label: 'TOTAL LIKED', value: String(lastWrappedSummary.total) },
+    { label: 'FAVOURITE SCALE', value: capitalise(lastWrappedSummary.scale) },
+    { label: 'FAVOURITE KEY', value: lastWrappedSummary.key },
+    { label: 'FAVOURITE VOICE', value: capitalise(lastWrappedSummary.voice) },
+    { label: 'TEMPO ZONE', value: lastWrappedSummary.tempo },
+    { label: 'AVG DENSITY · SWING', value: `${lastWrappedSummary.density}% · ${lastWrappedSummary.swing}%` },
+  ];
+
+  let y = 370;
+  for (const s of stats) {
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = '700 18px -apple-system, sans-serif';
+    ctx.fillText(s.label, 70, y);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '600 50px -apple-system, "Segoe UI", sans-serif';
+    ctx.fillText(s.value, 70, y + 60);
+    y += 105;
+  }
+
+  // Footer
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '400 16px -apple-system, sans-serif';
+  ctx.fillText('chicomcastro.github.io/procedural-music-generator-web', 70, H - 70);
+
+  return canvas;
+}
+
+function capitalise(s) {
+  if (!s) return s;
+  return String(s).replace(/(^|\s)\S/g, c => c.toUpperCase());
+}
+
+async function shareWrapped() {
+  const canvas = renderWrappedImage();
+  if (!canvas) return;
+  const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+  const file = new File([blob], 'seedsong-wrapped.png', { type: 'image/png' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({
+        title: 'My SeedSong Wrapped',
+        text: 'My musical taste, distilled.',
+        files: [file],
+      });
+      return;
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+    }
+  }
+  // Fallback: copy to clipboard
+  try {
+    await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': blob })]);
+    flashShareBtn('Copied!');
+    return;
+  } catch {}
+  // Final fallback: download
+  downloadWrapped();
+}
+
+function downloadWrapped() {
+  const canvas = renderWrappedImage();
+  if (!canvas) return;
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'seedsong-wrapped.png';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+  });
+}
+
+function flashShareBtn(text) {
+  const btn = document.getElementById('wrapped-share');
+  if (!btn) return;
+  const orig = btn.textContent;
+  btn.textContent = text;
+  setTimeout(() => { btn.textContent = orig; }, 1400);
 }
 
 function swipeAndAdvance(direction, action) {
@@ -288,6 +500,8 @@ export function initExploreView({ audioApi, onLoadSeed }) {
   wrappedOverlay?.addEventListener('click', (e) => {
     if (e.target === wrappedOverlay) wrappedOverlay.classList.add('hidden');
   });
+  document.getElementById('wrapped-share')?.addEventListener('click', shareWrapped);
+  document.getElementById('wrapped-download')?.addEventListener('click', downloadWrapped);
 
   // Touch swipe
   const card = document.getElementById('feed-card');

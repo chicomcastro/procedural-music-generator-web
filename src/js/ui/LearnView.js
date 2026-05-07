@@ -1,5 +1,37 @@
 const STORAGE_KEY = 'seedsong-learn-progress';
 const RECORDINGS_KEY = 'seedsong-learn-recordings';
+const STREAK_KEY = 'seedsong-learn-streak';
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function readStreak() {
+  try {
+    const v = JSON.parse(localStorage.getItem(STREAK_KEY)) || {};
+    return { current: v.current || 0, best: v.best || 0, lastDay: v.lastDay || null };
+  } catch { return { current: 0, best: 0, lastDay: null }; }
+}
+
+function writeStreak(s) { localStorage.setItem(STREAK_KEY, JSON.stringify(s)); }
+
+function bumpStreak() {
+  const today = todayKey();
+  const s = readStreak();
+  if (s.lastDay === today) return s;
+  if (s.lastDay) {
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const yKey = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    s.current = s.lastDay === yKey ? s.current + 1 : 1;
+  } else {
+    s.current = 1;
+  }
+  s.best = Math.max(s.best, s.current);
+  s.lastDay = today;
+  writeStreak(s);
+  return s;
+}
 
 const MODULES = [
   {
@@ -142,6 +174,21 @@ function updateProgress() {
   const lbl = document.getElementById('learn-progress-pct');
   if (fill) fill.style.width = `${pct}%`;
   if (lbl) lbl.textContent = `${pct}%`;
+  updateStreakUI();
+}
+
+function updateStreakUI() {
+  const s = readStreak();
+  const cur = document.getElementById('learn-streak-current');
+  const best = document.getElementById('learn-streak-best');
+  const wrap = document.getElementById('learn-streak');
+  if (cur) cur.textContent = String(s.current);
+  if (best) best.textContent = String(s.best);
+  if (wrap) {
+    wrap.classList.toggle('learn-streak-active', s.current > 0);
+    if (s.lastDay === todayKey()) wrap.classList.add('learn-streak-today');
+    else wrap.classList.remove('learn-streak-today');
+  }
 }
 
 function nextIncompleteIndex(from = 0) {
@@ -233,7 +280,10 @@ function closeExercise() {
 function advanceExercise(markDone) {
   if (activeIndex < 0) return;
   const m = MODULES[activeIndex];
-  if (markDone) progress.add(m.id);
+  if (markDone) {
+    progress.add(m.id);
+    bumpStreak();
+  }
   writeProgress(progress);
   updateProgress();
   renderContinueCard();
