@@ -58,7 +58,7 @@ function renderHistory() {
   const entries = getHistory();
   const { scaleLabel, tonicLabel } = getLabels();
   historyList.innerHTML = '';
-  historyEmpty.style.display = entries.length ? 'none' : 'block';
+  historyEmpty.style.display = entries.length ? 'none' : '';
   clearHistoryBtn.style.display = entries.length ? '' : 'none';
 
   for (let i = entries.length - 1; i >= 0; i--) {

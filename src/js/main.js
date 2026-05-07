@@ -1610,6 +1610,23 @@ window.addEventListener('appinstalled', () => {
 
 /* ---- Tab switching ---- */
 const tabBar = document.getElementById('tab-bar');
+function activateTab(panelId) {
+  const tab = tabBar.querySelector(`[role="tab"][data-panel="${panelId}"]`);
+  if (!tab) return;
+  for (const t of tabBar.querySelectorAll('[role="tab"]')) {
+    t.setAttribute('aria-selected', t === tab ? 'true' : 'false');
+  }
+  for (const p of document.querySelectorAll('.tab-panel')) {
+    p.classList.toggle('hidden', p.id !== `panel-${panelId}`);
+  }
+  saveSettings();
+}
+
+document.addEventListener('click', (e) => {
+  const cta = e.target.closest('[data-go-to-tab]');
+  if (cta) activateTab(cta.dataset.goToTab);
+});
+
 tabBar.addEventListener('click', (e) => {
   const tab = e.target.closest('[role="tab"]');
   if (!tab) return;

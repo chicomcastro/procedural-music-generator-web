@@ -1605,6 +1605,56 @@ input[type="text"]:focus {
   opacity: 1;
 }
 
+/* ---- Empty state ---- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+  gap: 4px;
+}
+
+.empty-state-icon {
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  opacity: 0.65;
+}
+
+.empty-state-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.empty-state-text {
+  font-size: 13px;
+  margin: 0 0 12px 0;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+.empty-state-cta {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: background-color 150ms, transform 150ms;
+}
+
+.empty-state-cta:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
 /* ---- History ---- */
 
 

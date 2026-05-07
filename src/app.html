@@ -515,7 +515,18 @@
                         <button id="clear-history" type="button">Clear all</button>
                     </div>
                     <div id="history-list"></div>
-                    <p id="history-empty" class="hint">No saved melodies yet.</p>
+                    <div id="history-empty" class="empty-state">
+                        <svg class="empty-state-icon" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="10" y="14" width="44" height="40" rx="4"/>
+                            <line x1="10" y1="22" x2="54" y2="22"/>
+                            <circle cx="20" cy="38" r="4" fill="currentColor"/>
+                            <path d="M24 38V24l20-3v14"/>
+                            <circle cx="40" cy="35" r="4" fill="currentColor"/>
+                        </svg>
+                        <p class="empty-state-title">No saved melodies yet</p>
+                        <p class="empty-state-text">Hit Save in the Generator tab to keep your favourite seeds here.</p>
+                        <button type="button" class="empty-state-cta" data-go-to-tab="generator">Open Generator</button>
+                    </div>
                 </section>
             </div>
 
