@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'seedsong-learn-progress';
+const RECORDINGS_KEY = 'seedsong-learn-recordings';
 
 const MODULES = [
   {
@@ -68,31 +69,52 @@ function readProgress() {
   try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY)) || []); }
   catch { return new Set(); }
 }
+function writeProgress(set) { localStorage.setItem(STORAGE_KEY, JSON.stringify([...set])); }
 
-function writeProgress(set) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+function readRecordings() {
+  try { return JSON.parse(localStorage.getItem(RECORDINGS_KEY)) || {}; }
+  catch { return {}; }
 }
+function writeRecordings(map) { localStorage.setItem(RECORDINGS_KEY, JSON.stringify(map)); }
 
 let progress = new Set();
+let audioApiRef = null;
+let activeIndex = -1;
 
-function midiToFreq(midi) {
-  return 440 * Math.pow(2, (midi - 69) / 12);
+let activeOscillators = [];
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingObjectUrl = null;
+
+function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+function playOneNote(ctx, dest, midi, when, dur, wave = 'sine', vel = 0.1) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = wave;
+  osc.frequency.value = midiToFreq(midi);
+  gain.gain.setValueAtTime(0, when);
+  gain.gain.linearRampToValueAtTime(vel, when + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  osc.connect(gain).connect(dest);
+  osc.start(when);
+  osc.stop(when + dur + 0.05);
+  activeOscillators.push(osc);
 }
 
-async function playSequence(notes, audioApi, style = 'melody') {
-  if (!audioApi) return;
-  try { await audioApi.ensureInit(); } catch {}
-  const ctx = audioApi.getContext();
+async function playSequence(notes, style = 'melody') {
+  if (!audioApiRef) return;
+  stopAllNotes();
+  try { await audioApiRef.ensureInit(); } catch {}
+  const ctx = audioApiRef.getContext();
   if (!ctx) return;
-  const dest = audioApi.getTrackDest(style === 'chord' ? 'chord' : 'melody') || audioApi.getMasterGain();
+  const dest = audioApiRef.getTrackDest(style === 'chord' ? 'chord' : 'melody') || audioApiRef.getMasterGain();
   const startTime = ctx.currentTime + 0.05;
 
   if (style === 'chord' && Array.isArray(notes) && typeof notes[0] === 'number') {
-    // single chord — play simultaneously
     for (const m of notes) playOneNote(ctx, dest, m, startTime, 1.4, 'triangle', 0.06);
     return;
   }
-
   if (style === 'progression') {
     let t = startTime;
     for (const chord of notes) {
@@ -101,26 +123,17 @@ async function playSequence(notes, audioApi, style = 'melody') {
     }
     return;
   }
-
-  // Default: arpeggiated melody
   const stepDur = style === 'rhythm' ? 0.35 : 0.42;
   for (let i = 0; i < notes.length; i++) {
     playOneNote(ctx, dest, notes[i], startTime + i * stepDur, stepDur * 0.85, 'sine', 0.10);
   }
 }
 
-function playOneNote(ctx, dest, midi, when, dur, wave = 'sine', vel = 0.1) {
-  const freq = midiToFreq(midi);
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = wave;
-  osc.frequency.value = freq;
-  gain.gain.setValueAtTime(0, when);
-  gain.gain.linearRampToValueAtTime(vel, when + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
-  osc.connect(gain).connect(dest);
-  osc.start(when);
-  osc.stop(when + dur + 0.05);
+function stopAllNotes() {
+  for (const osc of activeOscillators) {
+    try { osc.stop(); } catch {}
+  }
+  activeOscillators = [];
 }
 
 function updateProgress() {
@@ -131,46 +144,218 @@ function updateProgress() {
   if (lbl) lbl.textContent = `${pct}%`;
 }
 
-function render(audioApi) {
+function nextIncompleteIndex(from = 0) {
+  for (let i = from; i < MODULES.length; i++) {
+    if (!progress.has(MODULES[i].id)) return i;
+  }
+  return -1;
+}
+
+function renderContinueCard() {
+  const card = document.getElementById('learn-continue');
+  if (!card) return;
+  const idx = nextIncompleteIndex();
+  if (idx < 0) {
+    card.hidden = true;
+    return;
+  }
+  const m = MODULES[idx];
+  card.hidden = false;
+  document.getElementById('learn-continue-title').textContent = m.title;
+  document.getElementById('learn-continue-desc').textContent = m.description;
+  card.dataset.targetIndex = String(idx);
+}
+
+function renderCards() {
   const root = document.getElementById('learn-modules');
   if (!root) return;
   root.innerHTML = '';
-  for (const m of MODULES) {
+  for (let i = 0; i < MODULES.length; i++) {
+    const m = MODULES[i];
     const done = progress.has(m.id);
     const card = document.createElement('div');
     card.className = `learn-card${done ? ' completed' : ''}`;
     card.dataset.id = m.id;
+    card.dataset.index = String(i);
+    card.tabIndex = 0;
     card.innerHTML = `
       <span class="learn-card-tag">${m.tag}</span>
       <h3 class="learn-card-title">${m.title}</h3>
       <p class="learn-card-desc">${m.description}</p>
       <div class="learn-card-footer">
-        <span class="learn-card-status${done ? ' done' : ''}">${done ? '✓ Completed' : 'Tap card to listen'}</span>
-        <button class="learn-card-cta" data-action="${done ? 'reset' : 'complete'}" type="button">${done ? 'Replay' : 'Mark done'}</button>
+        <span class="learn-card-status${done ? ' done' : ''}">${done ? '✓ Completed' : 'Tap to open'}</span>
+        <span class="learn-card-cta">${done ? 'Replay →' : 'Open →'}</span>
       </div>
     `;
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.learn-card-cta')) return;
-      playSequence(m.notes, audioApi, m.style);
-    });
-    card.querySelector('.learn-card-cta')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const action = e.target.dataset.action;
-      if (action === 'complete') progress.add(m.id);
-      else if (action === 'reset') {
-        playSequence(m.notes, audioApi, m.style);
-        return;
+    card.addEventListener('click', () => openExercise(i));
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openExercise(i);
       }
-      writeProgress(progress);
-      updateProgress();
-      render(audioApi);
     });
     root.appendChild(card);
   }
   updateProgress();
 }
 
+/* ---- Exercise modal ---- */
+
+function openExercise(index) {
+  if (index < 0 || index >= MODULES.length) return;
+  activeIndex = index;
+  const m = MODULES[index];
+  const overlay = document.getElementById('learn-exercise-overlay');
+  if (!overlay) return;
+  document.getElementById('exercise-progress').textContent = `${index + 1} / ${MODULES.length}`;
+  document.getElementById('exercise-tag').textContent = m.tag;
+  document.getElementById('exercise-title').textContent = m.title;
+  document.getElementById('exercise-desc').textContent = m.description;
+  const doneBtn = document.getElementById('exercise-done');
+  if (doneBtn) {
+    doneBtn.textContent = progress.has(m.id) ? '✓ Already done — Next →' : 'Mark done →';
+  }
+  attachRecording(m.id);
+  overlay.classList.remove('hidden');
+}
+
+function closeExercise() {
+  stopAllNotes();
+  stopRecording(false);
+  const overlay = document.getElementById('learn-exercise-overlay');
+  if (overlay) overlay.classList.add('hidden');
+  if (recordingObjectUrl) {
+    URL.revokeObjectURL(recordingObjectUrl);
+    recordingObjectUrl = null;
+  }
+}
+
+function advanceExercise(markDone) {
+  if (activeIndex < 0) return;
+  const m = MODULES[activeIndex];
+  if (markDone) progress.add(m.id);
+  writeProgress(progress);
+  updateProgress();
+  renderContinueCard();
+  renderCards();
+  const next = nextIncompleteIndex(activeIndex + 1);
+  const nextWrap = next < 0 ? nextIncompleteIndex(0) : next;
+  if (nextWrap < 0) {
+    closeExercise();
+    return;
+  }
+  openExercise(nextWrap);
+}
+
+function attachRecording(moduleId) {
+  const audio = document.getElementById('exercise-recording');
+  const recordings = readRecordings();
+  if (audio && recordings[moduleId]) {
+    audio.src = recordings[moduleId];
+    audio.hidden = false;
+  } else if (audio) {
+    audio.removeAttribute('src');
+    audio.hidden = true;
+  }
+}
+
+async function toggleRecording(moduleId) {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setRecordHint('Recording not supported in this browser.');
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordedChunks = [];
+    mediaRecorder = new window.MediaRecorder(stream);
+    mediaRecorder.addEventListener('dataavailable', (e) => { if (e.data.size > 0) recordedChunks.push(e.data); });
+    mediaRecorder.addEventListener('stop', async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      const dataUrl = await blobToDataUrl(blob);
+      const recordings = readRecordings();
+      recordings[moduleId] = dataUrl;
+      writeRecordings(recordings);
+      attachRecording(moduleId);
+      setRecordingUI(false);
+      setRecordHint('Saved! Play back above or re-record.');
+    });
+    mediaRecorder.start();
+    setRecordingUI(true);
+    setRecordHint('Recording… tap again to stop.');
+  } catch (_err) {
+    setRecordHint('Microphone access denied.');
+  }
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function stopRecording() {
+  try { if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop(); } catch {}
+  setRecordingUI(false);
+}
+
+function setRecordingUI(recording) {
+  const btn = document.getElementById('exercise-record');
+  const lbl = btn?.querySelector('.exercise-record-label');
+  if (!btn) return;
+  btn.classList.toggle('recording', recording);
+  if (lbl) lbl.textContent = recording ? 'Stop' : 'Record';
+}
+
+function setRecordHint(text) {
+  const el = document.getElementById('exercise-record-hint');
+  if (el) el.textContent = text;
+}
+
+/* ---- Init ---- */
+
 export function initLearnView({ audioApi }) {
+  audioApiRef = audioApi;
   progress = readProgress();
-  render(audioApi);
+
+  renderCards();
+  renderContinueCard();
+
+  const continueBtn = document.getElementById('learn-continue-btn');
+  const continueCard = document.getElementById('learn-continue');
+  continueBtn?.addEventListener('click', () => {
+    const idx = Number(continueCard?.dataset.targetIndex || '0');
+    openExercise(idx);
+  });
+
+  document.getElementById('exercise-close')?.addEventListener('click', closeExercise);
+  document.getElementById('exercise-play')?.addEventListener('click', () => {
+    if (activeIndex < 0) return;
+    const m = MODULES[activeIndex];
+    playSequence(m.notes, m.style);
+  });
+  document.getElementById('exercise-record')?.addEventListener('click', () => {
+    if (activeIndex < 0) return;
+    toggleRecording(MODULES[activeIndex].id);
+  });
+  document.getElementById('exercise-done')?.addEventListener('click', () => advanceExercise(true));
+  document.getElementById('exercise-skip')?.addEventListener('click', () => advanceExercise(false));
+
+  document.getElementById('learn-exercise-overlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'learn-exercise-overlay') closeExercise();
+  });
+  document.addEventListener('keydown', (e) => {
+    const overlay = document.getElementById('learn-exercise-overlay');
+    if (!overlay || overlay.classList.contains('hidden')) return;
+    if (e.key === 'Escape') closeExercise();
+    else if (e.key === ' ') { e.preventDefault(); document.getElementById('exercise-play')?.click(); }
+    else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); advanceExercise(true); }
+  });
 }

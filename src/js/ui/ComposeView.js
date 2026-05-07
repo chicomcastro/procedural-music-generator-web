@@ -1,4 +1,5 @@
 import { randomSeed } from '../generate/rng.js';
+import { generateSong } from '../generate/song.js';
 
 const STORAGE_KEY = 'seedsong-compose-project';
 
@@ -24,6 +25,151 @@ const TONIC_LABELS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#'
 
 let sections = [];
 let onLoadSeedCb = null;
+let audioApiRef = null;
+
+/* ---- Playback ---- */
+let activeOscillators = [];
+let isPlaying = false;
+let stopTimeoutHandle = null;
+let progressTimerHandle = null;
+let totalDurationSec = 0;
+let playStartTime = 0;
+let activeSectionIndex = -1;
+
+function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+function scheduleNote(ctx, dest, midi, when, dur, type, peakVel) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.value = midiToFreq(midi);
+  gain.gain.setValueAtTime(0, when);
+  gain.gain.linearRampToValueAtTime(peakVel, when + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  osc.connect(gain).connect(dest);
+  osc.start(when);
+  osc.stop(when + dur + 0.05);
+  activeOscillators.push(osc);
+}
+
+async function playComposition() {
+  if (!audioApiRef || sections.length === 0) return;
+  if (isPlaying) { stopComposition(); return; }
+  try { await audioApiRef.ensureInit(); } catch {}
+  const ctx = audioApiRef.getContext();
+  if (!ctx) return;
+  const melodyDest = audioApiRef.getTrackDest('melody') || audioApiRef.getMasterGain();
+  const chordDest = audioApiRef.getTrackDest('chord') || melodyDest;
+  const bassDest = audioApiRef.getTrackDest('bass') || melodyDest;
+
+  isPlaying = true;
+  setPlayUI(true);
+
+  let cursorSec = ctx.currentTime + 0.05;
+  playStartTime = cursorSec;
+  totalDurationSec = 0;
+  const sectionStarts = [];
+
+  for (const sec of sections) {
+    const beatDur = 60 / sec.bpm;
+    const song = generateSong({
+      seed: sec.seed,
+      tonic: 60 + (sec.tonic | 0),
+      scale: sec.scale,
+      bars: sec.bars,
+      beatsPerBar: 4,
+      density: sec.density,
+    });
+    const sectionLengthSec = song.lengthBeats * beatDur;
+    sectionStarts.push({ start: cursorSec - playStartTime, length: sectionLengthSec });
+
+    for (const ev of song.events) {
+      if (ev.type === 'drum') continue;
+      const when = cursorSec + ev.atBeat * beatDur;
+      const dur = Math.max(0.05, ev.durationBeats * beatDur * 0.92);
+      const dest = ev.type === 'chord' ? chordDest : ev.type === 'bass' ? bassDest : melodyDest;
+      const type = ev.type === 'chord' ? 'triangle' : ev.type === 'bass' ? 'sawtooth' : 'sine';
+      const vel = ev.type === 'chord' ? 0.06 : ev.type === 'bass' ? 0.07 : 0.10;
+      scheduleNote(ctx, dest, ev.midi, when, dur, type, vel);
+    }
+
+    cursorSec += sectionLengthSec;
+    totalDurationSec += sectionLengthSec;
+  }
+
+  // Highlight + status timer
+  startProgressTimer(sectionStarts);
+  stopTimeoutHandle = window.setTimeout(() => stopComposition(), totalDurationSec * 1000 + 200);
+}
+
+function startProgressTimer(sectionStarts) {
+  if (progressTimerHandle) window.clearInterval(progressTimerHandle);
+  progressTimerHandle = window.setInterval(() => {
+    if (!isPlaying || !audioApiRef) return;
+    const ctx = audioApiRef.getContext();
+    if (!ctx) return;
+    const elapsed = ctx.currentTime - playStartTime;
+    if (elapsed < 0) return;
+    let idx = -1;
+    for (let i = 0; i < sectionStarts.length; i++) {
+      const s = sectionStarts[i];
+      if (elapsed >= s.start && elapsed < s.start + s.length) { idx = i; break; }
+    }
+    if (idx !== activeSectionIndex) {
+      activeSectionIndex = idx;
+      highlightActiveBlock();
+    }
+    updateStatusTime(elapsed);
+  }, 100);
+}
+
+function highlightActiveBlock() {
+  document.querySelectorAll('.section-block').forEach((el, i) => {
+    el.classList.toggle('section-block-active', i === activeSectionIndex);
+  });
+}
+
+function updateStatusTime(elapsed) {
+  const e = Math.max(0, Math.min(totalDurationSec, elapsed));
+  const t = document.getElementById('compose-status-time');
+  if (t) t.textContent = `${formatTime(e)} / ${formatTime(totalDurationSec)}`;
+}
+
+function formatTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60).toString().padStart(2, '0');
+  return `${m}:${sec}`;
+}
+
+function stopComposition() {
+  isPlaying = false;
+  for (const osc of activeOscillators) {
+    try { osc.stop(); } catch {}
+  }
+  activeOscillators = [];
+  if (stopTimeoutHandle) { window.clearTimeout(stopTimeoutHandle); stopTimeoutHandle = null; }
+  if (progressTimerHandle) { window.clearInterval(progressTimerHandle); progressTimerHandle = null; }
+  activeSectionIndex = -1;
+  highlightActiveBlock();
+  setPlayUI(false);
+}
+
+function setPlayUI(playing) {
+  const btn = document.getElementById('compose-play');
+  const icon = btn?.querySelector('.compose-play-icon');
+  const label = document.getElementById('compose-play-label');
+  const status = document.getElementById('compose-status');
+  if (icon) icon.textContent = playing ? '■' : '▶';
+  if (label) label.textContent = playing ? 'Stop' : 'Play composition';
+  if (status) status.hidden = !playing;
+  if (btn) btn.classList.toggle('compose-play-active', playing);
+}
+
+function refreshPlayButton() {
+  const btn = document.getElementById('compose-play');
+  if (!btn) return;
+  btn.disabled = sections.length === 0;
+}
 
 function load() {
   try {
@@ -58,9 +204,11 @@ function render() {
   tl.innerHTML = '';
   if (sections.length === 0) {
     if (empty) empty.hidden = false;
+    refreshPlayButton();
     return;
   }
   if (empty) empty.hidden = true;
+  refreshPlayButton();
 
   for (let i = 0; i < sections.length; i++) {
     const s = sections[i];
@@ -97,6 +245,7 @@ function findIndex(id) { return sections.findIndex(s => s.id === id); }
 function handleAction(id, action) {
   const idx = findIndex(id);
   if (idx < 0) return;
+  if (isPlaying) stopComposition();
   if (action === 'remove') {
     sections.splice(idx, 1);
   } else if (action === 'up' && idx > 0) {
@@ -123,14 +272,22 @@ function handleAction(id, action) {
   render();
 }
 
-export function initComposeView({ onLoadSeed }) {
+export function stopComposePlayback() {
+  if (isPlaying) stopComposition();
+}
+
+export function initComposeView({ onLoadSeed, audioApi }) {
   load();
   onLoadSeedCb = onLoadSeed;
+  audioApiRef = audioApi;
   render();
 
   const addBtn = document.getElementById('compose-add');
   const clearBtn = document.getElementById('compose-clear');
+  const playBtn = document.getElementById('compose-play');
   const tl = document.getElementById('compose-timeline');
+
+  playBtn?.addEventListener('click', () => playComposition());
 
   addBtn?.addEventListener('click', () => {
     sections.push(makeSection());

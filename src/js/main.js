@@ -21,7 +21,7 @@ import { initGallery } from './ui/Gallery.js';
 import { startOnboarding, shouldShowOnboarding } from './ui/Onboarding.js';
 import { initSidebar, onViewChange } from './ui/Sidebar.js';
 import { initExploreView, stopExplorePlayback, refreshExplore } from './ui/ExploreView.js';
-import { initComposeView } from './ui/ComposeView.js';
+import { initComposeView, stopComposePlayback } from './ui/ComposeView.js';
 import { initLearnView } from './ui/LearnView.js';
 import { getMasterGain } from './audio/AudioEngine.js';
 
@@ -1237,11 +1237,12 @@ function loadSeedIntoGenerator(p) {
 
 initSidebar();
 initExploreView({ audioApi, onLoadSeed: loadSeedIntoGenerator });
-initComposeView({ onLoadSeed: loadSeedIntoGenerator });
+initComposeView({ onLoadSeed: loadSeedIntoGenerator, audioApi });
 initLearnView({ audioApi });
 
 onViewChange((view) => {
   if (view !== 'explore') stopExplorePlayback();
+  if (view !== 'compose') stopComposePlayback();
   if (view === 'explore') refreshExplore();
   // Stop main scheduler if user leaves Generator
   if (view !== 'generator' && scheduler && scheduler.isPlaying) {
