@@ -77,10 +77,26 @@ button {
 
 #hero {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 48px;
+}
+
+.hero-title-group {
+  display: flex;
   align-items: baseline;
   gap: 12px;
-  padding: 6px 16px;
-  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -778,21 +794,38 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 8px;
-  min-height: 32px;
+  min-height: 36px;
 }
 
 .score-toolbar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.score-toolbar-info .song-info-seed {
   font-family: monospace;
-  font-size: 12px;
-  color: var(--text-secondary);
-  opacity: 0.75;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
-  min-width: 0;
+}
+
+.score-toolbar-info .song-info-meta {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .score-toolbar-info.flash {
@@ -1742,38 +1775,35 @@ input[type="text"]:focus {
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* ---- Theme toggle ---- */
+/* ---- Hero icon buttons ---- */
 
 #theme-toggle,
 #tour-btn,
 #shortcuts-btn {
-  position: fixed;
-  top: 5px;
-  background: var(--bg-card);
+  background: transparent;
   border: 1px solid var(--border);
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
-  transition: background-color 150ms, border-color 150ms, transform 150ms;
+  transition: background-color 150ms, border-color 150ms, color 150ms;
   line-height: 1;
+  font-weight: 600;
 }
 
-#theme-toggle { right: 10px; font-size: 13px; }
-#shortcuts-btn { right: 40px; font-weight: 600; }
-#tour-btn { right: 70px; }
+#theme-toggle { font-size: 15px; }
 
 #theme-toggle:hover,
 #shortcuts-btn:hover,
 #tour-btn:hover {
   border-color: var(--accent);
-  transform: scale(1.1);
+  color: var(--accent);
+  background: var(--accent-glow);
 }
 
 /* ---- Mixer ---- */
@@ -2863,27 +2893,30 @@ input[type="text"]:focus {
     height: 80px;
   }
 
-  /* Larger corner action buttons (touch targets) */
+  /* Hero buttons keep their inline header position; just bump size for touch */
   #theme-toggle,
   #tour-btn,
   #shortcuts-btn {
-    top: 8px;
     width: 36px;
     height: 36px;
     font-size: 16px;
   }
 
-  #theme-toggle { right: 12px; font-size: 17px; }
-  #shortcuts-btn { right: 56px; font-size: 18px; }
-  #tour-btn { right: 100px; font-size: 18px; }
+  #theme-toggle { font-size: 17px; }
+  #shortcuts-btn { font-size: 18px; }
+  #tour-btn { font-size: 18px; }
 
-  /* song-info: allow two-line wrap on small screens */
-  .score-toolbar-info {
-    white-space: normal;
-    line-height: 1.35;
-    overflow: visible;
-    text-overflow: clip;
-    max-height: 2.7em;
+  #hero {
+    padding: 8px 12px;
+    min-height: 56px;
+  }
+
+  .score-toolbar-info .song-info-seed {
+    font-size: 14px;
+  }
+
+  .score-toolbar-info .song-info-meta {
+    font-size: 12px;
   }
 }
 
