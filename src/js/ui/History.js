@@ -6,6 +6,7 @@ const clearHistoryBtn = document.getElementById('clear-history');
 const songNameInput = document.getElementById('song-name');
 const saveBtn = document.getElementById('save-btn');
 const saveHint = document.getElementById('save-hint');
+const unsavedDot = document.getElementById('unsaved-dot');
 
 let onLoad = null;
 let getSnapshot = null;
@@ -35,12 +36,15 @@ function snapshotsMatch(a, b) {
 export function checkUnsaved() {
   if (!getSnapshot) return;
   const snap = getSnapshot();
-  if (snapshotsMatch(snap, lastSavedSnapshot)) {
-    saveHint.textContent = '';
-    saveHint.classList.remove('unsaved');
-  } else {
+  const isUnsaved = !snapshotsMatch(snap, lastSavedSnapshot);
+  if (isUnsaved) {
     saveHint.textContent = 'Unsaved changes';
     saveHint.classList.add('unsaved');
+    if (unsavedDot) unsavedDot.hidden = false;
+  } else {
+    saveHint.textContent = '';
+    saveHint.classList.remove('unsaved');
+    if (unsavedDot) unsavedDot.hidden = true;
   }
 }
 

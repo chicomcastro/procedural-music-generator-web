@@ -32,7 +32,7 @@
     <button id="shortcuts-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
 
     <header id="hero">
-        <h1>SeedSong</h1>
+        <h1>SeedSong<span id="unsaved-dot" class="unsaved-dot" hidden aria-label="Unsaved changes" title="Unsaved changes"></span></h1>
         <p class="tagline">Infinite piano melodies from a single seed number.</p>
     </header>
 
@@ -330,7 +330,7 @@
                     <div class="mixer-console">
                         <div class="mixer-group">
                             <div class="mixer-channel" data-ch="melody">
-                                <span class="mixer-ch-label">MEL</span>
+                                <span class="mixer-ch-label" title="Melody">MEL</span>
                                 <div class="mixer-pan-wrap">
                                     <span class="mixer-pan-label">L</span>
                                     <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="melody" aria-label="Melody pan">
@@ -346,7 +346,7 @@
                                 </div>
                             </div>
                             <div class="mixer-channel duet-only" data-ch="melody2">
-                                <span class="mixer-ch-label">ML2</span>
+                                <span class="mixer-ch-label" title="Melody 2 (duet)">ML2</span>
                                 <div class="mixer-pan-wrap">
                                     <span class="mixer-pan-label">L</span>
                                     <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="melody2" aria-label="Melody 2 pan">
@@ -362,7 +362,7 @@
                                 </div>
                             </div>
                             <div class="mixer-channel" data-ch="chord">
-                                <span class="mixer-ch-label">CHD</span>
+                                <span class="mixer-ch-label" title="Chords">CHD</span>
                                 <div class="mixer-pan-wrap">
                                     <span class="mixer-pan-label">L</span>
                                     <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="chord" aria-label="Chord pan">
@@ -378,7 +378,7 @@
                                 </div>
                             </div>
                             <div class="mixer-channel" data-ch="bass">
-                                <span class="mixer-ch-label">BASS</span>
+                                <span class="mixer-ch-label" title="Bass">BASS</span>
                                 <div class="mixer-pan-wrap">
                                     <span class="mixer-pan-label">L</span>
                                     <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="bass" aria-label="Bass pan">
@@ -394,7 +394,7 @@
                                 </div>
                             </div>
                             <div class="mixer-channel" data-ch="drum">
-                                <span class="mixer-ch-label">DRM</span>
+                                <span class="mixer-ch-label" title="Drums">DRM</span>
                                 <div class="mixer-pan-wrap">
                                     <span class="mixer-pan-label">L</span>
                                     <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="drum" aria-label="Drum pan">
@@ -410,7 +410,7 @@
                                 </div>
                             </div>
                             <div class="mixer-channel" data-ch="click">
-                                <span class="mixer-ch-label">CLK</span>
+                                <span class="mixer-ch-label" title="Click track / metronome">CLK</span>
                                 <div class="mixer-pan-wrap">
                                     <span class="mixer-pan-label">L</span>
                                     <input type="range" class="mixer-pan" min="-1" max="1" step="0.1" value="0" data-track="click" aria-label="Click pan">
@@ -429,21 +429,21 @@
                         <div class="mixer-divider"></div>
                         <div class="mixer-group">
                             <div class="mixer-channel">
-                                <span class="mixer-ch-label">REV</span>
+                                <span class="mixer-ch-label" title="Reverb send">REV</span>
                                 <div class="mixer-fader-wrap">
                                     <input id="reverb" type="range" class="mixer-fader" min="0" max="0.8" step="0.05" value="0" aria-label="Reverb send">
                                 </div>
                                 <span id="reverb-display" class="mixer-val">0%</span>
                             </div>
                             <div class="mixer-channel">
-                                <span class="mixer-ch-label">DLY</span>
+                                <span class="mixer-ch-label" title="Delay send">DLY</span>
                                 <div class="mixer-fader-wrap">
                                     <input id="delay" type="range" class="mixer-fader" min="0" max="0.7" step="0.05" value="0" aria-label="Delay send">
                                 </div>
                                 <span id="delay-display" class="mixer-val">0%</span>
                             </div>
                             <div class="mixer-channel">
-                                <span class="mixer-ch-label">CHR</span>
+                                <span class="mixer-ch-label" title="Chorus send">CHR</span>
                                 <div class="mixer-fader-wrap">
                                     <input id="chorus" type="range" class="mixer-fader" min="0" max="0.8" step="0.05" value="0" aria-label="Chorus send">
                                 </div>
@@ -453,21 +453,21 @@
                         <div class="mixer-divider"></div>
                         <div class="mixer-group">
                             <div class="mixer-channel">
-                                <span class="mixer-ch-label">HI</span>
+                                <span class="mixer-ch-label" title="EQ High band (treble)">HI</span>
                                 <div class="mixer-fader-wrap">
                                     <input id="eq-high" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ High">
                                 </div>
                                 <span id="eq-high-display" class="mixer-val">0</span>
                             </div>
                             <div class="mixer-channel">
-                                <span class="mixer-ch-label">MID</span>
+                                <span class="mixer-ch-label" title="EQ Mid band">MID</span>
                                 <div class="mixer-fader-wrap">
                                     <input id="eq-mid" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ Mid">
                                 </div>
                                 <span id="eq-mid-display" class="mixer-val">0</span>
                             </div>
                             <div class="mixer-channel">
-                                <span class="mixer-ch-label">LO</span>
+                                <span class="mixer-ch-label" title="EQ Low band (bass)">LO</span>
                                 <div class="mixer-fader-wrap">
                                     <input id="eq-low" type="range" class="mixer-fader" min="-12" max="12" step="1" value="0" aria-label="EQ Low">
                                 </div>
@@ -477,7 +477,7 @@
                         <div class="mixer-divider"></div>
                         <div class="mixer-group">
                             <div class="mixer-channel mixer-master-ch">
-                                <span class="mixer-ch-label">MAIN</span>
+                                <span class="mixer-ch-label" title="Master volume">MAIN</span>
                                 <div class="mixer-fader-wrap">
                                     <input id="master-vol" type="range" class="mixer-fader" min="0" max="1" step="0.05" value="0.8" aria-label="Master volume">
                                 </div>
