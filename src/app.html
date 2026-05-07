@@ -60,6 +60,10 @@
                     </button>
                 </div>
             </div>
+            <div class="score-view-toggle" role="tablist" aria-label="Score view mode">
+                <button id="view-pianoroll" type="button" class="score-view-btn active">Piano Roll</button>
+                <button id="view-sheetmusic" type="button" class="score-view-btn">Sheet Music</button>
+            </div>
             <div class="score-canvas-wrap">
                 <canvas id="score-canvas" aria-label="Song score piano roll"></canvas>
                 <div id="osmd-container" style="display:none" aria-label="Sheet music notation"></div>
@@ -80,10 +84,6 @@
                     <button class="track-toggle active" data-track="chord" type="button">Chords</button>
                     <button class="track-toggle active" data-track="bass" type="button">Bass</button>
                     <button class="track-toggle active duet-only" data-track="melody2" type="button">Melody 2</button>
-                </div>
-                <div class="score-view-toggle">
-                    <button id="view-pianoroll" type="button" class="score-view-btn active">Piano Roll</button>
-                    <button id="view-sheetmusic" type="button" class="score-view-btn">Sheet Music</button>
                 </div>
             </div>
         </section>
