@@ -1550,6 +1550,22 @@ initShortcuts({
   onRandomize: () => generateBtn.click(),
 });
 
+/* ---- Mixer mobile sub-tabs ---- */
+const mixerSubtabs = document.querySelectorAll('.mixer-subtab');
+const mixerConsole = document.querySelector('.mixer-console');
+if (mixerConsole) mixerConsole.dataset.activeSection = 'tracks';
+mixerSubtabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    const section = tab.dataset.section;
+    mixerSubtabs.forEach(t => {
+      const active = t === tab;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    if (mixerConsole) mixerConsole.dataset.activeSection = section;
+  });
+});
+
 /* ---- Onboarding ---- */
 const tourBtn = document.getElementById('tour-btn');
 tourBtn.addEventListener('click', () => startOnboarding());

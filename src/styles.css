@@ -1736,6 +1736,37 @@ input[type="text"]:focus {
   color: var(--text-secondary);
 }
 
+.mixer-subtabs {
+  display: none;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 4px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.mixer-subtab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 150ms, color 150ms;
+}
+
+.mixer-subtab.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 .mixer-console {
   display: flex;
   flex-wrap: wrap;
@@ -2634,9 +2665,33 @@ input[type="text"]:focus {
   }
 
   /* Mixer */
+  .mixer-subtabs {
+    display: flex;
+  }
+
   .mixer-console {
-    overflow-x: auto;
+    overflow-x: hidden;
     max-width: 100%;
+    flex-direction: column;
+  }
+
+  .mixer-console > .mixer-divider {
+    display: none;
+  }
+
+  .mixer-console > .mixer-group {
+    display: none;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 8px 4px;
+  }
+
+  .mixer-console[data-active-section="tracks"] > [data-mixer-section="tracks"],
+  .mixer-console[data-active-section="fx"] > [data-mixer-section="fx"],
+  .mixer-console[data-active-section="eq"] > [data-mixer-section="eq"],
+  .mixer-console[data-active-section="master"] > [data-mixer-section="master"] {
+    display: flex;
   }
 
   .mixer-fader-wrap {

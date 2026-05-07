@@ -338,8 +338,14 @@
                             <option value="cathedral">Cathedral</option>
                         </select>
                     </div>
+                    <div class="mixer-subtabs" role="tablist" aria-label="Mixer sections">
+                        <button type="button" role="tab" class="mixer-subtab active" data-section="tracks" aria-selected="true">Tracks</button>
+                        <button type="button" role="tab" class="mixer-subtab" data-section="fx" aria-selected="false">FX</button>
+                        <button type="button" role="tab" class="mixer-subtab" data-section="eq" aria-selected="false">EQ</button>
+                        <button type="button" role="tab" class="mixer-subtab" data-section="master" aria-selected="false">Master</button>
+                    </div>
                     <div class="mixer-console">
-                        <div class="mixer-group">
+                        <div class="mixer-group" data-mixer-section="tracks">
                             <div class="mixer-channel" data-ch="melody">
                                 <span class="mixer-ch-label" title="Melody">MEL</span>
                                 <div class="mixer-pan-wrap">
@@ -438,7 +444,7 @@
                             </div>
                         </div>
                         <div class="mixer-divider"></div>
-                        <div class="mixer-group">
+                        <div class="mixer-group" data-mixer-section="fx">
                             <div class="mixer-channel">
                                 <span class="mixer-ch-label" title="Reverb send">REV</span>
                                 <div class="mixer-fader-wrap">
@@ -462,7 +468,7 @@
                             </div>
                         </div>
                         <div class="mixer-divider"></div>
-                        <div class="mixer-group">
+                        <div class="mixer-group" data-mixer-section="eq">
                             <div class="mixer-channel">
                                 <span class="mixer-ch-label" title="EQ High band (treble)">HI</span>
                                 <div class="mixer-fader-wrap">
@@ -486,7 +492,7 @@
                             </div>
                         </div>
                         <div class="mixer-divider"></div>
-                        <div class="mixer-group">
+                        <div class="mixer-group" data-mixer-section="master">
                             <div class="mixer-channel mixer-master-ch">
                                 <span class="mixer-ch-label" title="Master volume">MAIN</span>
                                 <div class="mixer-fader-wrap">
