@@ -19,6 +19,11 @@ import { initShortcuts } from './ui/Shortcuts.js';
 import { initHistory, checkUnsaved } from './ui/History.js';
 import { initGallery } from './ui/Gallery.js';
 import { startOnboarding, shouldShowOnboarding } from './ui/Onboarding.js';
+import { initSidebar, onViewChange } from './ui/Sidebar.js';
+import { initExploreView, stopExplorePlayback, refreshExplore } from './ui/ExploreView.js';
+import { initComposeView } from './ui/ComposeView.js';
+import { initLearnView } from './ui/LearnView.js';
+import { getMasterGain } from './audio/AudioEngine.js';
 
 /* ---- DOM refs ---- */
 const pianoEl = document.getElementById('piano');
@@ -1193,6 +1198,57 @@ window.addEventListener('beforeunload', saveSettings);
   if (urlHasSeed) applyUrlParams();
   regenerateSong({ keepSeed: urlHasSeed || seedInput.value !== '' });
 }
+
+/* ---- Sidebar + new views ---- */
+
+const audioApi = {
+  ensureInit: async () => init(),
+  getContext,
+  getTrackDest,
+  getMasterGain,
+};
+
+function loadSeedIntoGenerator(p) {
+  if (!p) return;
+  if (p.seed != null) seedInput.value = String(p.seed);
+  if (p.scale != null) scaleSelect.value = p.scale;
+  if (p.tonic != null) tonicSelect.value = String(p.tonic);
+  if (p.bpm != null) {
+    bpmInput.value = String(p.bpm);
+    bpmDisplay.textContent = String(p.bpm);
+    transport.setBpm(Number(p.bpm));
+  }
+  if (p.bars != null) barsSelect.value = String(p.bars);
+  if (p.density != null) {
+    densityInput.value = String(p.density);
+    densityDisplay.textContent = `${Math.round(p.density * 100)}%`;
+  }
+  if (p.swing != null) {
+    swingInput.value = String(p.swing);
+    swingDisplay.textContent = `${Math.round(p.swing * 100)}%`;
+  }
+  if (p.voice && voiceSelect.querySelector(`option[value="${p.voice}"]`)) {
+    voiceSelect.value = p.voice;
+  }
+  syncTransportPills?.();
+  clearActivePreset();
+  regenerateSong({ keepSeed: true });
+}
+
+initSidebar();
+initExploreView({ audioApi, onLoadSeed: loadSeedIntoGenerator });
+initComposeView({ onLoadSeed: loadSeedIntoGenerator });
+initLearnView({ audioApi });
+
+onViewChange((view) => {
+  if (view !== 'explore') stopExplorePlayback();
+  if (view === 'explore') refreshExplore();
+  // Stop main scheduler if user leaves Generator
+  if (view !== 'generator' && scheduler && scheduler.isPlaying) {
+    scheduler.stop();
+    updatePlayerUI();
+  }
+});
 
 requestAnimationFrame(() => { document.body.style.opacity = '1'; });
 
