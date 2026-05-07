@@ -802,10 +802,19 @@ kbd {
   animation: icon-flash 350ms ease-out;
 }
 
+#score-randomize-btn.flash svg {
+  animation: icon-spin 500ms ease-out;
+}
+
 @keyframes icon-flash {
   0% { transform: scale(1); }
   50% { transform: scale(1.12); }
   100% { transform: scale(1); }
+}
+
+@keyframes icon-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .score-canvas-wrap {

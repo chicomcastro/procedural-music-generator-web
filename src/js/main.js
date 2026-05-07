@@ -42,6 +42,7 @@ const songInfo = document.getElementById('song-info');
 const kbdOctaveDisplay = document.getElementById('kbd-octave');
 const shareBtn = document.getElementById('share-btn');
 const scoreRandomizeBtn = document.getElementById('score-randomize-btn');
+const scoreVariationBtn = document.getElementById('score-variation-btn');
 const scoreShareBtn = document.getElementById('score-share-btn');
 const songNameInput = document.getElementById('song-name');
 const progressionSelect = document.getElementById('progression');
@@ -967,6 +968,28 @@ for (const panInput of document.querySelectorAll('.mixer-pan')) {
 const presetBtns = document.querySelectorAll('.preset-btn');
 function clearActivePreset() { presetBtns.forEach(b => b.classList.remove('active')); }
 
+// Auto-generate tooltips on each preset showing the parameters it applies
+function buildPresetTip(btn) {
+  const d = btn.dataset;
+  const parts = [];
+  if (d.bpm) parts.push(`${d.bpm} BPM`);
+  if (d.tonic && d.scale) {
+    const tOpt = tonicSelect.querySelector(`option[value="${d.tonic}"]`);
+    const sOpt = scaleSelect.querySelector(`option[value="${d.scale}"]`);
+    parts.push(`${tOpt ? tOpt.textContent : d.tonic} ${sOpt ? sOpt.textContent : d.scale}`);
+  }
+  if (d.bars && d.time) parts.push(`${d.bars} bars · ${d.time}/4`);
+  if (d.voice) parts.push(d.voice);
+  if (d.density) parts.push(`density ${Math.round(d.density * 100)}%`);
+  if (d.swing && d.swing !== '0') parts.push(`swing ${Math.round(d.swing * 100)}%`);
+  return parts.join(' · ');
+}
+presetBtns.forEach(btn => {
+  const tip = buildPresetTip(btn);
+  btn.setAttribute('title', tip);
+  btn.setAttribute('data-tip', tip);
+});
+
 for (const btn of presetBtns) {
   btn.addEventListener('click', () => {
     bpmInput.value = btn.dataset.bpm;
@@ -1399,6 +1422,16 @@ shareBtn.addEventListener('click', async () => {
 
 if (scoreRandomizeBtn) scoreRandomizeBtn.addEventListener('click', () => generateBtn.click());
 if (scoreShareBtn) scoreShareBtn.addEventListener('click', () => shareBtn.click());
+if (scoreVariationBtn) {
+  scoreVariationBtn.addEventListener('click', () => {
+    const current = Number(seedInput.value) >>> 0;
+    const next = (current + 1) >>> 0;
+    seedInput.value = String(next);
+    clearActivePreset();
+    regenerateSong({ keepSeed: true });
+    saveSettings();
+  });
+}
 
 const shareImageBtn = document.getElementById('share-image-btn');
 shareImageBtn.addEventListener('click', async () => {
