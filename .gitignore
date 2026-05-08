@@ -1,1 +1,8 @@
 node_modules/
+dist/
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/
+.cache/
+*.log
+.DS_Store

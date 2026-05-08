@@ -34,6 +34,28 @@ cd src && python3 -m http.server 8000
 
 Then open [http://localhost:8000](http://localhost:8000).
 
+## Development
+
+```bash
+npm install            # one-time
+npm run lint           # ESLint
+npm run typecheck      # tsc --noEmit (validates module resolution + syntax)
+npm run test:unit      # Vitest — unit + integration suite
+npm run build          # produces dist/ ready to deploy
+npm run serve          # http-server on port 8080 (used by Cypress)
+npm run test:e2e       # full Cypress run against the served app
+npm run ci             # lint + typecheck + unit + build (mirrors the CI job)
+```
+
+CI runs on every push and PR to `main`:
+
+| Job | What it does |
+| --- | --- |
+| **static** | `npm ci` → lint → typecheck → build → uploads `dist/` artifact |
+| **unit** | Vitest run (`test:unit`) |
+| **e2e** | Cypress against the built app (auto-starts the server) |
+
+
 ## Controls
 
 | Input | Action |
