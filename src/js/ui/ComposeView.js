@@ -2,6 +2,7 @@ import { randomSeed } from '../generate/rng.js';
 import { generateSong } from '../generate/song.js';
 import { audioBufferToWav } from '../export/wav.js';
 import { downloadBlob } from '../export/download.js';
+import { createScoreCanvas } from './ScoreCanvas.js';
 
 const STORAGE_KEY = 'seedsong-compose-project';
 const FILE_VERSION = 1;
@@ -261,6 +262,7 @@ function render() {
   tl.innerHTML = '';
   refreshPlayButton();
   refreshFileButtons();
+  refreshLivePreview();
   if (sections.length === 0) {
     if (empty) empty.hidden = false;
     return;
@@ -494,6 +496,78 @@ function refreshFileButtons() {
   const stemsBtn = document.getElementById('compose-export-stems');
   if (saveBtn) saveBtn.disabled = sections.length === 0;
   if (stemsBtn) stemsBtn.disabled = sections.length === 0;
+}
+
+/* ---- Live preview canvas ---- */
+let composeScoreCanvas = null;
+
+function buildCombinedSong() {
+  if (sections.length === 0) return null;
+  const events = [];
+  let beatCursor = 0;
+  let totalBeats = 0;
+  const sectionMarkers = [];
+  // Use a uniform display BPM (the first section's) for visual scaling
+  const displayBpm = sections[0]?.bpm || 110;
+  for (const sec of sections) {
+    const enabled = new Set(sec.tracks || ALL_TRACKS);
+    const song = generateSong({
+      seed: sec.seed,
+      tonic: 60 + (sec.tonic | 0),
+      scale: sec.scale,
+      bars: sec.bars,
+      beatsPerBar: 4,
+      density: sec.density,
+    });
+    // Re-time events so each section's BPM stretches to the display BPM
+    const stretch = displayBpm / sec.bpm;
+    sectionMarkers.push({ label: sec.name, startBeat: beatCursor, lengthBeats: song.lengthBeats * stretch });
+    for (const ev of song.events) {
+      if (ev.type === 'drum') continue;
+      if (!enabled.has(ev.type)) continue;
+      events.push({
+        type: ev.type,
+        midi: ev.midi,
+        atBeat: beatCursor + ev.atBeat * stretch,
+        durationBeats: ev.durationBeats * stretch,
+        velocity: ev.velocity,
+      });
+    }
+    beatCursor += song.lengthBeats * stretch;
+    totalBeats = beatCursor;
+  }
+  return {
+    events: events.sort((a, b) => a.atBeat - b.atBeat),
+    lengthBeats: totalBeats,
+    beatsPerBar: 4,
+    bars: Math.round(totalBeats / 4),
+    bpm: displayBpm,
+    sections: sectionMarkers,
+  };
+}
+
+function refreshLivePreview() {
+  const wrap = document.getElementById('compose-preview');
+  if (!wrap) return;
+  const meta = document.getElementById('compose-preview-meta');
+  if (sections.length === 0) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  const canvasEl = document.getElementById('compose-preview-canvas');
+  if (canvasEl && !composeScoreCanvas) {
+    composeScoreCanvas = createScoreCanvas(canvasEl, {});
+  }
+  const song = buildCombinedSong();
+  if (composeScoreCanvas && song) composeScoreCanvas.render(song);
+  if (meta && song) {
+    const totalSec = sections.reduce((acc, s) => acc + (s.bars * 4 * 60 / s.bpm), 0);
+    const m = Math.floor(totalSec / 60);
+    const sec = Math.floor(totalSec % 60).toString().padStart(2, '0');
+    const noteCount = song.events.length;
+    meta.textContent = `${sections.length} sections · ${noteCount} notes · ${m}:${sec}`;
+  }
 }
 
 /* ---- Stem export ---- */

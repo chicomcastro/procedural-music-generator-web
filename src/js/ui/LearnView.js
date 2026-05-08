@@ -232,7 +232,8 @@ async function renderExerciseSheet(module) {
       });
       exerciseOSMD.container = container;
     }
-    const xml = buildMusicXMLFor(module);
+    const moduleForSheet = { ...module, notes: transposeNotes(module.notes) };
+    const xml = buildMusicXMLFor(moduleForSheet);
     await exerciseOSMD.load(xml);
     exerciseOSMD.render();
   } catch {
@@ -309,13 +310,14 @@ async function startPitchDetection(module) {
   source.connect(pitchAnalyser);
 
   // Build flat target sequence (octave-agnostic — match by pitch class)
+  const xnotes = transposeNotes(module.notes);
   pitchTargetSequence = [];
-  if (module.style === 'progression' && Array.isArray(module.notes[0])) {
-    for (const chord of module.notes) for (const m of chord) pitchTargetSequence.push(m);
+  if (module.style === 'progression' && Array.isArray(xnotes[0])) {
+    for (const chord of xnotes) for (const m of chord) pitchTargetSequence.push(m);
   } else if (module.style === 'chord') {
-    pitchTargetSequence = [...module.notes];
+    pitchTargetSequence = [...xnotes];
   } else {
-    pitchTargetSequence = module.notes.flat();
+    pitchTargetSequence = xnotes.flat();
   }
   pitchTargetIdx = 0;
   pitchSustainStart = 0;
@@ -415,6 +417,30 @@ function writeRecordings(map) { localStorage.setItem(RECORDINGS_KEY, JSON.string
 let progress = new Set();
 let audioApiRef = null;
 let activeIndex = -1;
+let exerciseTranspose = 0; // semitones
+let exerciseTempo = 110;
+
+function transposeNotes(notes) {
+  if (!notes || exerciseTranspose === 0) return notes;
+  if (Array.isArray(notes) && Array.isArray(notes[0])) {
+    return notes.map(c => c.map(m => m + exerciseTranspose));
+  }
+  return notes.map(m => Array.isArray(m) ? m.map(x => x + exerciseTranspose) : m + exerciseTranspose);
+}
+
+function tonicOfTransposed(originalNotes) {
+  // Use the lowest pitch in the first chord/note as the "key"
+  const first = Array.isArray(originalNotes[0]) ? Math.min(...originalNotes[0]) : originalNotes[0];
+  return ((first + exerciseTranspose) % 12 + 12) % 12;
+}
+
+function updateKeyLabel(module) {
+  const label = document.getElementById('exercise-key-label');
+  if (!label) return;
+  const pc = tonicOfTransposed(module.notes);
+  const sharp = PITCH_ALTERS[pc] ? '#' : '';
+  label.textContent = `${PITCH_STEPS[pc]}${sharp}`;
+}
 
 let activeOscillators = [];
 let mediaRecorder = null;
@@ -446,21 +472,32 @@ async function playSequence(notes, style = 'melody') {
   const dest = audioApiRef.getTrackDest(style === 'chord' ? 'chord' : 'melody') || audioApiRef.getMasterGain();
   const startTime = ctx.currentTime + 0.05;
 
-  if (style === 'chord' && Array.isArray(notes) && typeof notes[0] === 'number') {
-    for (const m of notes) playOneNote(ctx, dest, m, startTime, 1.4, 'triangle', 0.06);
+  // Tempo-aware durations: a quarter note at `exerciseTempo` BPM.
+  const beatDur = 60 / exerciseTempo;
+  const xnotes = transposeNotes(notes);
+
+  if (style === 'chord' && Array.isArray(xnotes) && typeof xnotes[0] === 'number') {
+    const wholeDur = beatDur * 4;
+    for (const m of xnotes) playOneNote(ctx, dest, m, startTime, wholeDur * 0.95, 'triangle', 0.06);
     return;
   }
   if (style === 'progression') {
     let t = startTime;
-    for (const chord of notes) {
-      for (const m of chord) playOneNote(ctx, dest, m, t, 1.0, 'triangle', 0.06);
-      t += 1.1;
+    const chordDur = beatDur * 4;
+    for (const chord of xnotes) {
+      for (const m of chord) playOneNote(ctx, dest, m, t, chordDur * 0.92, 'triangle', 0.06);
+      t += chordDur;
     }
     return;
   }
-  const stepDur = style === 'rhythm' ? 0.35 : 0.42;
-  for (let i = 0; i < notes.length; i++) {
-    playOneNote(ctx, dest, notes[i], startTime + i * stepDur, stepDur * 0.85, 'sine', 0.10);
+  const stepDur = beatDur; // quarter notes
+  for (let i = 0; i < xnotes.length; i++) {
+    const v = xnotes[i];
+    if (Array.isArray(v)) {
+      for (const m of v) playOneNote(ctx, dest, m, startTime + i * stepDur, stepDur * 0.85, 'triangle', 0.07);
+    } else {
+      playOneNote(ctx, dest, v, startTime + i * stepDur, stepDur * 0.85, 'sine', 0.10);
+    }
   }
 }
 
@@ -568,6 +605,13 @@ function openExercise(index) {
   attachRecording(m.id);
   setPitchStatus('listening…', 'idle');
   document.getElementById('exercise-pitch').hidden = true;
+  exerciseTranspose = 0;
+  exerciseTempo = 110;
+  const tempoSlider = document.getElementById('exercise-tempo');
+  const tempoDisp = document.getElementById('exercise-tempo-display');
+  if (tempoSlider) tempoSlider.value = String(exerciseTempo);
+  if (tempoDisp) tempoDisp.textContent = String(exerciseTempo);
+  updateKeyLabel(m);
   overlay.classList.remove('hidden');
   renderExerciseSheet(m);
 }
@@ -707,6 +751,26 @@ export function initLearnView({ audioApi }) {
   });
   document.getElementById('exercise-done')?.addEventListener('click', () => advanceExercise(true));
   document.getElementById('exercise-skip')?.addEventListener('click', () => advanceExercise(false));
+
+  document.getElementById('exercise-transpose-down')?.addEventListener('click', () => {
+    if (activeIndex < 0) return;
+    exerciseTranspose = Math.max(-12, exerciseTranspose - 1);
+    const m = MODULES[activeIndex];
+    updateKeyLabel(m);
+    renderExerciseSheet(m);
+  });
+  document.getElementById('exercise-transpose-up')?.addEventListener('click', () => {
+    if (activeIndex < 0) return;
+    exerciseTranspose = Math.min(12, exerciseTranspose + 1);
+    const m = MODULES[activeIndex];
+    updateKeyLabel(m);
+    renderExerciseSheet(m);
+  });
+  document.getElementById('exercise-tempo')?.addEventListener('input', (e) => {
+    exerciseTempo = Number(e.target.value) || 110;
+    const disp = document.getElementById('exercise-tempo-display');
+    if (disp) disp.textContent = String(exerciseTempo);
+  });
 
   document.getElementById('learn-exercise-overlay')?.addEventListener('click', (e) => {
     if (e.target.id === 'learn-exercise-overlay') closeExercise();

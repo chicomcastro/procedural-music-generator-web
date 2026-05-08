@@ -1,4 +1,4 @@
-const VIEWS = ['generator', 'explore', 'compose', 'learn'];
+const VIEWS = ['generator', 'explore', 'compose', 'learn', 'settings'];
 const DEFAULT_VIEW = 'generator';
 
 const listeners = [];

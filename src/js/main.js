@@ -23,6 +23,8 @@ import { initSidebar, onViewChange } from './ui/Sidebar.js';
 import { initExploreView, stopExplorePlayback, refreshExplore } from './ui/ExploreView.js';
 import { initComposeView, stopComposePlayback } from './ui/ComposeView.js';
 import { initLearnView } from './ui/LearnView.js';
+import { initSettingsView } from './ui/SettingsView.js';
+import { initI18n } from './i18n/i18n.js';
 import { getMasterGain } from './audio/AudioEngine.js';
 
 /* ---- DOM refs ---- */
@@ -1235,10 +1237,15 @@ function loadSeedIntoGenerator(p) {
   regenerateSong({ keepSeed: true });
 }
 
+initI18n();
+// Apply saved theme on load (Settings view persists this)
+const savedTheme = localStorage.getItem('seedsong-theme');
+if (savedTheme === 'light') document.documentElement.setAttribute('data-theme', 'light');
 initSidebar();
 initExploreView({ audioApi, onLoadSeed: loadSeedIntoGenerator });
 initComposeView({ onLoadSeed: loadSeedIntoGenerator, audioApi });
 initLearnView({ audioApi });
+initSettingsView();
 
 onViewChange((view) => {
   if (view !== 'explore') stopExplorePlayback();

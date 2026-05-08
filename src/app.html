@@ -43,7 +43,7 @@
         </button>
         <div class="hero-title-group">
             <h1>SeedSong<span id="unsaved-dot" class="unsaved-dot" hidden aria-label="Unsaved changes" title="Unsaved changes"></span></h1>
-            <p class="tagline">Infinite piano melodies from a single seed number.</p>
+            <p class="tagline" data-i18n="tagline">Infinite piano melodies from a single seed number.</p>
         </div>
         <div class="hero-actions">
             <button id="tour-btn" type="button" title="Take the tour" aria-label="Take the tour">&#9432;</button>
@@ -61,22 +61,26 @@
         <nav class="sidebar-nav">
             <a class="sidebar-link active" data-view="generator" href="#/generator">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                <span>Generator</span>
+                <span data-i18n="sidebar.generator">Generator</span>
             </a>
             <a class="sidebar-link" data-view="explore" href="#/explore">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></svg>
-                <span>Explore</span>
-                <span class="sidebar-badge">New</span>
+                <span data-i18n="sidebar.explore">Explore</span>
+                <span class="sidebar-badge" data-i18n="sidebar.badge.new">New</span>
             </a>
             <a class="sidebar-link" data-view="compose" href="#/compose">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="6" height="12" rx="1"/><rect x="11" y="9" width="6" height="9" rx="1"/><rect x="19" y="6" width="2" height="12" rx="1"/></svg>
-                <span>Compose</span>
-                <span class="sidebar-badge sidebar-badge-soon">Beta</span>
+                <span data-i18n="sidebar.compose">Compose</span>
+                <span class="sidebar-badge sidebar-badge-soon" data-i18n="sidebar.badge.beta">Beta</span>
             </a>
             <a class="sidebar-link" data-view="learn" href="#/learn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                <span>Learn</span>
-                <span class="sidebar-badge sidebar-badge-soon">Beta</span>
+                <span data-i18n="sidebar.learn">Learn</span>
+                <span class="sidebar-badge sidebar-badge-soon" data-i18n="sidebar.badge.beta">Beta</span>
+            </a>
+            <a class="sidebar-link" data-view="settings" href="#/settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span data-i18n="sidebar.settings">Settings</span>
             </a>
         </nav>
         <div class="sidebar-footer">
@@ -630,13 +634,13 @@
             <div class="explore-shell">
                 <header class="explore-head">
                     <div>
-                        <h2 class="view-title">Explore</h2>
-                        <p class="view-sub">Swipe through procedural seeds. Like what you love. We'll learn your taste.</p>
+                        <h2 class="view-title" data-i18n="explore.title">Explore</h2>
+                        <p class="view-sub" data-i18n="explore.sub">Swipe through procedural seeds. Like what you love. We'll learn your taste.</p>
                     </div>
                     <div class="explore-stats" id="explore-stats">
-                        <span class="explore-stat"><b id="explore-count-liked">0</b> liked</span>
-                        <span class="explore-stat"><b id="explore-count-skipped">0</b> skipped</span>
-                        <button id="explore-wrapped-btn" type="button" class="view-cta-secondary">Your Wrapped</button>
+                        <span class="explore-stat"><b id="explore-count-liked">0</b> <span data-i18n="explore.liked">liked</span></span>
+                        <span class="explore-stat"><b id="explore-count-skipped">0</b> <span data-i18n="explore.skipped">skipped</span></span>
+                        <button id="explore-wrapped-btn" type="button" class="view-cta-secondary" data-i18n="explore.wrapped">Your Wrapped</button>
                     </div>
                 </header>
 
@@ -693,17 +697,17 @@
             <div class="compose-shell">
                 <header class="view-head">
                     <div>
-                        <h2 class="view-title">Compose</h2>
-                        <p class="view-sub">Arrange sections into a full song. Each block has its own seed and parameters.</p>
+                        <h2 class="view-title" data-i18n="compose.title">Compose</h2>
+                        <p class="view-sub" data-i18n="compose.sub">Arrange sections into a full song. Each block has its own seed and parameters.</p>
                     </div>
                     <div class="view-actions compose-toolbar">
                         <button id="compose-play" type="button" class="view-cta compose-toolbar-primary" disabled>
                             <span class="compose-play-icon" aria-hidden="true">▶</span>
-                            <span id="compose-play-label">Play composition</span>
+                            <span id="compose-play-label" data-i18n="compose.play">Play composition</span>
                         </button>
                         <div class="compose-toolbar-secondary">
                             <button id="compose-add" type="button" class="view-cta-ghost">
-                                <span aria-hidden="true">+</span> Add section
+                                <span data-i18n="compose.add">+ Add section</span>
                             </button>
                             <div class="compose-tool-group" role="group" aria-label="History">
                                 <button id="compose-undo" type="button" class="compose-tool-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>↶</button>
@@ -720,9 +724,9 @@
                             </div>
                             <button id="compose-export-stems" type="button" class="view-cta-ghost" disabled title="Render each track as a separate WAV file">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="18" x2="9" y2="6"/><polygon points="9 6 19 12 9 18 9 6"/><line x1="3" y1="6" x2="3" y2="18"/></svg>
-                                Export stems
+                                <span data-i18n="compose.export_stems">Export stems</span>
                             </button>
-                            <button id="compose-clear" type="button" class="view-cta-ghost compose-clear-btn">Clear</button>
+                            <button id="compose-clear" type="button" class="view-cta-ghost compose-clear-btn" data-i18n="compose.clear">Clear</button>
                         </div>
                     </div>
                 </header>
@@ -732,9 +736,14 @@
                     <span class="compose-status-time" id="compose-status-time">0:00</span>
                 </div>
 
+                <div class="compose-preview" id="compose-preview" hidden>
+                    <canvas id="compose-preview-canvas" class="compose-preview-canvas" aria-label="Composition preview"></canvas>
+                    <div class="compose-preview-meta" id="compose-preview-meta"></div>
+                </div>
+
                 <div id="compose-timeline" class="compose-timeline" role="list" aria-label="Section timeline"></div>
 
-                <p class="hint compose-empty" id="compose-empty">No sections yet — tap <strong>+ Add section</strong> to start arranging.</p>
+                <p class="hint compose-empty" id="compose-empty" data-i18n="compose.empty">No sections yet — tap + Add section to start arranging.</p>
 
                 <details class="roadmap-disclosure">
                     <summary><span class="roadmap-icon" aria-hidden="true">↗</span> What's coming next</summary>
@@ -751,17 +760,17 @@
             <div class="learn-shell">
                 <header class="view-head learn-head">
                     <div class="learn-head-title">
-                        <h2 class="view-title">Learn</h2>
-                        <p class="view-sub">Bite-sized music theory grounded in procedural examples you can hear instantly.</p>
+                        <h2 class="view-title" data-i18n="learn.title">Learn</h2>
+                        <p class="view-sub" data-i18n="learn.sub">Bite-sized music theory grounded in procedural examples you can hear instantly.</p>
                     </div>
                     <div class="learn-head-side">
                         <div id="learn-streak" class="learn-streak" title="Daily practice streak">
                             <span class="learn-streak-icon" aria-hidden="true">🔥</span>
-                            <span class="learn-streak-text"><b id="learn-streak-current">0</b> day streak</span>
-                            <span class="learn-streak-best">best <b id="learn-streak-best">0</b></span>
+                            <span class="learn-streak-text"><b id="learn-streak-current">0</b> <span data-i18n="learn.streak">day streak</span></span>
+                            <span class="learn-streak-best"><span data-i18n="learn.best">best</span> <b id="learn-streak-best">0</b></span>
                         </div>
                         <div class="learn-progress-wrap" aria-label="Course progress">
-                            <span class="learn-progress-label">Progress</span>
+                            <span class="learn-progress-label" data-i18n="learn.progress">Progress</span>
                             <div class="learn-progress-bar"><div id="learn-progress-fill"></div></div>
                             <span id="learn-progress-pct" class="learn-progress-pct">0%</span>
                         </div>
@@ -770,25 +779,44 @@
 
                 <div id="learn-continue" class="learn-continue" hidden>
                     <div class="learn-continue-body">
-                        <span class="learn-continue-eyebrow">Continue where you left off</span>
+                        <span class="learn-continue-eyebrow" data-i18n="learn.continue">Continue where you left off</span>
                         <h3 id="learn-continue-title" class="learn-continue-title">—</h3>
                         <p id="learn-continue-desc" class="learn-continue-desc">—</p>
                     </div>
-                    <button id="learn-continue-btn" type="button" class="view-cta">Resume</button>
+                    <button id="learn-continue-btn" type="button" class="view-cta" data-i18n="learn.resume">Resume</button>
                 </div>
 
                 <div id="learn-modules" class="learn-modules"></div>
 
-                <div id="learn-exercise-overlay" class="exercise-overlay overlay hidden" role="dialog" aria-modal="true" aria-labelledby="exercise-title">
-                    <div class="overlay-card exercise-card">
+                <div id="learn-exercise-overlay" class="exercise-stage overlay hidden" role="dialog" aria-modal="true" aria-labelledby="exercise-title">
+                    <div class="exercise-shell">
                         <header class="exercise-head">
-                            <span class="exercise-progress" id="exercise-progress">1 / 7</span>
+                            <div class="exercise-head-left">
+                                <span class="exercise-progress" id="exercise-progress">1 / 7</span>
+                                <span class="learn-card-tag" id="exercise-tag"></span>
+                            </div>
                             <button id="exercise-close" type="button" class="exercise-close" aria-label="Close exercise">&times;</button>
                         </header>
-                        <span class="learn-card-tag" id="exercise-tag"></span>
                         <h2 id="exercise-title" class="exercise-title">—</h2>
                         <p id="exercise-desc" class="exercise-desc">—</p>
+
+                        <div class="exercise-controls-row">
+                            <div class="exercise-control">
+                                <span class="exercise-control-label" data-i18n="exercise.key">Key</span>
+                                <div class="exercise-stepper">
+                                    <button type="button" class="exercise-step-btn" id="exercise-transpose-down" aria-label="Transpose down">−</button>
+                                    <span id="exercise-key-label">C</span>
+                                    <button type="button" class="exercise-step-btn" id="exercise-transpose-up" aria-label="Transpose up">+</button>
+                                </div>
+                            </div>
+                            <div class="exercise-control">
+                                <span class="exercise-control-label"><span data-i18n="exercise.tempo">Tempo</span> <em id="exercise-tempo-display">110</em></span>
+                                <input id="exercise-tempo" type="range" min="40" max="200" step="1" value="110" aria-label="Exercise tempo">
+                            </div>
+                        </div>
+
                         <div id="exercise-sheet" class="exercise-sheet" aria-label="Sheet music"></div>
+
                         <div class="exercise-controls">
                             <button id="exercise-play" type="button" class="exercise-play-btn" aria-label="Play example">
                                 <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
@@ -799,6 +827,7 @@
                             </button>
                         </div>
                         <p id="exercise-record-hint" class="exercise-record-hint hint">Tap record to play along live, or capture your attempt — we'll save it locally.</p>
+
                         <div id="exercise-pitch" class="exercise-pitch" hidden>
                             <div class="exercise-pitch-row">
                                 <span class="exercise-pitch-label">You're playing</span>
@@ -814,9 +843,10 @@
                             </div>
                         </div>
                         <audio id="exercise-recording" controls hidden></audio>
+
                         <footer class="exercise-foot">
-                            <button id="exercise-skip" type="button" class="view-cta-secondary">Skip</button>
-                            <button id="exercise-done" type="button" class="view-cta">Mark done →</button>
+                            <button id="exercise-skip" type="button" class="view-cta-secondary" data-i18n="exercise.skip">Skip</button>
+                            <button id="exercise-done" type="button" class="view-cta" data-i18n="exercise.done">Mark done →</button>
                         </footer>
                     </div>
                 </div>
@@ -829,6 +859,51 @@
                         <li>User-authored exercises</li>
                     </ul>
                 </details>
+            </div>
+        </section>
+
+        <section class="app-view hidden" id="view-settings" data-view="settings" aria-label="Settings view">
+            <div class="settings-shell">
+                <header class="view-head">
+                    <div>
+                        <h2 class="view-title" data-i18n="settings.title">Settings</h2>
+                        <p class="view-sub" data-i18n="settings.sub">Personalise SeedSong. Everything is stored locally on your device.</p>
+                    </div>
+                </header>
+
+                <div class="settings-section">
+                    <h3 class="settings-section-title" data-i18n="settings.language">Language</h3>
+                    <div class="settings-language" id="settings-language" role="radiogroup" aria-label="Language">
+                        <button type="button" class="settings-lang" data-lang="en">English</button>
+                        <button type="button" class="settings-lang" data-lang="pt">Português</button>
+                        <button type="button" class="settings-lang" data-lang="es">Español</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 class="settings-section-title" data-i18n="settings.theme">Theme</h3>
+                    <div class="settings-theme" id="settings-theme" role="radiogroup" aria-label="Theme">
+                        <button type="button" class="settings-theme-btn" data-theme="dark" data-i18n="settings.theme.dark">Dark</button>
+                        <button type="button" class="settings-theme-btn" data-theme="light" data-i18n="settings.theme.light">Light</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3 class="settings-section-title" data-i18n="settings.data">Your data</h3>
+                    <p class="settings-text" data-i18n="settings.data_desc">Download everything we keep on this browser (history, projects, learning progress, preferences) as a JSON backup.</p>
+                    <button type="button" id="settings-download" class="view-cta">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <span data-i18n="settings.download">Download my data</span>
+                    </button>
+                </div>
+
+                <div class="settings-section settings-danger">
+                    <h3 class="settings-section-title" data-i18n="settings.danger">Danger zone</h3>
+                    <p class="settings-text" data-i18n="settings.reset_desc">Wipes saved melodies, compose projects, learning progress and preferences. This cannot be undone.</p>
+                    <button type="button" id="settings-reset" class="view-cta-ghost compose-clear-btn">
+                        <span data-i18n="settings.reset">Reset all SeedSong data</span>
+                    </button>
+                </div>
             </div>
         </section>
     </main>

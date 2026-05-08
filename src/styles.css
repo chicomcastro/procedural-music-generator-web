@@ -138,6 +138,24 @@ button {
     box-shadow: 4px 0 20px rgba(0, 0, 0, 0.4);
   }
 
+  .exercise-stage {
+    padding: 0;
+  }
+  .exercise-shell {
+    border-radius: 0;
+    border: none;
+    padding: 16px 16px 24px;
+    max-height: 100vh;
+    min-height: 100vh;
+  }
+  .exercise-sheet {
+    max-height: 36vh;
+  }
+  .exercise-controls-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .compose-toolbar {
     flex-direction: column;
     align-items: stretch;
@@ -747,6 +765,109 @@ button {
 
 .compose-empty[hidden] { display: none; }
 
+/* ---- Settings ---- */
+.settings-shell {
+  padding: 22px 22px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 720px;
+}
+
+.settings-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.settings-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 60ch;
+}
+
+.settings-language,
+.settings-theme {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-lang,
+.settings-theme-btn {
+  background: transparent;
+  border: 1px solid var(--border-hover);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 150ms, background-color 150ms, border-color 150ms;
+}
+
+.settings-lang:hover,
+.settings-theme-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.settings-lang.active,
+.settings-theme-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.settings-section.settings-danger {
+  border-color: rgba(248, 81, 73, 0.35);
+}
+
+.compose-preview {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.compose-preview[hidden] { display: none; }
+
+.compose-preview-canvas {
+  width: 100%;
+  height: 28vh;
+  min-height: 180px;
+  display: block;
+  border-radius: 8px;
+  background: var(--bg-primary);
+  touch-action: none;
+}
+
+.compose-preview-meta {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
 .compose-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1267,22 +1388,108 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
   gap: 12px;
 }
 
-/* ---- Exercise modal ---- */
+/* ---- Exercise stage (full surface, sheet-first) ---- */
 
-.exercise-overlay {
-  align-items: flex-start;
-  padding: 32px 16px;
+.exercise-stage {
+  align-items: stretch;
+  justify-content: center;
+  padding: 24px;
   overflow-y: auto;
+  background: rgba(0, 0, 0, 0.7);
 }
 
-.exercise-card {
-  max-width: 520px;
+.exercise-shell {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
   width: 100%;
+  max-width: 920px;
+  margin: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 22px 26px;
+  gap: 14px;
+  padding: 26px 30px;
+  position: relative;
+  max-height: calc(100vh - 48px);
 }
+
+.exercise-head-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.exercise-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.exercise-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.exercise-control-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.exercise-control-label em {
+  font-style: normal;
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.exercise-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  padding: 4px 10px;
+}
+
+.exercise-stepper > span {
+  font-family: monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 30px;
+  text-align: center;
+}
+
+.exercise-step-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 18px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.exercise-step-btn:hover { background: var(--accent-glow); color: var(--accent); }
+
+.exercise-control input[type="range"] { width: 100%; }
 
 .exercise-head {
   display: flex;
@@ -1309,7 +1516,8 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
 
 .exercise-close:hover { color: var(--text-primary); }
 
-.exercise-card .exercise-title {
+.exercise-card .exercise-title,
+.exercise-shell .exercise-title {
   margin: 0;
   font-size: 22px;
   color: var(--text-primary);
@@ -1327,12 +1535,13 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
 
 .exercise-sheet {
   background: #fff;
-  border-radius: 8px;
-  padding: 8px 4px;
+  border-radius: 10px;
+  padding: 14px 12px;
   margin-bottom: 4px;
-  min-height: 60px;
-  max-height: 220px;
-  overflow-y: auto;
+  min-height: 220px;
+  max-height: 50vh;
+  overflow: auto;
+  flex: 1 1 auto;
 }
 
 .exercise-sheet:empty,
