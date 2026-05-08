@@ -268,17 +268,25 @@ function render() {
       <div class="section-block-grip" title="Drag to reorder" aria-hidden="true">
         <svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor"><circle cx="4" cy="4" r="1.4"/><circle cx="10" cy="4" r="1.4"/><circle cx="4" cy="10" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="4" cy="16" r="1.4"/><circle cx="10" cy="16" r="1.4"/></svg>
       </div>
-      <div class="section-block-handle">${i + 1}</div>
       <div class="section-block-body">
-        <input class="section-block-name" value="${escapeHtml(s.name)}" aria-label="Section name">
+        <div class="section-block-row">
+          <span class="section-block-index">${i + 1}</span>
+          <input class="section-block-name" value="${escapeHtml(s.name)}" aria-label="Section name">
+        </div>
         <div class="section-block-meta">
-          seed ${s.seed} · ${TONIC_LABELS[s.tonic]} ${SCALE_LABELS[s.scale] || s.scale} · ${s.bars} bars · ${s.bpm} BPM · density ${Math.round(s.density * 100)}%
+          <span>seed ${s.seed}</span>
+          <span class="section-meta-sep">·</span>
+          <span>${TONIC_LABELS[s.tonic]} ${SCALE_LABELS[s.scale] || s.scale}</span>
+          <span class="section-meta-sep">·</span>
+          <span>${s.bars} bars · ${s.bpm} BPM</span>
+          <span class="section-meta-sep">·</span>
+          <span>${Math.round(s.density * 100)}% density</span>
         </div>
       </div>
       <div class="section-block-actions">
         <button class="section-block-btn" data-action="reseed" title="New seed" aria-label="Generate new seed">⟲</button>
         <button class="section-block-btn" data-action="open" title="Open in Generator" aria-label="Open in Generator">↗</button>
-        <button class="section-block-btn danger" data-action="remove" title="Remove section" aria-label="Remove section">×</button>
+        <button class="section-block-btn section-block-btn-danger" data-action="remove" title="Remove section" aria-label="Remove section">×</button>
       </div>
     `;
     tl.appendChild(block);
