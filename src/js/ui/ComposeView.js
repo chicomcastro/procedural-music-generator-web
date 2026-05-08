@@ -1,5 +1,7 @@
 import { randomSeed } from '../generate/rng.js';
 import { generateSong } from '../generate/song.js';
+import { audioBufferToWav } from '../export/wav.js';
+import { downloadBlob } from '../export/download.js';
 
 const STORAGE_KEY = 'seedsong-compose-project';
 const FILE_VERSION = 1;
@@ -136,8 +138,10 @@ async function playComposition() {
     const sectionLengthSec = song.lengthBeats * beatDur;
     sectionStarts.push({ start: cursorSec - playStartTime, length: sectionLengthSec });
 
+    const enabled = new Set(sec.tracks || ALL_TRACKS);
     for (const ev of song.events) {
       if (ev.type === 'drum') continue;
+      if (!enabled.has(ev.type)) continue;
       const when = cursorSec + ev.atBeat * beatDur;
       const dur = Math.max(0.05, ev.durationBeats * beatDur * 0.92);
       const dest = ev.type === 'chord' ? chordDest : ev.type === 'bass' ? bassDest : melodyDest;
@@ -235,8 +239,14 @@ function makeSection(template) {
     bars: t.bars,
     density: t.density,
     voice: 'piano',
+    tracks: ['melody', 'chord', 'bass'],
   };
 }
+
+const SCALES_LIST = ['major', 'natural_minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'pentatonic_major', 'pentatonic_minor', 'blues'];
+const VOICES_LIST = ['piano', 'pad', 'pluck', 'organ', 'strings', 'marimba', 'epiano'];
+const BARS_LIST = [2, 4, 8];
+const ALL_TRACKS = ['melody', 'chord', 'bass'];
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -264,29 +274,68 @@ function render() {
     block.dataset.id = s.id;
     block.draggable = true;
     block.setAttribute('role', 'listitem');
+    const tracksSet = new Set(s.tracks || ALL_TRACKS);
+    const trackChips = ALL_TRACKS.map(t => `
+      <button type="button" class="section-track-chip${tracksSet.has(t) ? ' active' : ''}" data-action="toggle-track" data-track="${t}" aria-pressed="${tracksSet.has(t)}">
+        <span class="section-track-dot section-track-dot-${t}"></span>${t}
+      </button>
+    `).join('');
+
     block.innerHTML = `
-      <div class="section-block-grip" title="Drag to reorder" aria-hidden="true">
-        <svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor"><circle cx="4" cy="4" r="1.4"/><circle cx="10" cy="4" r="1.4"/><circle cx="4" cy="10" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="4" cy="16" r="1.4"/><circle cx="10" cy="16" r="1.4"/></svg>
-      </div>
-      <div class="section-block-body">
-        <div class="section-block-row">
-          <span class="section-block-index">${i + 1}</span>
-          <input class="section-block-name" value="${escapeHtml(s.name)}" aria-label="Section name">
+      <div class="section-block-main">
+        <div class="section-block-grip" title="Drag to reorder" aria-hidden="true">
+          <svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor"><circle cx="4" cy="4" r="1.4"/><circle cx="10" cy="4" r="1.4"/><circle cx="4" cy="10" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="4" cy="16" r="1.4"/><circle cx="10" cy="16" r="1.4"/></svg>
         </div>
-        <div class="section-block-meta">
-          <span>seed ${s.seed}</span>
-          <span class="section-meta-sep">·</span>
-          <span>${TONIC_LABELS[s.tonic]} ${SCALE_LABELS[s.scale] || s.scale}</span>
-          <span class="section-meta-sep">·</span>
-          <span>${s.bars} bars · ${s.bpm} BPM</span>
-          <span class="section-meta-sep">·</span>
-          <span>${Math.round(s.density * 100)}% density</span>
+        <div class="section-block-body">
+          <div class="section-block-row">
+            <span class="section-block-index">${i + 1}</span>
+            <input class="section-block-name" value="${escapeHtml(s.name)}" aria-label="Section name">
+          </div>
+          <div class="section-block-meta">
+            <span>seed ${s.seed}</span>
+            <span class="section-meta-sep">·</span>
+            <span>${TONIC_LABELS[s.tonic]} ${SCALE_LABELS[s.scale] || s.scale}</span>
+            <span class="section-meta-sep">·</span>
+            <span>${s.bars} bars · ${s.bpm} BPM</span>
+            <span class="section-meta-sep">·</span>
+            <span>${Math.round(s.density * 100)}% density · ${s.voice}</span>
+          </div>
+          <div class="section-block-tracks">${trackChips}</div>
+        </div>
+        <div class="section-block-actions">
+          <button class="section-block-btn" data-action="toggle-edit" title="Edit parameters" aria-label="Edit parameters">⚙</button>
+          <button class="section-block-btn" data-action="reseed" title="New seed" aria-label="Generate new seed">⟲</button>
+          <button class="section-block-btn" data-action="open" title="Open in Generator" aria-label="Open in Generator">↗</button>
+          <button class="section-block-btn section-block-btn-danger" data-action="remove" title="Remove section" aria-label="Remove section">×</button>
         </div>
       </div>
-      <div class="section-block-actions">
-        <button class="section-block-btn" data-action="reseed" title="New seed" aria-label="Generate new seed">⟲</button>
-        <button class="section-block-btn" data-action="open" title="Open in Generator" aria-label="Open in Generator">↗</button>
-        <button class="section-block-btn section-block-btn-danger" data-action="remove" title="Remove section" aria-label="Remove section">×</button>
+      <div class="section-block-editor" hidden>
+        <div class="section-edit-grid">
+          <label class="section-edit-field">
+            <span>Tonic</span>
+            <select data-edit="tonic">${TONIC_LABELS.map((t, ti) => `<option value="${ti}"${ti === s.tonic ? ' selected' : ''}>${t}</option>`).join('')}</select>
+          </label>
+          <label class="section-edit-field">
+            <span>Scale</span>
+            <select data-edit="scale">${SCALES_LIST.map(sc => `<option value="${sc}"${sc === s.scale ? ' selected' : ''}>${SCALE_LABELS[sc] || sc}</option>`).join('')}</select>
+          </label>
+          <label class="section-edit-field">
+            <span>Bars</span>
+            <select data-edit="bars">${BARS_LIST.map(b => `<option value="${b}"${b === s.bars ? ' selected' : ''}>${b}</option>`).join('')}</select>
+          </label>
+          <label class="section-edit-field">
+            <span>BPM <em>${s.bpm}</em></span>
+            <input type="range" data-edit="bpm" min="40" max="220" step="1" value="${s.bpm}">
+          </label>
+          <label class="section-edit-field">
+            <span>Density <em>${Math.round(s.density * 100)}%</em></span>
+            <input type="range" data-edit="density" min="0.2" max="1" step="0.05" value="${s.density}">
+          </label>
+          <label class="section-edit-field">
+            <span>Voice</span>
+            <select data-edit="voice">${VOICES_LIST.map(v => `<option value="${v}"${v === s.voice ? ' selected' : ''}>${v}</option>`).join('')}</select>
+          </label>
+        </div>
       </div>
     `;
     tl.appendChild(block);
@@ -358,12 +407,12 @@ function onDragEnd(e) {
 
 /* ---- Actions ---- */
 
-function handleAction(id, action) {
+function handleAction(id, action, dataset, blockEl) {
   const idx = findIndex(id);
   if (idx < 0) return;
-  if (isPlaying) stopComposition();
 
   if (action === 'open') {
+    if (isPlaying) stopComposition();
     const s = sections[idx];
     if (onLoadSeedCb) onLoadSeedCb({
       seed: s.seed, scale: s.scale, tonic: s.tonic, bpm: s.bpm,
@@ -373,6 +422,34 @@ function handleAction(id, action) {
     return;
   }
 
+  if (action === 'toggle-edit') {
+    const editor = blockEl?.querySelector('.section-block-editor');
+    if (!editor) return;
+    const opening = editor.hasAttribute('hidden');
+    if (opening) editor.removeAttribute('hidden');
+    else editor.setAttribute('hidden', '');
+    blockEl.classList.toggle('section-editing', opening);
+    return;
+  }
+
+  if (action === 'toggle-track') {
+    const track = dataset?.track;
+    if (!track || !ALL_TRACKS.includes(track)) return;
+    if (isPlaying) stopComposition();
+    pushUndo();
+    const set = new Set(sections[idx].tracks || ALL_TRACKS);
+    if (set.has(track)) {
+      if (set.size > 1) set.delete(track);
+    } else {
+      set.add(track);
+    }
+    sections[idx].tracks = ALL_TRACKS.filter(t => set.has(t));
+    save(false);
+    render();
+    return;
+  }
+
+  if (isPlaying) stopComposition();
   pushUndo();
   if (action === 'remove') {
     sections.splice(idx, 1);
@@ -383,11 +460,133 @@ function handleAction(id, action) {
   render();
 }
 
+function applyEdit(id, field, value) {
+  const idx = findIndex(id);
+  if (idx < 0) return;
+  if (isPlaying) stopComposition();
+  pushUndo();
+  if (field === 'tonic') sections[idx].tonic = Math.max(0, Math.min(11, Number(value) | 0));
+  else if (field === 'scale') sections[idx].scale = String(value);
+  else if (field === 'bars') sections[idx].bars = BARS_LIST.includes(Number(value)) ? Number(value) : sections[idx].bars;
+  else if (field === 'bpm') sections[idx].bpm = Math.max(40, Math.min(240, Number(value) | 0));
+  else if (field === 'density') sections[idx].density = Math.max(0.1, Math.min(1, Number(value)));
+  else if (field === 'voice') sections[idx].voice = String(value);
+  save(false);
+  // Re-render only the affected block to preserve editor open state and focus
+  const block = document.querySelector(`.section-block[data-id="${id}"]`);
+  if (block) {
+    const editorOpen = !block.querySelector('.section-block-editor')?.hasAttribute('hidden');
+    render();
+    const newBlock = document.querySelector(`.section-block[data-id="${id}"]`);
+    if (newBlock && editorOpen) {
+      newBlock.querySelector('.section-block-editor')?.removeAttribute('hidden');
+      newBlock.classList.add('section-editing');
+    }
+  } else {
+    render();
+  }
+}
+
 /* ---- Save / load file ---- */
 
 function refreshFileButtons() {
-  const btn = document.getElementById('compose-save-file');
-  if (btn) btn.disabled = sections.length === 0;
+  const saveBtn = document.getElementById('compose-save-file');
+  const stemsBtn = document.getElementById('compose-export-stems');
+  if (saveBtn) saveBtn.disabled = sections.length === 0;
+  if (stemsBtn) stemsBtn.disabled = sections.length === 0;
+}
+
+/* ---- Stem export ---- */
+
+async function renderCompositionStem(trackType) {
+  if (sections.length === 0) return null;
+  // Compute total length first
+  let totalSec = 0;
+  const sectionData = sections.map(sec => {
+    const beatDur = 60 / sec.bpm;
+    const song = generateSong({
+      seed: sec.seed,
+      tonic: 60 + (sec.tonic | 0),
+      scale: sec.scale,
+      bars: sec.bars,
+      beatsPerBar: 4,
+      density: sec.density,
+    });
+    const lengthSec = song.lengthBeats * beatDur;
+    const start = totalSec;
+    totalSec += lengthSec;
+    return { sec, song, beatDur, start };
+  });
+  const tailSeconds = 1.5;
+  const sampleRate = 44100;
+  const offline = new OfflineAudioContext(2, Math.ceil(sampleRate * (totalSec + tailSeconds)), sampleRate);
+  const masterGain = offline.createGain();
+  masterGain.gain.value = 0.85;
+  masterGain.connect(offline.destination);
+
+  const wave = trackType === 'chord' ? 'triangle' : trackType === 'bass' ? 'sawtooth' : 'sine';
+  const peakVel = trackType === 'chord' ? 0.06 : trackType === 'bass' ? 0.07 : 0.10;
+
+  for (const { sec, song, beatDur, start } of sectionData) {
+    const enabled = new Set(sec.tracks || ALL_TRACKS);
+    if (!enabled.has(trackType)) continue;
+    for (const ev of song.events) {
+      if (ev.type !== trackType) continue;
+      const when = start + ev.atBeat * beatDur;
+      const dur = Math.max(0.05, ev.durationBeats * beatDur * 0.92);
+      const osc = offline.createOscillator();
+      const gain = offline.createGain();
+      osc.type = wave;
+      osc.frequency.value = 440 * Math.pow(2, (ev.midi - 69) / 12);
+      gain.gain.setValueAtTime(0, when);
+      gain.gain.linearRampToValueAtTime(peakVel, when + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+      osc.connect(gain).connect(masterGain);
+      osc.start(when);
+      osc.stop(when + dur + 0.05);
+    }
+  }
+
+  return offline.startRendering();
+}
+
+async function exportStems() {
+  if (sections.length === 0) return;
+  const btn = document.getElementById('compose-export-stems');
+  if (btn) {
+    btn.disabled = true;
+    btn.dataset.label = btn.textContent;
+    btn.textContent = 'Rendering…';
+  }
+  try {
+    const stamp = new Date().toISOString().slice(0, 10);
+    let exported = 0;
+    for (const track of ALL_TRACKS) {
+      const buffer = await renderCompositionStem(track);
+      if (!buffer) continue;
+      const wav = audioBufferToWav(buffer);
+      // Skip silent stems (no notes for that track in any section)
+      const hasContent = sections.some(s => (s.tracks || ALL_TRACKS).includes(track));
+      if (!hasContent) continue;
+      downloadBlob(wav, `seedsong-${stamp}-${track}.wav`, 'audio/wav');
+      exported++;
+    }
+    if (btn) {
+      btn.textContent = exported > 0 ? `✓ ${exported} stems` : 'No stems';
+      window.setTimeout(() => {
+        btn.textContent = btn.dataset.label || 'Export stems';
+        btn.disabled = false;
+      }, 1800);
+    }
+  } catch (_err) {
+    if (btn) {
+      btn.textContent = 'Failed';
+      window.setTimeout(() => {
+        btn.textContent = btn.dataset.label || 'Export stems';
+        btn.disabled = false;
+      }, 1800);
+    }
+  }
 }
 
 function downloadProject() {
@@ -429,6 +628,9 @@ async function loadProjectFile(file) {
 }
 
 function normalizeSection(s) {
+  const tracks = Array.isArray(s.tracks)
+    ? s.tracks.filter(t => ALL_TRACKS.includes(t))
+    : ALL_TRACKS.slice();
   return {
     id: s.id || `s${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     name: String(s.name || 'Section').slice(0, 32),
@@ -436,9 +638,10 @@ function normalizeSection(s) {
     scale: typeof s.scale === 'string' ? s.scale : 'major',
     tonic: Number.isFinite(s.tonic) ? Math.max(0, Math.min(11, s.tonic | 0)) : 0,
     bpm: Number.isFinite(s.bpm) ? Math.max(40, Math.min(240, s.bpm | 0)) : 110,
-    bars: [2, 4, 8].includes(s.bars) ? s.bars : 4,
+    bars: BARS_LIST.includes(s.bars) ? s.bars : 4,
     density: typeof s.density === 'number' ? Math.max(0.1, Math.min(1, s.density)) : 0.5,
     voice: typeof s.voice === 'string' ? s.voice : 'piano',
+    tracks: tracks.length > 0 ? tracks : ALL_TRACKS.slice(),
   };
 }
 
@@ -487,6 +690,7 @@ export function initComposeView({ onLoadSeed, audioApi }) {
   redoBtn?.addEventListener('click', redo);
 
   saveFileBtn?.addEventListener('click', downloadProject);
+  document.getElementById('compose-export-stems')?.addEventListener('click', exportStems);
   loadFileInput?.addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     if (file) loadProjectFile(file);
@@ -507,18 +711,37 @@ export function initComposeView({ onLoadSeed, audioApi }) {
     if (!btn) return;
     const block = btn.closest('.section-block');
     if (!block) return;
-    handleAction(block.dataset.id, btn.dataset.action);
+    handleAction(block.dataset.id, btn.dataset.action, btn.dataset, block);
   });
 
   tl?.addEventListener('change', (e) => {
-    if (!e.target.classList.contains('section-block-name')) return;
     const block = e.target.closest('.section-block');
     if (!block) return;
-    const idx = findIndex(block.dataset.id);
-    if (idx >= 0) {
-      pushUndo();
-      sections[idx].name = e.target.value.slice(0, 32);
-      save(false);
+    if (e.target.classList.contains('section-block-name')) {
+      const idx = findIndex(block.dataset.id);
+      if (idx >= 0) {
+        pushUndo();
+        sections[idx].name = e.target.value.slice(0, 32);
+        save(false);
+      }
+      return;
+    }
+    if (e.target.dataset.edit) {
+      applyEdit(block.dataset.id, e.target.dataset.edit, e.target.value);
+    }
+  });
+
+  // Live preview of slider values without committing on every input
+  tl?.addEventListener('input', (e) => {
+    const block = e.target.closest('.section-block');
+    if (!block) return;
+    if (e.target.dataset.edit === 'bpm' || e.target.dataset.edit === 'density') {
+      const labelEm = e.target.closest('label')?.querySelector('em');
+      if (labelEm) {
+        labelEm.textContent = e.target.dataset.edit === 'bpm'
+          ? String(e.target.value)
+          : `${Math.round(Number(e.target.value) * 100)}%`;
+      }
     }
   });
 }

@@ -97,6 +97,309 @@ const MODULES = [
   },
 ];
 
+/* ---- Sheet music (lazy OSMD) ---- */
+
+let osmdLoading = null;
+let exerciseOSMD = null;
+
+function loadOSMD() {
+  if (window.opensheetmusicdisplay) return Promise.resolve();
+  if (osmdLoading) return osmdLoading;
+  osmdLoading = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.6/build/opensheetmusicdisplay.min.js';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load OSMD'));
+    document.head.appendChild(script);
+  });
+  return osmdLoading;
+}
+
+const PITCH_STEPS = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
+const PITCH_ALTERS = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
+
+function midiToPitchXml(midi) {
+  const pc = ((midi % 12) + 12) % 12;
+  const octave = Math.floor(midi / 12) - 1;
+  const step = PITCH_STEPS[pc];
+  const alter = PITCH_ALTERS[pc];
+  const alterTag = alter ? `<alter>${alter}</alter>` : '';
+  return `<step>${step}</step>${alterTag}<octave>${octave}</octave>`;
+}
+
+function buildMusicXMLFor(module) {
+  // Default: quarter notes, 4/4 time, treble clef
+  const measures = [];
+  const notes = module.notes;
+  const beatsPerMeasure = 4;
+  let currentMeasure = [];
+  let beatsInMeasure = 0;
+
+  function flushMeasure(force) {
+    if (currentMeasure.length === 0 && !force) return;
+    measures.push(currentMeasure.join(''));
+    currentMeasure = [];
+    beatsInMeasure = 0;
+  }
+
+  function pushQuarter(midi, isChordMember = false) {
+    const chordTag = isChordMember ? '<chord/>' : '';
+    currentMeasure.push(`<note>${chordTag}<pitch>${midiToPitchXml(midi)}</pitch><duration>1</duration><type>quarter</type></note>`);
+  }
+
+  if (module.style === 'chord' && Array.isArray(notes) && typeof notes[0] === 'number') {
+    // Single chord — one whole note per pitch (chorded)
+    const sorted = [...notes].sort((a, b) => a - b);
+    sorted.forEach((m, i) => {
+      const chordTag = i > 0 ? '<chord/>' : '';
+      currentMeasure.push(`<note>${chordTag}<pitch>${midiToPitchXml(m)}</pitch><duration>4</duration><type>whole</type></note>`);
+    });
+    flushMeasure(true);
+  } else if (module.style === 'progression' && Array.isArray(notes) && Array.isArray(notes[0])) {
+    // Each chord = one whole note in its own measure
+    for (const chord of notes) {
+      currentMeasure = [];
+      const sorted = [...chord].sort((a, b) => a - b);
+      sorted.forEach((m, i) => {
+        const chordTag = i > 0 ? '<chord/>' : '';
+        currentMeasure.push(`<note>${chordTag}<pitch>${midiToPitchXml(m)}</pitch><duration>4</duration><type>whole</type></note>`);
+      });
+      measures.push(currentMeasure.join(''));
+    }
+  } else {
+    // Melody/rhythm: quarters
+    for (const note of notes) {
+      if (Array.isArray(note)) {
+        // chord-as-quarter
+        const sorted = [...note].sort((a, b) => a - b);
+        sorted.forEach((m, i) => pushQuarter(m, i > 0));
+      } else {
+        pushQuarter(note);
+      }
+      beatsInMeasure += 1;
+      if (beatsInMeasure >= beatsPerMeasure) flushMeasure();
+    }
+    if (beatsInMeasure > 0) {
+      // Pad with rests
+      while (beatsInMeasure < beatsPerMeasure) {
+        currentMeasure.push('<note><rest/><duration>1</duration><type>quarter</type></note>');
+        beatsInMeasure += 1;
+      }
+      flushMeasure(true);
+    }
+  }
+
+  const measuresXml = measures.map((m, i) => `
+    <measure number="${i + 1}">
+      ${i === 0 ? `<attributes>
+        <divisions>1</divisions>
+        <key><fifths>0</fifths></key>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>` : ''}
+      ${m}
+    </measure>
+  `).join('');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+<score-partwise version="3.1">
+  <part-list>
+    <score-part id="P1"><part-name>${module.title}</part-name></score-part>
+  </part-list>
+  <part id="P1">${measuresXml}</part>
+</score-partwise>`;
+}
+
+async function renderExerciseSheet(module) {
+  const container = document.getElementById('exercise-sheet');
+  if (!container) return;
+  container.textContent = '';
+  container.classList.add('exercise-sheet-loading');
+  try {
+    await loadOSMD();
+    if (!window.opensheetmusicdisplay) throw new Error('OSMD not available');
+    if (!exerciseOSMD || exerciseOSMD.container !== container) {
+      exerciseOSMD = new window.opensheetmusicdisplay.OpenSheetMusicDisplay(container, {
+        backend: 'svg',
+        autoResize: true,
+        drawTitle: false,
+        drawSubtitle: false,
+        drawComposer: false,
+        drawLyricist: false,
+        drawPartNames: false,
+        drawPartAbbreviations: false,
+      });
+      exerciseOSMD.container = container;
+    }
+    const xml = buildMusicXMLFor(module);
+    await exerciseOSMD.load(xml);
+    exerciseOSMD.render();
+  } catch {
+    container.textContent = 'Sheet music unavailable.';
+  } finally {
+    container.classList.remove('exercise-sheet-loading');
+  }
+}
+
+/* ---- Pitch detection (autocorrelation) ---- */
+
+let pitchAudioCtx = null;
+let pitchAnalyser = null;
+let pitchBuf = null;
+let pitchStream = null;
+let pitchRafId = null;
+let pitchTargetSequence = [];
+let pitchTargetIdx = 0;
+let pitchSustainStart = 0;
+let pitchSustainNote = null;
+const PITCH_SUSTAIN_MS = 400;
+
+function autoCorrelatePitch(buffer, sampleRate) {
+  let SIZE = buffer.length;
+  let rms = 0;
+  for (let i = 0; i < SIZE; i++) rms += buffer[i] * buffer[i];
+  rms = Math.sqrt(rms / SIZE);
+  if (rms < 0.01) return -1; // silence
+  let r1 = 0, r2 = SIZE - 1;
+  const thres = 0.2;
+  for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buffer[i]) < thres) { r1 = i; break; }
+  for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buffer[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+  buffer = buffer.slice(r1, r2);
+  SIZE = buffer.length;
+  const c = new Array(SIZE).fill(0);
+  for (let i = 0; i < SIZE; i++) for (let j = 0; j < SIZE - i; j++) c[i] += buffer[j] * buffer[j + i];
+  let d = 0;
+  while (c[d] > c[d + 1]) d++;
+  let maxval = -1, maxpos = -1;
+  for (let i = d; i < SIZE; i++) {
+    if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
+  }
+  let T0 = maxpos;
+  if (T0 === 0) return -1;
+  const x1 = c[T0 - 1] || 0, x2 = c[T0], x3 = c[T0 + 1] || 0;
+  const a = (x1 + x3 - 2 * x2) / 2;
+  const b = (x3 - x1) / 2;
+  if (a) T0 = T0 - b / (2 * a);
+  return sampleRate / T0;
+}
+
+function freqToMidi(freq) {
+  if (freq <= 0) return -1;
+  return Math.round(69 + 12 * Math.log2(freq / 440));
+}
+
+function midiToName(midi) {
+  if (midi < 0) return '—';
+  const oct = Math.floor(midi / 12) - 1;
+  return `${PITCH_STEPS[((midi % 12) + 12) % 12]}${PITCH_ALTERS[((midi % 12) + 12) % 12] ? '#' : ''}${oct}`;
+}
+
+async function startPitchDetection(module) {
+  if (!navigator.mediaDevices?.getUserMedia) return false;
+  if (!window.AudioContext) return false;
+  try {
+    pitchStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch { return false; }
+  pitchAudioCtx = new window.AudioContext();
+  const source = pitchAudioCtx.createMediaStreamSource(pitchStream);
+  pitchAnalyser = pitchAudioCtx.createAnalyser();
+  pitchAnalyser.fftSize = 2048;
+  pitchBuf = new Float32Array(pitchAnalyser.fftSize);
+  source.connect(pitchAnalyser);
+
+  // Build flat target sequence (octave-agnostic — match by pitch class)
+  pitchTargetSequence = [];
+  if (module.style === 'progression' && Array.isArray(module.notes[0])) {
+    for (const chord of module.notes) for (const m of chord) pitchTargetSequence.push(m);
+  } else if (module.style === 'chord') {
+    pitchTargetSequence = [...module.notes];
+  } else {
+    pitchTargetSequence = module.notes.flat();
+  }
+  pitchTargetIdx = 0;
+  pitchSustainStart = 0;
+  pitchSustainNote = null;
+  const panel = document.getElementById('exercise-pitch');
+  if (panel) panel.hidden = false;
+  updatePitchTarget();
+  pitchLoop();
+  return true;
+}
+
+function updatePitchTarget() {
+  const target = pitchTargetSequence[pitchTargetIdx];
+  const targetEl = document.getElementById('exercise-pitch-target');
+  const fill = document.getElementById('exercise-pitch-fill');
+  if (targetEl) targetEl.textContent = target == null ? '🎉' : midiToName(target);
+  if (fill) {
+    const pct = pitchTargetSequence.length === 0 ? 0 : Math.round((pitchTargetIdx / pitchTargetSequence.length) * 100);
+    fill.style.width = `${pct}%`;
+  }
+}
+
+function setPitchStatus(text, kind) {
+  const el = document.getElementById('exercise-pitch-status');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.remove('match', 'miss', 'idle');
+  if (kind) el.classList.add(kind);
+}
+
+function pitchLoop() {
+  if (!pitchAnalyser || !pitchAudioCtx) return;
+  pitchAnalyser.getFloatTimeDomainData(pitchBuf);
+  const freq = autoCorrelatePitch(pitchBuf, pitchAudioCtx.sampleRate);
+  const midi = freqToMidi(freq);
+  const cur = document.getElementById('exercise-pitch-current');
+  if (cur) cur.textContent = midi > 0 ? midiToName(midi) : '—';
+
+  const target = pitchTargetSequence[pitchTargetIdx];
+  if (target != null && midi > 0) {
+    const targetPC = ((target % 12) + 12) % 12;
+    const heardPC = ((midi % 12) + 12) % 12;
+    if (targetPC === heardPC) {
+      if (pitchSustainNote === heardPC) {
+        if (Date.now() - pitchSustainStart >= PITCH_SUSTAIN_MS) {
+          pitchTargetIdx++;
+          updatePitchTarget();
+          if (pitchTargetIdx >= pitchTargetSequence.length) {
+            setPitchStatus('Nailed it 🎉', 'match');
+          } else {
+            setPitchStatus('✓ matched', 'match');
+          }
+          pitchSustainNote = null;
+          pitchSustainStart = 0;
+        } else {
+          setPitchStatus('Hold…', 'match');
+        }
+      } else {
+        pitchSustainNote = heardPC;
+        pitchSustainStart = Date.now();
+        setPitchStatus('Hold…', 'match');
+      }
+    } else {
+      pitchSustainNote = null;
+      pitchSustainStart = 0;
+      setPitchStatus(`Try ${midiToName(target)}`, 'miss');
+    }
+  } else if (target != null) {
+    setPitchStatus('listening…', 'idle');
+  }
+
+  pitchRafId = requestAnimationFrame(pitchLoop);
+}
+
+function stopPitchDetection() {
+  if (pitchRafId) { cancelAnimationFrame(pitchRafId); pitchRafId = null; }
+  if (pitchStream) { pitchStream.getTracks().forEach(t => t.stop()); pitchStream = null; }
+  if (pitchAudioCtx) { try { pitchAudioCtx.close(); } catch {} pitchAudioCtx = null; }
+  pitchAnalyser = null;
+  pitchBuf = null;
+  const panel = document.getElementById('exercise-pitch');
+  if (panel) panel.hidden = true;
+}
+
 function readProgress() {
   try { return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY)) || []); }
   catch { return new Set(); }
@@ -263,12 +566,16 @@ function openExercise(index) {
     doneBtn.textContent = progress.has(m.id) ? '✓ Already done — Next →' : 'Mark done →';
   }
   attachRecording(m.id);
+  setPitchStatus('listening…', 'idle');
+  document.getElementById('exercise-pitch').hidden = true;
   overlay.classList.remove('hidden');
+  renderExerciseSheet(m);
 }
 
 function closeExercise() {
   stopAllNotes();
   stopRecording(false);
+  stopPitchDetection();
   const overlay = document.getElementById('learn-exercise-overlay');
   if (overlay) overlay.classList.add('hidden');
   if (recordingObjectUrl) {
@@ -312,6 +619,7 @@ function attachRecording(moduleId) {
 async function toggleRecording(moduleId) {
   if (mediaRecorder && mediaRecorder.state === 'recording') {
     mediaRecorder.stop();
+    stopPitchDetection();
     return;
   }
   if (!navigator.mediaDevices?.getUserMedia) {
@@ -336,7 +644,9 @@ async function toggleRecording(moduleId) {
     });
     mediaRecorder.start();
     setRecordingUI(true);
-    setRecordHint('Recording… tap again to stop.');
+    setRecordHint('Recording + listening for pitch — tap again to stop.');
+    // Kick off pitch detection in parallel (separate stream so we can stop independently)
+    if (activeIndex >= 0) startPitchDetection(MODULES[activeIndex]);
   } catch (_err) {
     setRecordHint('Microphone access denied.');
   }
