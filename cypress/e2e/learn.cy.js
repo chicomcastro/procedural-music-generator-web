@@ -1,12 +1,13 @@
 describe('Learn view — exercise flow', () => {
   beforeEach(() => {
     cy.clearLocalStorage();
-    cy.visit('/app.html#/learn', {
+    cy.visit('/app.html', {
       onBeforeLoad(win) {
         win.localStorage.setItem('seedsong-onboarding-done', '1');
       },
     });
-    cy.get('#view-learn', { timeout: 8000 }).should('not.have.class', 'hidden');
+    cy.get('.sidebar-link[data-view="learn"]', { timeout: 8000 }).click();
+    cy.get('#view-learn').should('not.have.class', 'hidden');
   });
 
   it('shows the Continue card pointing to the first incomplete module', () => {

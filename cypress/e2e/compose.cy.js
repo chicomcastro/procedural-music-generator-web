@@ -1,12 +1,13 @@
 describe('Compose view — section management', () => {
   beforeEach(() => {
     cy.clearLocalStorage();
-    cy.visit('/app.html#/compose', {
+    cy.visit('/app.html', {
       onBeforeLoad(win) {
         win.localStorage.setItem('seedsong-onboarding-done', '1');
       },
     });
-    cy.get('#view-compose', { timeout: 8000 }).should('not.have.class', 'hidden');
+    cy.get('.sidebar-link[data-view="compose"]', { timeout: 8000 }).click();
+    cy.get('#view-compose').should('not.have.class', 'hidden');
   });
 
   it('starts empty and shows the empty hint', () => {
@@ -64,8 +65,15 @@ describe('Compose view — section management', () => {
   it('persists sections across reloads', () => {
     cy.get('#compose-add').click();
     cy.get('#compose-add').click();
+    cy.get('.section-block').should('have.length', 2);
+    // Full page reload — must keep onboarding flag set so we land in the
+    // app rather than the tour, then re-navigate to the Compose view.
+    cy.window().then((win) => {
+      win.localStorage.setItem('seedsong-onboarding-done', '1');
+    });
     cy.reload();
-    cy.get('#view-compose', { timeout: 8000 }).should('not.have.class', 'hidden');
+    cy.get('.sidebar-link[data-view="compose"]', { timeout: 8000 }).click();
+    cy.get('#view-compose').should('not.have.class', 'hidden');
     cy.get('.section-block').should('have.length', 2);
   });
 

@@ -1,12 +1,13 @@
 describe('Explore view — feed', () => {
   beforeEach(() => {
     cy.clearLocalStorage();
-    cy.visit('/app.html#/explore', {
+    cy.visit('/app.html', {
       onBeforeLoad(win) {
         win.localStorage.setItem('seedsong-onboarding-done', '1');
       },
     });
-    cy.get('#view-explore', { timeout: 8000 }).should('not.have.class', 'hidden');
+    cy.get('.sidebar-link[data-view="explore"]', { timeout: 8000 }).click();
+    cy.get('#view-explore').should('not.have.class', 'hidden');
   });
 
   it('shows a feed card with seed and tags', () => {

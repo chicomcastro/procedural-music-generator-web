@@ -46,11 +46,9 @@ describe('Sidebar navigation', () => {
 
   it('hides the transport bar outside Generator', () => {
     cy.get('#transport-bar').should('not.have.class', 'view-hidden');
-    cy.visit('/app.html#/explore', {
-      onBeforeLoad(win) {
-        win.localStorage.setItem('seedsong-onboarding-done', '1');
-      },
-    });
+    cy.get('.sidebar-link[data-view="explore"]').click();
     cy.get('#transport-bar', { timeout: 5000 }).should('have.class', 'view-hidden');
+    cy.get('.sidebar-link[data-view="generator"]').click();
+    cy.get('#transport-bar').should('not.have.class', 'view-hidden');
   });
 });
