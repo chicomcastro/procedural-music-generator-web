@@ -78,17 +78,14 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
-
-      - name: Run Cypress
+      - name: Cypress run
         uses: cypress-io/github-action@v6
         with:
           start: npm run serve
-          wait-on: 'http://localhost:8080'
-          wait-on-timeout: 120
+          wait-on: 'http://localhost:8080/app.html'
+          wait-on-timeout: 180
           browser: chrome
-          install: false
+          record: false
 
       - name: Upload Cypress screenshots on failure
         if: failure()
@@ -96,5 +93,14 @@ jobs:
         with:
           name: cypress-screenshots
           path: cypress/screenshots
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Upload Cypress videos on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: cypress/videos
           if-no-files-found: ignore
           retention-days: 7
