@@ -328,11 +328,24 @@ async function renderExerciseSheet(step, opts) {
     const stepForSheet = { ...step, notes: xnotes };
     const xml = buildMusicXMLFor(stepForSheet, opts);
     await exerciseOSMD.load(xml);
-    exerciseOSMD.render();
-  } catch {
-    container.textContent = 'Sheet music unavailable.';
-  } finally {
     container.classList.remove('exercise-sheet-loading');
+
+    // OSMD renders into the container at its current width, so we wait one
+    // frame for layout to settle (the container may have just been un-hidden
+    // when transitioning from theory to exercise) and re-render once if the
+    // width was still 0.
+    const doRender = () => {
+      try { exerciseOSMD.render(); } catch (_e) { /* ignore */ }
+    };
+    requestAnimationFrame(() => {
+      doRender();
+      if (container.clientWidth === 0) {
+        requestAnimationFrame(doRender);
+      }
+    });
+  } catch (_e) {
+    container.classList.remove('exercise-sheet-loading');
+    container.textContent = 'Sheet music unavailable.';
   }
 }
 

@@ -1706,7 +1706,7 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
     flex-basis: 100%;
   }
 
-  .exercise-sheet { min-height: 130px; max-height: 28vh; padding: 10px 8px; }
+  .exercise-sheet { min-height: 160px; max-height: 36vh; padding: 10px 8px; }
 
   .exercise-controls {
     gap: 14px;
@@ -1928,20 +1928,26 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
 
 .exercise-sheet {
   background: #fff;
-  border-radius: 8px;
-  padding: 8px 4px;
+  border-radius: 10px;
+  padding: 14px 12px;
   margin-bottom: 4px;
-  min-height: 60px;
-  max-height: 220px;
-  overflow-y: auto;
+  min-height: 200px;
+  max-height: 50vh;
+  overflow: auto;
+  flex: 1 1 auto;
+  position: relative;
 }
 
-.exercise-sheet:empty,
 .exercise-sheet.exercise-sheet-loading {
-  display: none;
+  opacity: 0.5;
 }
 
-.exercise-sheet svg { max-width: 100%; height: auto; }
+.exercise-sheet svg {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+}
 
 .exercise-pitch {
   background: var(--bg-input);
