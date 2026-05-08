@@ -718,6 +718,10 @@
                                     <input id="compose-load-file" type="file" accept="application/json,.json,.seedsong" hidden>
                                 </label>
                             </div>
+                            <button id="compose-export-stems" type="button" class="view-cta-ghost" disabled title="Render each track as a separate WAV file">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="18" x2="9" y2="6"/><polygon points="9 6 19 12 9 18 9 6"/><line x1="3" y1="6" x2="3" y2="18"/></svg>
+                                Export stems
+                            </button>
                             <button id="compose-clear" type="button" class="view-cta-ghost compose-clear-btn">Clear</button>
                         </div>
                     </div>
@@ -784,6 +788,7 @@
                         <span class="learn-card-tag" id="exercise-tag"></span>
                         <h2 id="exercise-title" class="exercise-title">—</h2>
                         <p id="exercise-desc" class="exercise-desc">—</p>
+                        <div id="exercise-sheet" class="exercise-sheet" aria-label="Sheet music"></div>
                         <div class="exercise-controls">
                             <button id="exercise-play" type="button" class="exercise-play-btn" aria-label="Play example">
                                 <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
@@ -793,7 +798,21 @@
                                 <span class="exercise-record-label">Record</span>
                             </button>
                         </div>
-                        <p id="exercise-record-hint" class="exercise-record-hint hint">Tap record to capture your attempt — we'll save the audio locally.</p>
+                        <p id="exercise-record-hint" class="exercise-record-hint hint">Tap record to play along live, or capture your attempt — we'll save it locally.</p>
+                        <div id="exercise-pitch" class="exercise-pitch" hidden>
+                            <div class="exercise-pitch-row">
+                                <span class="exercise-pitch-label">You're playing</span>
+                                <span id="exercise-pitch-current">—</span>
+                            </div>
+                            <div class="exercise-pitch-row">
+                                <span class="exercise-pitch-label">Target</span>
+                                <span id="exercise-pitch-target">—</span>
+                                <span id="exercise-pitch-status" class="exercise-pitch-status">listening…</span>
+                            </div>
+                            <div class="exercise-pitch-progress" aria-hidden="true">
+                                <div id="exercise-pitch-fill"></div>
+                            </div>
+                        </div>
                         <audio id="exercise-recording" controls hidden></audio>
                         <footer class="exercise-foot">
                             <button id="exercise-skip" type="button" class="view-cta-secondary">Skip</button>

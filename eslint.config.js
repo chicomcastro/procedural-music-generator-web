@@ -28,6 +28,8 @@ export default [
         fetch: 'readonly',
         history: 'readonly',
         requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
+        MediaRecorder: 'readonly',
         ResizeObserver: 'readonly',
         getComputedStyle: 'readonly',
         Audio: 'readonly',
