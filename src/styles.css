@@ -1267,8 +1267,334 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
   gap: 12px;
 }
 
-/* ---- Exercise modal ---- */
+/* ---- Exercise stage (v2 — full surface, sheet-first) ---- */
 
+.exercise-stage {
+  align-items: stretch;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.exercise-shell {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 920px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px 28px;
+  position: relative;
+  max-height: calc(100vh - 48px);
+}
+
+.exercise-shell .exercise-title {
+  margin: 0;
+  font-size: 22px;
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+
+.exercise-head-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.exercise-head .exercise-progress {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.exercise-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.exercise-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.exercise-control-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.exercise-control-label em {
+  font-style: normal;
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.exercise-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-hover);
+  border-radius: 8px;
+  padding: 4px 10px;
+  width: fit-content;
+}
+
+.exercise-stepper > span {
+  font-family: monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 30px;
+  text-align: center;
+}
+
+.exercise-step-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 18px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.exercise-step-btn:hover { background: var(--accent-glow); color: var(--accent); }
+
+.exercise-control input[type="range"] { width: 100%; }
+
+.exercise-clef-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.exercise-pill {
+  background: var(--bg-card);
+  border: 1px solid var(--border-hover);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms, background-color 150ms;
+}
+
+.exercise-pill:hover { color: var(--accent); border-color: var(--accent); }
+
+.exercise-pill.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.exercise-step-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.exercise-step-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--border-hover);
+  cursor: pointer;
+  transition: transform 150ms, background-color 150ms, box-shadow 150ms;
+  border: none;
+  padding: 0;
+}
+
+.exercise-step-dot:hover { transform: scale(1.2); }
+.exercise-step-dot.theory { border-radius: 3px; }
+.exercise-step-dot.done { background: var(--accent); }
+.exercise-step-dot.current {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  transform: scale(1.25);
+}
+
+.exercise-desc strong { color: var(--text-primary); font-weight: 600; }
+.exercise-desc { line-height: 1.55; color: var(--text-secondary); margin: 0 0 4px; font-size: 14px; }
+
+.exercise-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.exercise-foot button { flex: 1; }
+
+@media (max-width: 900px) {
+  .exercise-stage { padding: 0; }
+  .exercise-shell {
+    border-radius: 0;
+    border: none;
+    padding: 16px 16px 24px;
+    max-height: 100vh;
+    min-height: 100vh;
+  }
+  .exercise-controls-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+/* ---- Group heading inside cards grid ---- */
+.learn-group-heading {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 8px 0 0;
+}
+
+/* ---- Card per-module progress bar ---- */
+.learn-card-progress {
+  height: 4px;
+  background: var(--bg-elevated);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.learn-card-progress > div {
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+  transition: width 220ms ease;
+}
+
+/* ---- Module map ---- */
+.learn-map-card {
+  max-width: 920px;
+  width: 100%;
+  position: relative;
+  padding: 26px 28px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+
+.learn-map-card h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  color: var(--text-primary);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.learn-map-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.learn-map-group h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.learn-map-lane {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.learn-map-node {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+  flex: 1 1 200px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 150ms, transform 150ms;
+  font-family: inherit;
+  color: var(--text-primary);
+}
+
+.learn-map-node:hover { border-color: var(--accent); transform: translateY(-1px); }
+.learn-map-node.partial { border-color: var(--accent); }
+.learn-map-node.done {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+}
+
+.learn-map-node-title { font-size: 13px; font-weight: 600; }
+.learn-map-node-meta { font-family: monospace; font-size: 11px; color: var(--text-secondary); }
+.learn-map-node-bar {
+  display: block;
+  height: 4px;
+  background: var(--bg-elevated);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.learn-map-node-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  width: 0%;
+}
+
+.overlay-close-x {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  z-index: 1;
+  transition: color 150ms, background-color 150ms;
+}
+
+.overlay-close-x:hover { color: var(--text-primary); background: var(--bg-elevated); }
+
+/* ---- v1 Exercise modal (legacy) ---- */
 .exercise-overlay {
   align-items: flex-start;
   padding: 32px 16px;

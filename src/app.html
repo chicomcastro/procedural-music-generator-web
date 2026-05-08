@@ -765,6 +765,7 @@
                             <div class="learn-progress-bar"><div id="learn-progress-fill"></div></div>
                             <span id="learn-progress-pct" class="learn-progress-pct">0%</span>
                         </div>
+                        <button id="learn-map-btn" type="button" class="view-cta-secondary">Lesson map</button>
                     </div>
                 </header>
 
@@ -779,17 +780,53 @@
 
                 <div id="learn-modules" class="learn-modules"></div>
 
-                <div id="learn-exercise-overlay" class="exercise-overlay overlay hidden" role="dialog" aria-modal="true" aria-labelledby="exercise-title">
-                    <div class="overlay-card exercise-card">
+                <div id="learn-exercise-overlay" class="exercise-stage overlay hidden" role="dialog" aria-modal="true" aria-labelledby="exercise-title">
+                    <div class="exercise-shell">
                         <header class="exercise-head">
-                            <span class="exercise-progress" id="exercise-progress">1 / 7</span>
+                            <div class="exercise-head-left">
+                                <span class="learn-card-tag" id="exercise-tag"></span>
+                                <span class="exercise-progress" id="exercise-progress">Step 1</span>
+                            </div>
                             <button id="exercise-close" type="button" class="exercise-close" aria-label="Close exercise">&times;</button>
                         </header>
-                        <span class="learn-card-tag" id="exercise-tag"></span>
+                        <div id="exercise-step-dots" class="exercise-step-dots" aria-label="Step navigation"></div>
                         <h2 id="exercise-title" class="exercise-title">—</h2>
-                        <p id="exercise-desc" class="exercise-desc">—</p>
-                        <div id="exercise-sheet" class="exercise-sheet" aria-label="Sheet music"></div>
-                        <div class="exercise-controls">
+                        <div id="exercise-desc" class="exercise-desc">—</div>
+
+                        <div class="exercise-controls-row exercise-only">
+                            <div class="exercise-control">
+                                <span class="exercise-control-label">Key</span>
+                                <div class="exercise-stepper">
+                                    <button type="button" class="exercise-step-btn" id="exercise-transpose-down" aria-label="Transpose down">−</button>
+                                    <span id="exercise-key-label">C</span>
+                                    <button type="button" class="exercise-step-btn" id="exercise-transpose-up" aria-label="Transpose up">+</button>
+                                </div>
+                            </div>
+                            <div class="exercise-control">
+                                <span class="exercise-control-label">Octave</span>
+                                <div class="exercise-stepper">
+                                    <button type="button" class="exercise-step-btn" id="exercise-octave-down" aria-label="Octave down">−</button>
+                                    <span id="exercise-octave-label">0</span>
+                                    <button type="button" class="exercise-step-btn" id="exercise-octave-up" aria-label="Octave up">+</button>
+                                </div>
+                            </div>
+                            <div class="exercise-control">
+                                <span class="exercise-control-label">Clef</span>
+                                <div id="exercise-clef" class="exercise-clef-row" role="radiogroup" aria-label="Clef">
+                                    <button type="button" class="exercise-pill" data-clef="treble">𝄞 Treble</button>
+                                    <button type="button" class="exercise-pill" data-clef="bass">𝄢 Bass</button>
+                                    <button type="button" class="exercise-pill" data-clef="alto">𝄡 Alto</button>
+                                </div>
+                            </div>
+                            <div class="exercise-control">
+                                <span class="exercise-control-label">Tempo <em id="exercise-tempo-display">110</em></span>
+                                <input id="exercise-tempo" type="range" min="40" max="200" step="1" value="110" aria-label="Exercise tempo">
+                            </div>
+                        </div>
+
+                        <div id="exercise-sheet" class="exercise-sheet exercise-only" aria-label="Sheet music"></div>
+
+                        <div class="exercise-controls exercise-only">
                             <button id="exercise-play" type="button" class="exercise-play-btn" aria-label="Play example">
                                 <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
                             </button>
@@ -798,8 +835,9 @@
                                 <span class="exercise-record-label">Record</span>
                             </button>
                         </div>
-                        <p id="exercise-record-hint" class="exercise-record-hint hint">Tap record to play along live, or capture your attempt — we'll save it locally.</p>
-                        <div id="exercise-pitch" class="exercise-pitch" hidden>
+                        <p id="exercise-record-hint" class="exercise-record-hint hint exercise-only">Tap record to play along live, or capture your attempt — we'll save it locally.</p>
+
+                        <div id="exercise-pitch" class="exercise-pitch exercise-only" hidden>
                             <div class="exercise-pitch-row">
                                 <span class="exercise-pitch-label">You're playing</span>
                                 <span id="exercise-pitch-current">—</span>
@@ -813,11 +851,21 @@
                                 <div id="exercise-pitch-fill"></div>
                             </div>
                         </div>
-                        <audio id="exercise-recording" controls hidden></audio>
+                        <audio id="exercise-recording" class="exercise-only" controls hidden></audio>
+
                         <footer class="exercise-foot">
-                            <button id="exercise-skip" type="button" class="view-cta-secondary">Skip</button>
-                            <button id="exercise-done" type="button" class="view-cta">Mark done →</button>
+                            <button id="exercise-back" type="button" class="view-cta-secondary">← Back</button>
+                            <button id="exercise-next" type="button" class="view-cta">Next →</button>
                         </footer>
+                    </div>
+                </div>
+
+                <div id="learn-map-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="learn-map-title">
+                    <div class="overlay-card learn-map-card">
+                        <button id="learn-map-close" type="button" class="overlay-close-x" aria-label="Close map">&times;</button>
+                        <h2 id="learn-map-title">Lesson map</h2>
+                        <p class="hint" style="text-align:left;margin-bottom:14px;opacity:0.7">Browse modules by group. Click any node to jump in.</p>
+                        <div id="learn-map-body" class="learn-map-body"></div>
                     </div>
                 </div>
 
