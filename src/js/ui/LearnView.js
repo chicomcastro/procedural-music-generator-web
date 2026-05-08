@@ -222,6 +222,77 @@ function escapeText(s) {
   return String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
 }
 
+/* ---- Theory diagrams ---- */
+// Supported shapes:
+//   { type: 'intervals', steps: ['W','W','H',...], labels: ['1','2','3',...] }
+//   { type: 'keyboard', highlight: [60, 62, 64,...], range: [60, 72] }
+//   { type: 'progression', chords: ['I','V','vi','IV'], romans: true }
+//   { type: 'stack', notes: ['C','E','G','B'], labels: ['1','3','5','7'] }
+function renderDiagram(d) {
+  if (!d || !d.type) return '';
+  if (d.type === 'intervals') return renderIntervalsDiagram(d);
+  if (d.type === 'keyboard') return renderKeyboardDiagram(d);
+  if (d.type === 'progression') return renderProgressionDiagram(d);
+  if (d.type === 'stack') return renderStackDiagram(d);
+  return '';
+}
+
+function renderIntervalsDiagram({ steps = [], labels = [] }) {
+  const items = labels.map((l, i) => `
+    <span class="diag-degree">${l}</span>
+    ${i < steps.length ? `<span class="diag-step ${steps[i] === 'H' ? 'diag-half' : 'diag-whole'}">${steps[i]}</span>` : ''}
+  `).join('');
+  return `<div class="theory-diagram theory-intervals" aria-hidden="true">${items}</div>`;
+}
+
+function renderKeyboardDiagram({ highlight = [], range = [60, 72] }) {
+  const [from, to] = range;
+  const set = new Set(highlight);
+  const whitePcs = [0, 2, 4, 5, 7, 9, 11];
+  const blackPcs = [1, 3, 6, 8, 10];
+  const whites = [];
+  const blacks = [];
+  for (let m = from; m <= to; m++) {
+    const pc = ((m % 12) + 12) % 12;
+    const hl = set.has(m);
+    const isC = pc === 0;
+    if (whitePcs.includes(pc)) {
+      whites.push(`<div class="diag-key diag-white${hl ? ' hl' : ''}${isC ? ' diag-c' : ''}" data-midi="${m}">${isC ? `<span class="diag-c-label">C${Math.floor(m / 12) - 1}</span>` : ''}</div>`);
+    }
+  }
+  // black keys positioned absolutely
+  let whiteIndex = 0;
+  for (let m = from; m <= to; m++) {
+    const pc = ((m % 12) + 12) % 12;
+    if (whitePcs.includes(pc)) whiteIndex++;
+    if (blackPcs.includes(pc)) {
+      const left = (whiteIndex - 0.3) * (100 / (whites.length || 1));
+      const hl = set.has(m);
+      blacks.push(`<div class="diag-key diag-black${hl ? ' hl' : ''}" style="left:${left}%" data-midi="${m}"></div>`);
+    }
+  }
+  return `<div class="theory-diagram theory-keyboard" aria-hidden="true">
+    <div class="diag-keys-white">${whites.join('')}</div>
+    <div class="diag-keys-black">${blacks.join('')}</div>
+  </div>`;
+}
+
+function renderProgressionDiagram({ chords = [] }) {
+  const items = chords.map(c => `<span class="diag-chord">${c}</span>`).join('<span class="diag-arrow">→</span>');
+  return `<div class="theory-diagram theory-progression" aria-hidden="true">${items}</div>`;
+}
+
+function renderStackDiagram({ notes = [], labels = [] }) {
+  const rows = notes.slice().reverse().map((n, idx) => {
+    const realIdx = notes.length - 1 - idx;
+    return `<div class="diag-stack-row">
+      <span class="diag-stack-degree">${labels[realIdx] || ''}</span>
+      <span class="diag-stack-note">${n}</span>
+    </div>`;
+  }).join('');
+  return `<div class="theory-diagram theory-stack" aria-hidden="true">${rows}</div>`;
+}
+
 function transposeNotes(notes, semitones, octaveShift) {
   const totalShift = semitones + octaveShift * 12;
   if (!notes || totalShift === 0) return notes;
@@ -706,7 +777,34 @@ function renderActiveStep() {
   // Title / description
   document.getElementById('exercise-title').textContent = step.title;
   const descEl = document.getElementById('exercise-desc');
-  if (descEl) descEl.innerHTML = step.type === 'theory' ? step.text : (step.description || '');
+  if (descEl) {
+    if (step.type === 'theory') {
+      const diagramHtml = step.diagram ? renderDiagram(step.diagram) : '';
+      const audioBtn = step.audio
+        ? `<button type="button" class="theory-audio-btn" id="theory-audio-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            <span>Hear example</span>
+          </button>`
+        : '';
+      const referencesHtml = step.references && step.references.length
+        ? `<div class="theory-refs"><span class="theory-refs-title">Listen to this in</span><ul>${
+            step.references.map(r => `<li>${r}</li>`).join('')
+          }</ul></div>`
+        : '';
+      descEl.innerHTML = `
+        ${step.text}
+        ${diagramHtml}
+        ${audioBtn}
+        ${referencesHtml}
+      `;
+      const btn = document.getElementById('theory-audio-btn');
+      if (btn && step.audio) {
+        btn.addEventListener('click', () => playStep({ notes: step.audio, style: step.audioStyle || 'melody' }, exerciseOpts));
+      }
+    } else {
+      descEl.innerHTML = step.description || '';
+    }
+  }
 
   // Step indicator dots
   const dots = document.getElementById('exercise-step-dots');

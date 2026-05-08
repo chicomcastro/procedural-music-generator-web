@@ -1444,6 +1444,204 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
 .exercise-desc strong { color: var(--text-primary); font-weight: 600; }
 .exercise-desc { line-height: 1.55; color: var(--text-secondary); margin: 0 0 4px; font-size: 14px; }
 
+/* ---- Theory audio-visual ---- */
+.theory-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  background: var(--accent-glow);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 150ms;
+}
+
+.theory-audio-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.theory-diagram {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 12px 0;
+}
+
+/* Intervals row: degrees with W/H tags between */
+.theory-intervals {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.diag-degree {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: monospace;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.diag-step {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.diag-step.diag-whole { background: var(--accent-glow); color: var(--accent); }
+.diag-step.diag-half { background: rgba(232, 167, 53, 0.18); color: var(--warning); }
+
+/* Keyboard diagram */
+.theory-keyboard {
+  position: relative;
+  height: 90px;
+  padding: 0;
+  overflow: hidden;
+}
+.diag-keys-white {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+.diag-key {
+  flex: 1;
+  height: 100%;
+  border-right: 1px solid var(--border);
+  background: var(--bg-card);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 4px;
+}
+.diag-key:last-child { border-right: none; }
+.diag-key.hl {
+  background: var(--accent-glow);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+.diag-c-label {
+  font-family: monospace;
+  font-size: 9px;
+  color: var(--text-muted);
+}
+.diag-keys-black {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.diag-key.diag-black {
+  position: absolute;
+  width: 6%;
+  height: 60%;
+  top: 0;
+  background: #1a1a1a;
+  border: 1px solid #000;
+  border-radius: 0 0 3px 3px;
+}
+.diag-key.diag-black.hl {
+  background: var(--accent);
+  border-color: var(--accent-hover);
+}
+
+/* Progression chords */
+.theory-progression {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.diag-chord {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 6px 10px;
+  background: var(--accent-glow);
+  color: var(--accent);
+  border-radius: 8px;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 14px;
+  border: 1px solid var(--accent);
+}
+.diag-arrow {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Stack diagram (for triads/tetrads) */
+.theory-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 220px;
+}
+.diag-stack-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border-radius: 6px;
+}
+.diag-stack-degree {
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 24px;
+}
+.diag-stack-note {
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* References block */
+.theory-refs {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.theory-refs-title {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+.theory-refs ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
 .exercise-foot {
   display: flex;
   justify-content: space-between;
@@ -1460,14 +1658,91 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
   .exercise-shell {
     border-radius: 0;
     border: none;
-    padding: 16px 16px 24px;
+    padding: 12px 14px 18px;
     max-height: 100vh;
     min-height: 100vh;
-  }
-  .exercise-controls-row {
-    flex-direction: column;
     gap: 10px;
   }
+  .exercise-shell .exercise-title { font-size: 18px; }
+  .exercise-shell .exercise-desc { font-size: 13px; line-height: 1.45; }
+  .exercise-step-dots { gap: 6px; }
+  .exercise-step-dot { width: 10px; height: 10px; }
+  .exercise-controls-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .exercise-control {
+    min-width: 0;
+    flex: 1 1 calc(50% - 4px);
+    gap: 4px;
+  }
+  .exercise-control-label {
+    font-size: 9px;
+  }
+  .exercise-stepper {
+    gap: 6px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    width: auto;
+  }
+  .exercise-stepper > span { font-size: 13px; min-width: 22px; }
+  .exercise-step-btn { width: 22px; height: 22px; font-size: 14px; }
+  .exercise-pill {
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+  .exercise-clef-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -2px;
+    padding: 0 2px;
+  }
+  .exercise-clef-row .exercise-pill { flex: 0 0 auto; white-space: nowrap; }
+  /* Tempo gets the full row to itself */
+  .exercise-control:last-child {
+    flex-basis: 100%;
+  }
+
+  .exercise-sheet { min-height: 130px; max-height: 28vh; padding: 10px 8px; }
+
+  .exercise-controls {
+    gap: 14px;
+    padding: 4px 0;
+  }
+  .exercise-play-btn {
+    width: 60px;
+    height: 60px;
+  }
+  .exercise-play-btn svg { width: 28px; height: 28px; }
+  .exercise-record-btn {
+    padding: 7px 12px;
+    font-size: 12px;
+    gap: 6px;
+  }
+  .exercise-record-dot { width: 8px; height: 8px; }
+  .exercise-record-hint { font-size: 11px; line-height: 1.4; }
+
+  .exercise-foot {
+    padding-top: 10px;
+    margin-top: 4px;
+  }
+  .exercise-foot button {
+    padding: 10px 14px;
+    font-size: 13px;
+    height: auto;
+    min-height: 40px;
+  }
+
+  .exercise-pitch {
+    padding: 10px 12px;
+    font-size: 12px;
+    gap: 4px;
+  }
+  .exercise-pitch-label { min-width: 64px; font-size: 9px; }
+  .exercise-pitch-row > span:nth-child(2) { font-size: 14px; }
 }
 
 /* ---- Group heading inside cards grid ---- */
