@@ -672,9 +672,19 @@
 
             <div class="wrapped-overlay overlay hidden" id="wrapped-overlay" role="dialog" aria-modal="true" aria-labelledby="wrapped-title">
                 <div class="overlay-card wrapped-card">
+                    <button id="wrapped-close" type="button" class="overlay-close-x" aria-label="Close">&times;</button>
                     <h2 id="wrapped-title">Your SeedSong Wrapped</h2>
                     <div id="wrapped-body"></div>
-                    <button id="wrapped-close" type="button">Close</button>
+                    <div class="wrapped-actions" id="wrapped-actions" hidden>
+                        <button id="wrapped-share" type="button" class="view-cta">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                            Share
+                        </button>
+                        <button id="wrapped-download" type="button" class="view-cta-secondary">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -686,13 +696,30 @@
                         <h2 class="view-title">Compose</h2>
                         <p class="view-sub">Arrange sections into a full song. Each block has its own seed and parameters.</p>
                     </div>
-                    <div class="view-actions">
-                        <button id="compose-play" type="button" class="view-cta" disabled>
+                    <div class="view-actions compose-toolbar">
+                        <button id="compose-play" type="button" class="view-cta compose-toolbar-primary" disabled>
                             <span class="compose-play-icon" aria-hidden="true">▶</span>
                             <span id="compose-play-label">Play composition</span>
                         </button>
-                        <button id="compose-add" type="button" class="view-cta-secondary">+ Add section</button>
-                        <button id="compose-clear" type="button" class="view-cta-secondary">Clear</button>
+                        <div class="compose-toolbar-secondary">
+                            <button id="compose-add" type="button" class="view-cta-ghost">
+                                <span aria-hidden="true">+</span> Add section
+                            </button>
+                            <div class="compose-tool-group" role="group" aria-label="History">
+                                <button id="compose-undo" type="button" class="compose-tool-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>↶</button>
+                                <button id="compose-redo" type="button" class="compose-tool-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" disabled>↷</button>
+                            </div>
+                            <div class="compose-tool-group" role="group" aria-label="File">
+                                <button id="compose-save-file" type="button" class="compose-tool-btn" title="Save as file" aria-label="Save composition to file" disabled>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                </button>
+                                <label class="compose-tool-btn" title="Load from file" aria-label="Load composition from file">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    <input id="compose-load-file" type="file" accept="application/json,.json,.seedsong" hidden>
+                                </label>
+                            </div>
+                            <button id="compose-clear" type="button" class="view-cta-ghost compose-clear-btn">Clear</button>
+                        </div>
                     </div>
                 </header>
 
@@ -705,30 +732,35 @@
 
                 <p class="hint compose-empty" id="compose-empty">No sections yet — tap <strong>+ Add section</strong> to start arranging.</p>
 
-                <div class="compose-roadmap">
-                    <h3>Coming next</h3>
+                <details class="roadmap-disclosure">
+                    <summary><span class="roadmap-icon" aria-hidden="true">↗</span> What's coming next</summary>
                     <ul>
-                        <li><span class="status-dot status-todo"></span>Multi-track lanes (melody / harmony / bass)</li>
-                        <li><span class="status-dot status-todo"></span>Drag-to-reorder sections</li>
-                        <li><span class="status-dot status-todo"></span>Stem export (WAV per track)</li>
-                        <li><span class="status-dot status-todo"></span>Undo/redo history</li>
-                        <li><span class="status-dot status-todo"></span>Project save/load (.seedsong file)</li>
+                        <li>Multi-track lanes (melody / harmony / bass)</li>
+                        <li>Stem export (WAV per track)</li>
+                        <li>Per-section voice / scale / BPM editor</li>
                     </ul>
-                </div>
+                </details>
             </div>
         </section>
 
         <section class="app-view hidden" id="view-learn" data-view="learn" aria-label="Learn view">
             <div class="learn-shell">
-                <header class="view-head">
-                    <div>
+                <header class="view-head learn-head">
+                    <div class="learn-head-title">
                         <h2 class="view-title">Learn</h2>
                         <p class="view-sub">Bite-sized music theory grounded in procedural examples you can hear instantly.</p>
                     </div>
-                    <div class="view-actions">
-                        <span class="learn-progress-label">Progress</span>
-                        <div class="learn-progress-bar"><div id="learn-progress-fill"></div></div>
-                        <span id="learn-progress-pct" class="learn-progress-pct">0%</span>
+                    <div class="learn-head-side">
+                        <div id="learn-streak" class="learn-streak" title="Daily practice streak">
+                            <span class="learn-streak-icon" aria-hidden="true">🔥</span>
+                            <span class="learn-streak-text"><b id="learn-streak-current">0</b> day streak</span>
+                            <span class="learn-streak-best">best <b id="learn-streak-best">0</b></span>
+                        </div>
+                        <div class="learn-progress-wrap" aria-label="Course progress">
+                            <span class="learn-progress-label">Progress</span>
+                            <div class="learn-progress-bar"><div id="learn-progress-fill"></div></div>
+                            <span id="learn-progress-pct" class="learn-progress-pct">0%</span>
+                        </div>
                     </div>
                 </header>
 
@@ -770,15 +802,14 @@
                     </div>
                 </div>
 
-                <div class="learn-roadmap">
-                    <h3>Coming next</h3>
+                <details class="roadmap-disclosure">
+                    <summary><span class="roadmap-icon" aria-hidden="true">↗</span> What's coming next</summary>
                     <ul>
-                        <li><span class="status-dot status-todo"></span>Play-along sheet music with note detection</li>
-                        <li><span class="status-dot status-todo"></span>Solo &amp; duet exercises with feedback</li>
-                        <li><span class="status-dot status-todo"></span>Streak tracking and shareable progress</li>
-                        <li><span class="status-dot status-todo"></span>User-authored exercises</li>
+                        <li>Play-along sheet music with note detection</li>
+                        <li>Solo &amp; duet exercises with feedback</li>
+                        <li>User-authored exercises</li>
                     </ul>
-                </div>
+                </details>
             </div>
         </section>
     </main>

@@ -2,6 +2,8 @@ import { randomSeed } from '../generate/rng.js';
 import { generateSong } from '../generate/song.js';
 
 const STORAGE_KEY = 'seedsong-compose-project';
+const FILE_VERSION = 1;
+const UNDO_STACK_LIMIT = 60;
 
 const SECTION_TEMPLATES = [
   { name: 'Intro', density: 0.4, bars: 4 },
@@ -26,6 +28,57 @@ const TONIC_LABELS = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#'
 let sections = [];
 let onLoadSeedCb = null;
 let audioApiRef = null;
+
+/* ---- Undo / redo stacks ---- */
+const undoStack = [];
+let redoStack = [];
+
+function snapshot() {
+  return JSON.stringify(sections);
+}
+function restore(snap) {
+  try { sections = JSON.parse(snap); } catch { /* ignore */ }
+}
+function pushUndo() {
+  undoStack.push(snapshot());
+  if (undoStack.length > UNDO_STACK_LIMIT) undoStack.shift();
+  redoStack = [];
+  refreshHistoryButtons();
+}
+function undo() {
+  if (undoStack.length === 0) return;
+  redoStack.push(snapshot());
+  restore(undoStack.pop());
+  save(false);
+  render();
+  refreshHistoryButtons();
+}
+function redo() {
+  if (redoStack.length === 0) return;
+  undoStack.push(snapshot());
+  restore(redoStack.pop());
+  save(false);
+  render();
+  refreshHistoryButtons();
+}
+function refreshHistoryButtons() {
+  const u = document.getElementById('compose-undo');
+  const r = document.getElementById('compose-redo');
+  if (u) u.disabled = undoStack.length === 0;
+  if (r) r.disabled = redoStack.length === 0;
+}
+
+/* ---- Persistence ---- */
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) sections = JSON.parse(raw);
+  } catch { sections = []; }
+}
+function save(takeSnapshot = true) {
+  if (takeSnapshot) pushUndo();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sections));
+}
 
 /* ---- Playback ---- */
 let activeOscillators = [];
@@ -97,7 +150,6 @@ async function playComposition() {
     totalDurationSec += sectionLengthSec;
   }
 
-  // Highlight + status timer
   startProgressTimer(sectionStarts);
   stopTimeoutHandle = window.setTimeout(() => stopComposition(), totalDurationSec * 1000 + 200);
 }
@@ -171,17 +223,6 @@ function refreshPlayButton() {
   btn.disabled = sections.length === 0;
 }
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) sections = JSON.parse(raw);
-  } catch { sections = []; }
-}
-
-function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sections));
-}
-
 function makeSection(template) {
   const t = template || SECTION_TEMPLATES[sections.length % SECTION_TEMPLATES.length];
   return {
@@ -197,80 +238,211 @@ function makeSection(template) {
   };
 }
 
-function render() {
-  const tl = document.getElementById('compose-timeline');
-  const empty = document.getElementById('compose-empty');
-  if (!tl) return;
-  tl.innerHTML = '';
-  if (sections.length === 0) {
-    if (empty) empty.hidden = false;
-    refreshPlayButton();
-    return;
-  }
-  if (empty) empty.hidden = true;
-  refreshPlayButton();
-
-  for (let i = 0; i < sections.length; i++) {
-    const s = sections[i];
-    const block = document.createElement('div');
-    block.className = 'section-block';
-    block.dataset.id = s.id;
-    block.setAttribute('role', 'listitem');
-    block.innerHTML = `
-      <div class="section-block-handle">${i + 1}</div>
-      <div class="section-block-body">
-        <input class="section-block-name" value="${escapeHtml(s.name)}" aria-label="Section name">
-        <div class="section-block-meta">
-          seed ${s.seed} · ${TONIC_LABELS[s.tonic]} ${SCALE_LABELS[s.scale] || s.scale} · ${s.bars} bars · ${s.bpm} BPM · density ${Math.round(s.density * 100)}%
-        </div>
-      </div>
-      <div class="section-block-actions">
-        <button class="section-block-btn" data-action="up" title="Move up" aria-label="Move section up">↑</button>
-        <button class="section-block-btn" data-action="down" title="Move down" aria-label="Move section down">↓</button>
-        <button class="section-block-btn" data-action="reseed" title="New seed" aria-label="Generate new seed">⟲</button>
-        <button class="section-block-btn" data-action="open" title="Open in Generator" aria-label="Open in Generator">↗</button>
-        <button class="section-block-btn danger" data-action="remove" title="Remove section" aria-label="Remove section">×</button>
-      </div>
-    `;
-    tl.appendChild(block);
-  }
-}
-
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function findIndex(id) { return sections.findIndex(s => s.id === id); }
 
+function render() {
+  const tl = document.getElementById('compose-timeline');
+  const empty = document.getElementById('compose-empty');
+  if (!tl) return;
+  tl.innerHTML = '';
+  refreshPlayButton();
+  refreshFileButtons();
+  if (sections.length === 0) {
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+
+  for (let i = 0; i < sections.length; i++) {
+    const s = sections[i];
+    const block = document.createElement('div');
+    block.className = 'section-block';
+    block.dataset.id = s.id;
+    block.draggable = true;
+    block.setAttribute('role', 'listitem');
+    block.innerHTML = `
+      <div class="section-block-grip" title="Drag to reorder" aria-hidden="true">
+        <svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor"><circle cx="4" cy="4" r="1.4"/><circle cx="10" cy="4" r="1.4"/><circle cx="4" cy="10" r="1.4"/><circle cx="10" cy="10" r="1.4"/><circle cx="4" cy="16" r="1.4"/><circle cx="10" cy="16" r="1.4"/></svg>
+      </div>
+      <div class="section-block-body">
+        <div class="section-block-row">
+          <span class="section-block-index">${i + 1}</span>
+          <input class="section-block-name" value="${escapeHtml(s.name)}" aria-label="Section name">
+        </div>
+        <div class="section-block-meta">
+          <span>seed ${s.seed}</span>
+          <span class="section-meta-sep">·</span>
+          <span>${TONIC_LABELS[s.tonic]} ${SCALE_LABELS[s.scale] || s.scale}</span>
+          <span class="section-meta-sep">·</span>
+          <span>${s.bars} bars · ${s.bpm} BPM</span>
+          <span class="section-meta-sep">·</span>
+          <span>${Math.round(s.density * 100)}% density</span>
+        </div>
+      </div>
+      <div class="section-block-actions">
+        <button class="section-block-btn" data-action="reseed" title="New seed" aria-label="Generate new seed">⟲</button>
+        <button class="section-block-btn" data-action="open" title="Open in Generator" aria-label="Open in Generator">↗</button>
+        <button class="section-block-btn section-block-btn-danger" data-action="remove" title="Remove section" aria-label="Remove section">×</button>
+      </div>
+    `;
+    tl.appendChild(block);
+  }
+
+  attachDragHandlers();
+}
+
+/* ---- Drag-to-reorder ---- */
+let dragSrcIndex = -1;
+
+function attachDragHandlers() {
+  const blocks = document.querySelectorAll('.section-block');
+  blocks.forEach((el) => {
+    el.addEventListener('dragstart', onDragStart);
+    el.addEventListener('dragover', onDragOver);
+    el.addEventListener('dragleave', onDragLeave);
+    el.addEventListener('drop', onDrop);
+    el.addEventListener('dragend', onDragEnd);
+  });
+}
+
+function onDragStart(e) {
+  const block = e.currentTarget;
+  dragSrcIndex = findIndex(block.dataset.id);
+  block.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', block.dataset.id); } catch {}
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const block = e.currentTarget;
+  if (block.classList.contains('dragging')) return;
+  const rect = block.getBoundingClientRect();
+  const before = e.clientY < rect.top + rect.height / 2;
+  block.classList.toggle('drop-before', before);
+  block.classList.toggle('drop-after', !before);
+}
+
+function onDragLeave(e) {
+  const block = e.currentTarget;
+  block.classList.remove('drop-before', 'drop-after');
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  const block = e.currentTarget;
+  const targetIdx = findIndex(block.dataset.id);
+  if (dragSrcIndex < 0 || targetIdx < 0 || targetIdx === dragSrcIndex) return;
+  const rect = block.getBoundingClientRect();
+  const before = e.clientY < rect.top + rect.height / 2;
+  let insertAt = before ? targetIdx : targetIdx + 1;
+  if (insertAt > dragSrcIndex) insertAt--;
+  if (isPlaying) stopComposition();
+  pushUndo();
+  const [moved] = sections.splice(dragSrcIndex, 1);
+  sections.splice(insertAt, 0, moved);
+  save(false);
+  render();
+}
+
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.section-block').forEach(b => b.classList.remove('drop-before', 'drop-after'));
+  dragSrcIndex = -1;
+}
+
+/* ---- Actions ---- */
+
 function handleAction(id, action) {
   const idx = findIndex(id);
   if (idx < 0) return;
   if (isPlaying) stopComposition();
-  if (action === 'remove') {
-    sections.splice(idx, 1);
-  } else if (action === 'up' && idx > 0) {
-    [sections[idx - 1], sections[idx]] = [sections[idx], sections[idx - 1]];
-  } else if (action === 'down' && idx < sections.length - 1) {
-    [sections[idx + 1], sections[idx]] = [sections[idx], sections[idx + 1]];
-  } else if (action === 'reseed') {
-    sections[idx].seed = randomSeed();
-  } else if (action === 'open') {
+
+  if (action === 'open') {
     const s = sections[idx];
     if (onLoadSeedCb) onLoadSeedCb({
-      seed: s.seed,
-      scale: s.scale,
-      tonic: s.tonic,
-      bpm: s.bpm,
-      bars: s.bars,
-      density: s.density,
-      voice: s.voice,
+      seed: s.seed, scale: s.scale, tonic: s.tonic, bpm: s.bpm,
+      bars: s.bars, density: s.density, voice: s.voice,
     });
     window.location.hash = '#/generator';
     return;
   }
-  save();
+
+  pushUndo();
+  if (action === 'remove') {
+    sections.splice(idx, 1);
+  } else if (action === 'reseed') {
+    sections[idx].seed = randomSeed();
+  }
+  save(false);
   render();
 }
+
+/* ---- Save / load file ---- */
+
+function refreshFileButtons() {
+  const btn = document.getElementById('compose-save-file');
+  if (btn) btn.disabled = sections.length === 0;
+}
+
+function downloadProject() {
+  if (sections.length === 0) return;
+  const data = {
+    format: 'seedsong-compose',
+    version: FILE_VERSION,
+    savedAt: new Date().toISOString(),
+    sections,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.download = `seedsong-compose-${stamp}.seedsong.json`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 0);
+}
+
+async function loadProjectFile(file) {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (data.format !== 'seedsong-compose' || !Array.isArray(data.sections)) {
+      window.alert('That file does not look like a SeedSong compose project.');
+      return;
+    }
+    if (sections.length > 0 && !window.confirm('Replace your current composition with the loaded one?')) return;
+    if (isPlaying) stopComposition();
+    pushUndo();
+    sections = data.sections.map(normalizeSection);
+    save(false);
+    render();
+  } catch {
+    window.alert('Could not read this project file.');
+  }
+}
+
+function normalizeSection(s) {
+  return {
+    id: s.id || `s${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    name: String(s.name || 'Section').slice(0, 32),
+    seed: Number.isFinite(s.seed) ? s.seed >>> 0 : randomSeed(),
+    scale: typeof s.scale === 'string' ? s.scale : 'major',
+    tonic: Number.isFinite(s.tonic) ? Math.max(0, Math.min(11, s.tonic | 0)) : 0,
+    bpm: Number.isFinite(s.bpm) ? Math.max(40, Math.min(240, s.bpm | 0)) : 110,
+    bars: [2, 4, 8].includes(s.bars) ? s.bars : 4,
+    density: typeof s.density === 'number' ? Math.max(0.1, Math.min(1, s.density)) : 0.5,
+    voice: typeof s.voice === 'string' ? s.voice : 'piano',
+  };
+}
+
+/* ---- Init ---- */
 
 export function stopComposePlayback() {
   if (isPlaying) stopComposition();
@@ -285,22 +457,49 @@ export function initComposeView({ onLoadSeed, audioApi }) {
   const addBtn = document.getElementById('compose-add');
   const clearBtn = document.getElementById('compose-clear');
   const playBtn = document.getElementById('compose-play');
+  const undoBtn = document.getElementById('compose-undo');
+  const redoBtn = document.getElementById('compose-redo');
+  const saveFileBtn = document.getElementById('compose-save-file');
+  const loadFileInput = document.getElementById('compose-load-file');
   const tl = document.getElementById('compose-timeline');
+
+  refreshHistoryButtons();
 
   playBtn?.addEventListener('click', () => playComposition());
 
   addBtn?.addEventListener('click', () => {
+    pushUndo();
     sections.push(makeSection());
-    save();
+    save(false);
     render();
   });
 
   clearBtn?.addEventListener('click', () => {
     if (sections.length === 0) return;
     if (!window.confirm('Remove all sections?')) return;
+    pushUndo();
     sections = [];
-    save();
+    save(false);
     render();
+  });
+
+  undoBtn?.addEventListener('click', undo);
+  redoBtn?.addEventListener('click', redo);
+
+  saveFileBtn?.addEventListener('click', downloadProject);
+  loadFileInput?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (file) loadProjectFile(file);
+    e.target.value = '';
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (document.getElementById('view-compose')?.classList.contains('hidden')) return;
+    if (e.target.matches('input, textarea, select')) return;
+    const meta = e.metaKey || e.ctrlKey;
+    if (!meta) return;
+    if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+    else if ((e.key === 'z' && e.shiftKey) || e.key === 'y') { e.preventDefault(); redo(); }
   });
 
   tl?.addEventListener('click', (e) => {
@@ -317,8 +516,9 @@ export function initComposeView({ onLoadSeed, audioApi }) {
     if (!block) return;
     const idx = findIndex(block.dataset.id);
     if (idx >= 0) {
+      pushUndo();
       sections[idx].name = e.target.value.slice(0, 32);
-      save();
+      save(false);
     }
   });
 }

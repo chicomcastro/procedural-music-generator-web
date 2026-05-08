@@ -24,6 +24,7 @@ export default [
         Float32Array: 'readonly',
         Blob: 'readonly',
         FileReader: 'readonly',
+        File: 'readonly',
         fetch: 'readonly',
         history: 'readonly',
         requestAnimationFrame: 'readonly',
