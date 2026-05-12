@@ -1,5 +1,6 @@
 import { MODULES, GROUPS } from './learn-modules.js';
 import { t, onLangChange } from '../i18n/i18n.js';
+import { getModuleField as mf, getStepField as sf, getStepArray as sfa } from './learn-translations.js';
 
 const PROGRESS_KEY = 'seedsong-learn-progress-v2';
 const RECORDINGS_KEY = 'seedsong-learn-recordings';
@@ -680,10 +681,9 @@ function renderContinueCard() {
   const m = MODULES[idx];
   const stepDone = moduleStepsDone(m.id).size;
   const next = nextIncompleteStepIndex(m);
-  const step = m.steps[next] || m.steps[0];
   card.hidden = false;
-  document.getElementById('learn-continue-title').textContent = m.title;
-  document.getElementById('learn-continue-desc').textContent = `${stepDone}/${m.steps.length} · Next: ${step.title}`;
+  document.getElementById('learn-continue-title').textContent = mf(m, 'title');
+  document.getElementById('learn-continue-desc').textContent = `${stepDone}/${m.steps.length} · ${t('learn.next')}: ${sf(m, next, 'title')}`;
   card.dataset.targetIndex = String(idx);
   card.dataset.targetStep = String(next);
 }
@@ -700,7 +700,7 @@ function renderCards() {
       seenGroups.add(m.group);
       const heading = document.createElement('div');
       heading.className = 'learn-group-heading';
-      heading.textContent = m.group;
+      heading.textContent = t(`learn.group.${m.group.toLowerCase().replace(/\s+/g, '_')}`);
       root.appendChild(heading);
     }
     const done = moduleIsComplete(m);
@@ -711,12 +711,12 @@ function renderCards() {
     card.dataset.index = String(i);
     card.tabIndex = 0;
     card.innerHTML = `
-      <span class="learn-card-tag">${m.tag}</span>
-      <h3 class="learn-card-title">${m.title}</h3>
-      <p class="learn-card-desc">${m.summary}</p>
+      <span class="learn-card-tag">${mf(m, 'tag')}</span>
+      <h3 class="learn-card-title">${mf(m, 'title')}</h3>
+      <p class="learn-card-desc">${mf(m, 'summary')}</p>
       <div class="learn-card-progress" aria-hidden="true"><div style="width:${moduleProgressPct(m)}%"></div></div>
       <div class="learn-card-footer">
-        <span class="learn-card-status${done ? ' done' : ''}">${stepsDone}/${m.steps.length} steps</span>
+        <span class="learn-card-status${done ? ' done' : ''}">${stepsDone}/${m.steps.length} ${t('learn.steps_label')}</span>
         <span class="learn-card-cta">${done ? t('learn.replay') : t('learn.open')}</span>
       </div>
     `;
@@ -785,11 +785,11 @@ function renderActiveStep() {
 
   // Header
   const progressEl = document.getElementById('exercise-progress');
-  if (progressEl) progressEl.textContent = `Step ${activeStepIdx + 1} / ${mod.steps.length} · ${mod.title}`;
-  document.getElementById('exercise-tag').textContent = mod.tag;
+  if (progressEl) progressEl.textContent = `${t('learn.step_label')} ${activeStepIdx + 1} / ${mod.steps.length} · ${mf(mod, 'title')}`;
+  document.getElementById('exercise-tag').textContent = mf(mod, 'tag');
 
   // Title / description
-  document.getElementById('exercise-title').textContent = step.title;
+  document.getElementById('exercise-title').textContent = sf(mod, activeStepIdx, 'title');
   const descEl = document.getElementById('exercise-desc');
   if (descEl) {
     if (step.type === 'theory') {
@@ -797,16 +797,17 @@ function renderActiveStep() {
       const audioBtn = step.audio
         ? `<button type="button" class="theory-audio-btn" id="theory-audio-btn">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-            <span>Hear example</span>
+            <span>${t('learn.hear_example')}</span>
           </button>`
         : '';
-      const referencesHtml = step.references && step.references.length
-        ? `<div class="theory-refs"><span class="theory-refs-title">Listen to this in</span><ul>${
-            step.references.map(r => `<li>${r}</li>`).join('')
+      const refs = sfa(mod, activeStepIdx, 'references');
+      const referencesHtml = refs && refs.length
+        ? `<div class="theory-refs"><span class="theory-refs-title">${t('learn.listen_in')}</span><ul>${
+            refs.map(r => `<li>${r}</li>`).join('')
           }</ul></div>`
         : '';
       descEl.innerHTML = `
-        ${step.text}
+        ${sf(mod, activeStepIdx, 'text')}
         ${diagramHtml}
         ${audioBtn}
         ${referencesHtml}
@@ -816,7 +817,7 @@ function renderActiveStep() {
         btn.addEventListener('click', () => playStep({ notes: step.audio, style: step.audioStyle || 'melody' }, exerciseOpts));
       }
     } else {
-      descEl.innerHTML = step.description || '';
+      descEl.innerHTML = sf(mod, activeStepIdx, 'description') || '';
     }
   }
 
@@ -928,7 +929,7 @@ function openMap() {
     if (inGroup.length === 0) continue;
     const groupEl = document.createElement('div');
     groupEl.className = 'learn-map-group';
-    groupEl.innerHTML = `<h3>${group}</h3>`;
+    groupEl.innerHTML = `<h3>${t(`learn.group.${group.toLowerCase().replace(/\s+/g, '_')}`)}</h3>`;
     const lane = document.createElement('div');
     lane.className = 'learn-map-lane';
     for (const m of inGroup) {
@@ -939,8 +940,8 @@ function openMap() {
       const ratio = stepsDone / m.steps.length;
       node.className = `learn-map-node${done ? ' done' : stepsDone > 0 ? ' partial' : ''}`;
       node.innerHTML = `
-        <span class="learn-map-node-title">${m.title}</span>
-        <span class="learn-map-node-meta">${stepsDone}/${m.steps.length} steps</span>
+        <span class="learn-map-node-title">${mf(m, 'title')}</span>
+        <span class="learn-map-node-meta">${stepsDone}/${m.steps.length} ${t('learn.steps_label')}</span>
         <span class="learn-map-node-bar"><span style="width:${Math.round(ratio * 100)}%"></span></span>
       `;
       node.addEventListener('click', () => {
