@@ -1147,6 +1147,79 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
   gap: 20px;
 }
 
+.settings-shell {
+  padding: 22px 22px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 720px;
+}
+
+.settings-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.settings-text {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  max-width: 60ch;
+}
+
+.settings-language,
+.settings-theme {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-lang,
+.settings-theme-btn {
+  background: transparent;
+  border: 1px solid var(--border-hover);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 150ms, background-color 150ms, border-color 150ms;
+}
+
+.settings-lang:hover,
+.settings-theme-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.settings-lang.active,
+.settings-theme-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.settings-section.settings-danger {
+  border-color: rgba(248, 81, 73, 0.35);
+}
+
 .learn-head { padding-bottom: 20px; }
 
 .learn-head-title { min-width: 0; flex: 1; }
