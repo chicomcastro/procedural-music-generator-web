@@ -1,4 +1,5 @@
 import { MODULES, GROUPS } from './learn-modules.js';
+import { t, onLangChange } from '../i18n/i18n.js';
 
 const PROGRESS_KEY = 'seedsong-learn-progress-v2';
 const RECORDINGS_KEY = 'seedsong-learn-recordings';
@@ -716,7 +717,7 @@ function renderCards() {
       <div class="learn-card-progress" aria-hidden="true"><div style="width:${moduleProgressPct(m)}%"></div></div>
       <div class="learn-card-footer">
         <span class="learn-card-status${done ? ' done' : ''}">${stepsDone}/${m.steps.length} steps</span>
-        <span class="learn-card-cta">${done ? 'Replay →' : 'Open →'}</span>
+        <span class="learn-card-cta">${done ? t('learn.replay') : t('learn.open')}</span>
       </div>
     `;
     card.addEventListener('click', () => openExercise(i, nextIncompleteStepIndex(m)));
@@ -852,7 +853,7 @@ function renderActiveStep() {
   if (nextBtn) {
     const isLastStep = activeStepIdx === mod.steps.length - 1;
     const isLastModule = activeModuleIdx === MODULES.length - 1;
-    nextBtn.textContent = isLastStep ? (isLastModule ? '✓ Finish' : 'Done · Next module →') : 'Next →';
+    nextBtn.textContent = isLastStep ? (isLastModule ? t('exercise.finish') : t('exercise.next_module')) : t('exercise.next');
   }
 
   // Sheet music + recording
@@ -966,6 +967,13 @@ export function initLearnView({ audioApi }) {
 
   renderCards();
   renderContinueCard();
+
+  onLangChange(() => {
+    renderCards();
+    renderContinueCard();
+    // Re-apply the exercise step labels if the overlay is open
+    if (activeModuleIdx >= 0) renderActiveStep();
+  });
 
   document.getElementById('learn-continue-btn')?.addEventListener('click', () => {
     const card = document.getElementById('learn-continue');
