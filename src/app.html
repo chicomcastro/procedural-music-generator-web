@@ -634,13 +634,13 @@
             <div class="explore-shell">
                 <header class="explore-head">
                     <div>
-                        <h2 class="view-title">Explore</h2>
-                        <p class="view-sub">Swipe through procedural seeds. Like what you love. We'll learn your taste.</p>
+                        <h2 class="view-title" data-i18n="explore.title">Explore</h2>
+                        <p class="view-sub" data-i18n="explore.sub">Swipe through procedural seeds. Like what you love. We'll learn your taste.</p>
                     </div>
                     <div class="explore-stats" id="explore-stats">
-                        <span class="explore-stat"><b id="explore-count-liked">0</b> liked</span>
-                        <span class="explore-stat"><b id="explore-count-skipped">0</b> skipped</span>
-                        <button id="explore-wrapped-btn" type="button" class="view-cta-secondary">Your Wrapped</button>
+                        <span class="explore-stat"><b id="explore-count-liked">0</b> <span data-i18n="explore.liked">liked</span></span>
+                        <span class="explore-stat"><b id="explore-count-skipped">0</b> <span data-i18n="explore.skipped">skipped</span></span>
+                        <button id="explore-wrapped-btn" type="button" class="view-cta-secondary" data-i18n="explore.wrapped">Your Wrapped</button>
                     </div>
                 </header>
 
@@ -671,22 +671,22 @@
                     </button>
                 </div>
 
-                <p class="hint feed-hint">Use <kbd>←</kbd> skip, <kbd>↑</kbd> save, <kbd>→</kbd> like, <kbd>Space</kbd> play</p>
+                <p class="hint feed-hint"><kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>Space</kbd> <span data-i18n="explore.hint">skip · save · like · play</span></p>
             </div>
 
             <div class="wrapped-overlay overlay hidden" id="wrapped-overlay" role="dialog" aria-modal="true" aria-labelledby="wrapped-title">
                 <div class="overlay-card wrapped-card">
                     <button id="wrapped-close" type="button" class="overlay-close-x" aria-label="Close">&times;</button>
-                    <h2 id="wrapped-title">Your SeedSong Wrapped</h2>
+                    <h2 id="wrapped-title" data-i18n="explore.wrapped_title">Your SeedSong Wrapped</h2>
                     <div id="wrapped-body"></div>
                     <div class="wrapped-actions" id="wrapped-actions" hidden>
                         <button id="wrapped-share" type="button" class="view-cta">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                            Share
+                            <span data-i18n="explore.share">Share</span>
                         </button>
                         <button id="wrapped-download" type="button" class="view-cta-secondary">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            Download
+                            <span data-i18n="explore.download">Download</span>
                         </button>
                     </div>
                 </div>
@@ -697,17 +697,17 @@
             <div class="compose-shell">
                 <header class="view-head">
                     <div>
-                        <h2 class="view-title">Compose</h2>
-                        <p class="view-sub">Arrange sections into a full song. Each block has its own seed and parameters.</p>
+                        <h2 class="view-title" data-i18n="compose.title">Compose</h2>
+                        <p class="view-sub" data-i18n="compose.sub">Arrange sections into a full song. Each block has its own seed and parameters.</p>
                     </div>
                     <div class="view-actions compose-toolbar">
                         <button id="compose-play" type="button" class="view-cta compose-toolbar-primary" disabled>
                             <span class="compose-play-icon" aria-hidden="true">▶</span>
-                            <span id="compose-play-label">Play composition</span>
+                            <span id="compose-play-label" data-i18n="compose.play">Play composition</span>
                         </button>
                         <div class="compose-toolbar-secondary">
                             <button id="compose-add" type="button" class="view-cta-ghost">
-                                <span aria-hidden="true">+</span> Add section
+                                <span aria-hidden="true">+</span> <span data-i18n="compose.add">Add section</span>
                             </button>
                             <div class="compose-tool-group" role="group" aria-label="History">
                                 <button id="compose-undo" type="button" class="compose-tool-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>↶</button>
@@ -724,9 +724,9 @@
                             </div>
                             <button id="compose-export-stems" type="button" class="view-cta-ghost" disabled title="Render each track as a separate WAV file">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="9" y1="18" x2="9" y2="6"/><polygon points="9 6 19 12 9 18 9 6"/><line x1="3" y1="6" x2="3" y2="18"/></svg>
-                                Export stems
+                                <span data-i18n="compose.export_stems">Export stems</span>
                             </button>
-                            <button id="compose-clear" type="button" class="view-cta-ghost compose-clear-btn">Clear</button>
+                            <button id="compose-clear" type="button" class="view-cta-ghost compose-clear-btn" data-i18n="compose.clear">Clear</button>
                         </div>
                     </div>
                 </header>
@@ -738,10 +738,10 @@
 
                 <div id="compose-timeline" class="compose-timeline" role="list" aria-label="Section timeline"></div>
 
-                <p class="hint compose-empty" id="compose-empty">No sections yet — tap <strong>+ Add section</strong> to start arranging.</p>
+                <p class="hint compose-empty" id="compose-empty" data-i18n="compose.empty">No sections yet — tap + Add section to start arranging.</p>
 
                 <details class="roadmap-disclosure">
-                    <summary><span class="roadmap-icon" aria-hidden="true">↗</span> What's coming next</summary>
+                    <summary><span class="roadmap-icon" aria-hidden="true">↗</span> <span data-i18n="compose.coming_next">What's coming next</span></summary>
                     <ul>
                         <li>Multi-track lanes (melody / harmony / bass)</li>
                         <li>Stem export (WAV per track)</li>
@@ -755,31 +755,31 @@
             <div class="learn-shell">
                 <header class="view-head learn-head">
                     <div class="learn-head-title">
-                        <h2 class="view-title">Learn</h2>
-                        <p class="view-sub">Bite-sized music theory grounded in procedural examples you can hear instantly.</p>
+                        <h2 class="view-title" data-i18n="learn.title">Learn</h2>
+                        <p class="view-sub" data-i18n="learn.sub">Bite-sized music theory grounded in procedural examples you can hear instantly.</p>
                     </div>
                     <div class="learn-head-side">
                         <div id="learn-streak" class="learn-streak" title="Daily practice streak">
                             <span class="learn-streak-icon" aria-hidden="true">🔥</span>
-                            <span class="learn-streak-text"><b id="learn-streak-current">0</b> day streak</span>
-                            <span class="learn-streak-best">best <b id="learn-streak-best">0</b></span>
+                            <span class="learn-streak-text"><b id="learn-streak-current">0</b> <span data-i18n="learn.streak">day streak</span></span>
+                            <span class="learn-streak-best"><span data-i18n="learn.best">best</span> <b id="learn-streak-best">0</b></span>
                         </div>
                         <div class="learn-progress-wrap" aria-label="Course progress">
-                            <span class="learn-progress-label">Progress</span>
+                            <span class="learn-progress-label" data-i18n="learn.progress">Progress</span>
                             <div class="learn-progress-bar"><div id="learn-progress-fill"></div></div>
                             <span id="learn-progress-pct" class="learn-progress-pct">0%</span>
                         </div>
-                        <button id="learn-map-btn" type="button" class="view-cta-secondary">Lesson map</button>
+                        <button id="learn-map-btn" type="button" class="view-cta-secondary" data-i18n="learn.map_btn">Lesson map</button>
                     </div>
                 </header>
 
                 <div id="learn-continue" class="learn-continue" hidden>
                     <div class="learn-continue-body">
-                        <span class="learn-continue-eyebrow">Continue where you left off</span>
+                        <span class="learn-continue-eyebrow" data-i18n="learn.continue">Continue where you left off</span>
                         <h3 id="learn-continue-title" class="learn-continue-title">—</h3>
                         <p id="learn-continue-desc" class="learn-continue-desc">—</p>
                     </div>
-                    <button id="learn-continue-btn" type="button" class="view-cta">Resume</button>
+                    <button id="learn-continue-btn" type="button" class="view-cta" data-i18n="learn.resume">Resume</button>
                 </div>
 
                 <div id="learn-modules" class="learn-modules"></div>
@@ -799,7 +799,7 @@
 
                         <div class="exercise-controls-row exercise-only">
                             <div class="exercise-control">
-                                <span class="exercise-control-label">Key</span>
+                                <span class="exercise-control-label" data-i18n="exercise.key">Key</span>
                                 <div class="exercise-stepper">
                                     <button type="button" class="exercise-step-btn" id="exercise-transpose-down" aria-label="Transpose down">−</button>
                                     <span id="exercise-key-label">C</span>
@@ -807,7 +807,7 @@
                                 </div>
                             </div>
                             <div class="exercise-control">
-                                <span class="exercise-control-label">Octave</span>
+                                <span class="exercise-control-label" data-i18n="exercise.octave">Octave</span>
                                 <div class="exercise-stepper">
                                     <button type="button" class="exercise-step-btn" id="exercise-octave-down" aria-label="Octave down">−</button>
                                     <span id="exercise-octave-label">0</span>
@@ -815,7 +815,7 @@
                                 </div>
                             </div>
                             <div class="exercise-control">
-                                <span class="exercise-control-label">Clef</span>
+                                <span class="exercise-control-label" data-i18n="exercise.clef">Clef</span>
                                 <div id="exercise-clef" class="exercise-clef-row" role="radiogroup" aria-label="Clef">
                                     <button type="button" class="exercise-pill" data-clef="treble">𝄞 Treble</button>
                                     <button type="button" class="exercise-pill" data-clef="bass">𝄢 Bass</button>
@@ -823,7 +823,7 @@
                                 </div>
                             </div>
                             <div class="exercise-control">
-                                <span class="exercise-control-label">Tempo <em id="exercise-tempo-display">110</em></span>
+                                <span class="exercise-control-label"><span data-i18n="exercise.tempo">Tempo</span> <em id="exercise-tempo-display">110</em></span>
                                 <input id="exercise-tempo" type="range" min="40" max="200" step="1" value="110" aria-label="Exercise tempo">
                             </div>
                         </div>
@@ -836,20 +836,20 @@
                             </button>
                             <button id="exercise-record" type="button" class="exercise-record-btn" aria-label="Record yourself" title="Record yourself">
                                 <span class="exercise-record-dot"></span>
-                                <span class="exercise-record-label">Record</span>
+                                <span class="exercise-record-label" data-i18n="exercise.record">Record</span>
                             </button>
                         </div>
-                        <p id="exercise-record-hint" class="exercise-record-hint hint exercise-only">Tap record to play along live, or capture your attempt — we'll save it locally.</p>
+                        <p id="exercise-record-hint" class="exercise-record-hint hint exercise-only" data-i18n="exercise.record_hint">Tap record to play along live, or capture your attempt — we'll save it locally.</p>
 
                         <div id="exercise-pitch" class="exercise-pitch exercise-only" hidden>
                             <div class="exercise-pitch-row">
-                                <span class="exercise-pitch-label">You're playing</span>
+                                <span class="exercise-pitch-label" data-i18n="exercise.you_play">You're playing</span>
                                 <span id="exercise-pitch-current">—</span>
                             </div>
                             <div class="exercise-pitch-row">
-                                <span class="exercise-pitch-label">Target</span>
+                                <span class="exercise-pitch-label" data-i18n="exercise.target">Target</span>
                                 <span id="exercise-pitch-target">—</span>
-                                <span id="exercise-pitch-status" class="exercise-pitch-status">listening…</span>
+                                <span id="exercise-pitch-status" class="exercise-pitch-status" data-i18n="exercise.listening">listening…</span>
                             </div>
                             <div class="exercise-pitch-progress" aria-hidden="true">
                                 <div id="exercise-pitch-fill"></div>
@@ -858,8 +858,8 @@
                         <audio id="exercise-recording" class="exercise-only" controls hidden></audio>
 
                         <footer class="exercise-foot">
-                            <button id="exercise-back" type="button" class="view-cta-secondary">← Back</button>
-                            <button id="exercise-next" type="button" class="view-cta">Next →</button>
+                            <button id="exercise-back" type="button" class="view-cta-secondary" data-i18n="exercise.back">← Back</button>
+                            <button id="exercise-next" type="button" class="view-cta" data-i18n="exercise.next">Next →</button>
                         </footer>
                     </div>
                 </div>
@@ -867,14 +867,14 @@
                 <div id="learn-map-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="learn-map-title">
                     <div class="overlay-card learn-map-card">
                         <button id="learn-map-close" type="button" class="overlay-close-x" aria-label="Close map">&times;</button>
-                        <h2 id="learn-map-title">Lesson map</h2>
-                        <p class="hint" style="text-align:left;margin-bottom:14px;opacity:0.7">Browse modules by group. Click any node to jump in.</p>
+                        <h2 id="learn-map-title" data-i18n="learn.map_title">Lesson map</h2>
+                        <p class="hint" style="text-align:left;margin-bottom:14px;opacity:0.7" data-i18n="learn.map_hint">Browse modules by group. Click any node to jump in.</p>
                         <div id="learn-map-body" class="learn-map-body"></div>
                     </div>
                 </div>
 
                 <details class="roadmap-disclosure">
-                    <summary><span class="roadmap-icon" aria-hidden="true">↗</span> What's coming next</summary>
+                    <summary><span class="roadmap-icon" aria-hidden="true">↗</span> <span data-i18n="learn.coming_next">What's coming next</span></summary>
                     <ul>
                         <li>Play-along sheet music with note detection</li>
                         <li>Solo &amp; duet exercises with feedback</li>

@@ -2,6 +2,7 @@ import { randomSeed } from '../generate/rng.js';
 import { generateSong } from '../generate/song.js';
 import { audioBufferToWav } from '../export/wav.js';
 import { downloadBlob } from '../export/download.js';
+import { t, onLangChange } from '../i18n/i18n.js';
 
 const STORAGE_KEY = 'seedsong-compose-project';
 const FILE_VERSION = 1;
@@ -216,7 +217,7 @@ function setPlayUI(playing) {
   const label = document.getElementById('compose-play-label');
   const status = document.getElementById('compose-status');
   if (icon) icon.textContent = playing ? '■' : '▶';
-  if (label) label.textContent = playing ? 'Stop' : 'Play composition';
+  if (label) label.textContent = playing ? t('compose.stop') : t('compose.play');
   if (status) status.hidden = !playing;
   if (btn) btn.classList.toggle('compose-play-active', playing);
 }
@@ -656,6 +657,11 @@ export function initComposeView({ onLoadSeed, audioApi }) {
   onLoadSeedCb = onLoadSeed;
   audioApiRef = audioApi;
   render();
+
+  onLangChange(() => {
+    setPlayUI(isPlaying);
+    render();
+  });
 
   const addBtn = document.getElementById('compose-add');
   const clearBtn = document.getElementById('compose-clear');
