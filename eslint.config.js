@@ -13,6 +13,7 @@ export default [
         setTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        performance: 'readonly',
         AudioContext: 'readonly',
         webkitAudioContext: 'readonly',
         OfflineAudioContext: 'readonly',
