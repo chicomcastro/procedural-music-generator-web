@@ -122,16 +122,16 @@
                 </div>
             </div>
             <div class="score-view-toggle" role="tablist" aria-label="Score view mode">
-                <button id="view-pianoroll" type="button" class="score-view-btn active">Piano Roll</button>
-                <button id="view-sheetmusic" type="button" class="score-view-btn">Sheet Music</button>
+                <button id="view-pianoroll" type="button" class="score-view-btn active" data-i18n="gen.view.pianoroll">Piano Roll</button>
+                <button id="view-sheetmusic" type="button" class="score-view-btn" data-i18n="gen.view.sheet">Sheet Music</button>
             </div>
             <div class="score-canvas-wrap">
                 <canvas id="score-canvas" aria-label="Song score piano roll"></canvas>
                 <div id="osmd-container" style="display:none" aria-label="Sheet music notation"></div>
                 <div class="score-float-left" id="lock-controls">
-                    <button id="lock-all-btn" type="button" class="score-float-btn" title="Lock all bars">Lock All</button>
-                    <button id="unlock-all-btn" type="button" class="score-float-btn" title="Unlock all bars">Unlock All</button>
-                    <button id="invert-lock-btn" type="button" class="score-float-btn" title="Invert locked bars">Invert</button>
+                    <button id="lock-all-btn" type="button" class="score-float-btn" title="Lock all bars" data-i18n="gen.lock.all">Lock All</button>
+                    <button id="unlock-all-btn" type="button" class="score-float-btn" title="Unlock all bars" data-i18n="gen.lock.unlock_all">Unlock All</button>
+                    <button id="invert-lock-btn" type="button" class="score-float-btn" title="Invert locked bars" data-i18n="gen.lock.invert">Invert</button>
                 </div>
                 <div class="score-float-right" id="zoom-controls">
                     <button id="zoom-out-btn" type="button" class="score-float-btn" title="Zoom out (Ctrl+wheel)">−</button>
@@ -141,29 +141,29 @@
             </div>
             <div class="score-bar-actions">
                 <div class="score-track-toggles">
-                    <button class="track-toggle active" data-track="melody" type="button">Melody</button>
-                    <button class="track-toggle active" data-track="chord" type="button">Chords</button>
-                    <button class="track-toggle active" data-track="bass" type="button">Bass</button>
-                    <button class="track-toggle active duet-only" data-track="melody2" type="button">Melody 2</button>
+                    <button class="track-toggle active" data-track="melody" type="button" data-i18n="gen.track.melody">Melody</button>
+                    <button class="track-toggle active" data-track="chord" type="button" data-i18n="gen.track.chord">Chords</button>
+                    <button class="track-toggle active" data-track="bass" type="button" data-i18n="gen.track.bass">Bass</button>
+                    <button class="track-toggle active duet-only" data-track="melody2" type="button" data-i18n="gen.track.melody2">Melody 2</button>
                 </div>
             </div>
         </section>
 
         <div id="tab-panels">
             <nav id="tab-bar" role="tablist">
-                <button role="tab" data-panel="generator" aria-selected="true">Generator</button>
-                <button role="tab" data-panel="mixer" aria-selected="false">Mixer</button>
-                <button role="tab" data-panel="history" aria-selected="false">History</button>
-                <button role="tab" data-panel="export" aria-selected="false">Export</button>
-                <button role="tab" data-panel="gallery" aria-selected="false">Gallery</button>
-                <button id="piano-toggle" type="button" aria-expanded="false">Piano</button>
+                <button role="tab" data-panel="generator" aria-selected="true" data-i18n="gen.tab.generator">Generator</button>
+                <button role="tab" data-panel="mixer" aria-selected="false" data-i18n="gen.tab.mixer">Mixer</button>
+                <button role="tab" data-panel="history" aria-selected="false" data-i18n="gen.tab.history">History</button>
+                <button role="tab" data-panel="export" aria-selected="false" data-i18n="gen.tab.export">Export</button>
+                <button role="tab" data-panel="gallery" aria-selected="false" data-i18n="gen.tab.gallery">Gallery</button>
+                <button id="piano-toggle" type="button" aria-expanded="false" data-i18n="gen.tab.piano">Piano</button>
             </nav>
 
             <div id="panel-generator" role="tabpanel" class="tab-panel">
                 <section id="generator" aria-label="Song generator controls">
                     <div class="gen-section gen-section-presets">
                         <div class="gen-row" id="presets-row">
-                            <span class="preset-label">Genre</span>
+                            <span class="preset-label" data-i18n="gen.preset.genre">Genre</span>
                             <button class="preset-btn" type="button" data-bpm="72" data-scale="pentatonic_minor" data-tonic="9" data-bars="4" data-time="4" data-density="0.5" data-swing="0.3" data-voice="piano" data-reverb="0.3" data-delay="0.15">Lo-fi</button>
                             <button class="preset-btn" type="button" data-bpm="130" data-scale="mixolydian" data-tonic="7" data-bars="4" data-time="4" data-density="0.7" data-swing="0.4" data-voice="piano" data-reverb="0.2" data-delay="0">Jazz</button>
                             <button class="preset-btn" type="button" data-bpm="108" data-scale="major" data-tonic="0" data-bars="8" data-time="4" data-density="0.6" data-swing="0" data-voice="piano" data-reverb="0.4" data-delay="0">Classical</button>
@@ -172,7 +172,7 @@
                             <button class="preset-btn" type="button" data-bpm="150" data-scale="dorian" data-tonic="2" data-bars="4" data-time="4" data-density="0.8" data-swing="0.2" data-voice="pluck" data-reverb="0.1" data-delay="0">Funk</button>
                         </div>
                         <div class="gen-row" id="mood-presets-row">
-                            <span class="preset-label">Mood</span>
+                            <span class="preset-label" data-i18n="gen.preset.mood">Mood</span>
                             <button class="preset-btn" type="button" data-bpm="65" data-scale="major" data-tonic="5" data-bars="4" data-time="4" data-density="0.35" data-swing="0.1" data-voice="pad" data-reverb="0.6" data-delay="0.2" data-velocity="0.5">Chill</button>
                             <button class="preset-btn" type="button" data-bpm="170" data-scale="major" data-tonic="7" data-bars="4" data-time="4" data-density="0.9" data-swing="0.15" data-voice="pluck" data-reverb="0.1" data-delay="0">Energetic</button>
                             <button class="preset-btn" type="button" data-bpm="76" data-scale="natural_minor" data-tonic="4" data-bars="4" data-time="3" data-density="0.4" data-swing="0" data-voice="strings" data-reverb="0.5" data-delay="0.1" data-velocity="0.6">Melancholic</button>
@@ -183,10 +183,10 @@
                     </div>
 
                     <div class="gen-section">
-                        <h3 class="gen-section-title">Key &amp; Structure</h3>
+                        <h3 class="gen-section-title" data-i18n="gen.section.key">Key &amp; Structure</h3>
                         <div class="gen-grid">
                             <div class="gen-field">
-                                <label for="tonic">Tonic</label>
+                                <label for="tonic" data-i18n="gen.field.tonic">Tonic</label>
                                 <select id="tonic">
                                     <option value="0" selected>C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option>
                                     <option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option>
@@ -194,7 +194,7 @@
                                 </select>
                             </div>
                             <div class="gen-field">
-                                <label for="scale">Scale</label>
+                                <label for="scale" data-i18n="gen.field.scale">Scale</label>
                                 <select id="scale">
                                     <option value="major" selected>Major</option>
                                     <option value="natural_minor">Natural Minor</option>
@@ -209,7 +209,7 @@
                                 </select>
                             </div>
                             <div class="gen-field">
-                                <label for="progression">Chords</label>
+                                <label for="progression" data-i18n="gen.field.chords">Chords</label>
                                 <select id="progression">
                                     <option value="auto" selected>Auto (from seed)</option>
                                     <option value="pop">I-V-vi-IV (Pop)</option>
@@ -221,7 +221,7 @@
                                 </select>
                             </div>
                             <div class="gen-field">
-                                <label for="bars">Bars</label>
+                                <label for="bars" data-i18n="gen.field.bars">Bars</label>
                                 <select id="bars">
                                     <option value="2">2</option>
                                     <option value="4" selected>4</option>
@@ -229,7 +229,7 @@
                                 </select>
                             </div>
                             <div class="gen-field">
-                                <label for="structure">Structure</label>
+                                <label for="structure" data-i18n="gen.field.structure">Structure</label>
                                 <select id="structure">
                                     <option value="single" selected>Loop</option>
                                     <option value="short">Short (I-V-C-O)</option>
@@ -237,7 +237,7 @@
                                 </select>
                             </div>
                             <div class="gen-field gen-field-transpose">
-                                <label>Transpose</label>
+                                <label data-i18n="gen.field.transpose">Transpose</label>
                                 <div class="transpose-group">
                                     <button id="transpose-down" type="button" class="transpose-btn">−</button>
                                     <span id="transpose-display">0</span>
@@ -248,10 +248,10 @@
                     </div>
 
                     <div class="gen-section">
-                        <h3 class="gen-section-title">Voices</h3>
+                        <h3 class="gen-section-title" data-i18n="gen.section.voices">Voices</h3>
                         <div class="gen-grid">
                             <div class="gen-field">
-                                <label for="voice">Melody</label>
+                                <label for="voice" data-i18n="gen.field.melody">Melody</label>
                                 <select id="voice">
                                     <option value="piano" selected>Piano</option>
                                     <option value="pad">Synth Pad</option>
@@ -265,7 +265,7 @@
                                 </select>
                             </div>
                             <div class="gen-field">
-                                <label for="chord-voice">Chords</label>
+                                <label for="chord-voice" data-i18n="gen.field.chords">Chords</label>
                                 <select id="chord-voice">
                                     <option value="pad" selected>Synth Pad</option>
                                     <option value="piano">Piano</option>
@@ -282,10 +282,10 @@
                     </div>
 
                     <div class="gen-section">
-                        <h3 class="gen-section-title">Performance</h3>
+                        <h3 class="gen-section-title" data-i18n="gen.section.perf">Performance</h3>
                         <div class="gen-grid">
                             <div class="gen-field">
-                                <label for="contour">Contour</label>
+                                <label for="contour" data-i18n="gen.field.contour">Contour</label>
                                 <select id="contour">
                                     <option value="auto" selected>Auto</option>
                                     <option value="ascending">Ascending</option>
@@ -296,7 +296,7 @@
                                 </select>
                             </div>
                             <div class="gen-field">
-                                <label for="rhythm-template">Rhythm</label>
+                                <label for="rhythm-template" data-i18n="gen.field.rhythm">Rhythm</label>
                                 <select id="rhythm-template">
                                     <option value="auto" selected>Auto</option>
                                     <option value="straight">Straight</option>
@@ -308,17 +308,17 @@
                         </div>
                         <div class="gen-sliders">
                             <div class="gen-slider">
-                                <label for="density">Density</label>
+                                <label for="density" data-i18n="gen.field.density">Density</label>
                                 <input id="density" type="range" min="0.2" max="1.0" step="0.05" value="0.65">
                                 <span id="density-display">65%</span>
                             </div>
                             <div class="gen-slider">
-                                <label for="swing">Swing</label>
+                                <label for="swing" data-i18n="gen.field.swing">Swing</label>
                                 <input id="swing" type="range" min="0" max="0.8" step="0.1" value="0">
                                 <span id="swing-display">0%</span>
                             </div>
                             <div class="gen-slider">
-                                <label for="velocity">Velocity</label>
+                                <label for="velocity" data-i18n="gen.field.velocity">Velocity</label>
                                 <input id="velocity" type="range" min="0.1" max="1.0" step="0.05" value="0.8">
                                 <span id="velocity-display">80%</span>
                             </div>
@@ -327,16 +327,16 @@
 
                     <div class="gen-section gen-section-duet">
                         <div class="gen-section-header">
-                            <h3 class="gen-section-title">Duet</h3>
+                            <h3 class="gen-section-title" data-i18n="gen.section.duet">Duet</h3>
                             <label class="gen-toggle" for="duet-enabled">
                                 <input id="duet-enabled" type="checkbox">
-                                <span>Enable second melody</span>
+                                <span data-i18n="gen.duet.enable">Enable second melody</span>
                             </label>
                         </div>
                         <div class="duet-controls">
                             <div class="gen-grid">
                                 <div class="gen-field">
-                                    <label for="duet-mode">Counterpoint</label>
+                                    <label for="duet-mode" data-i18n="gen.field.counterpoint">Counterpoint</label>
                                     <select id="duet-mode">
                                         <option value="parallel_thirds" selected>Parallel 3rds</option>
                                         <option value="parallel_sixths">Parallel 6ths</option>
@@ -348,7 +348,7 @@
                             </div>
                             <div class="gen-sliders">
                                 <div class="gen-slider">
-                                    <label for="duet-independence">Independence</label>
+                                    <label for="duet-independence" data-i18n="gen.field.independence">Independence</label>
                                     <input id="duet-independence" type="range" min="0" max="1" step="0.1" value="0.5">
                                     <span id="duet-independence-display">50%</span>
                                 </div>
@@ -359,16 +359,16 @@
                     <div class="gen-section gen-section-actions">
                         <div class="gen-actions-row">
                             <div class="gen-seed-group">
-                                <label for="seed">Seed</label>
+                                <label for="seed" data-i18n="gen.field.seed">Seed</label>
                                 <input id="seed" type="number" min="0" max="4294967295" step="1">
                             </div>
-                            <button id="generate-btn" type="button">&#127922; Randomize</button>
-                            <button id="share-btn" type="button">Share</button>
-                            <button id="share-image-btn" type="button" title="Copy score image to clipboard">Copy Image</button>
+                            <button id="generate-btn" type="button">&#127922; <span data-i18n="gen.action.randomize">Randomize</span></button>
+                            <button id="share-btn" type="button" data-i18n="gen.action.share">Share</button>
+                            <button id="share-image-btn" type="button" title="Copy score image to clipboard" data-i18n="gen.action.copy_image">Copy Image</button>
                         </div>
                         <div class="gen-actions-row gen-actions-save">
-                            <input id="song-name" type="text" placeholder="Name this melody…">
-                            <button id="save-btn" type="button">Save</button>
+                            <input id="song-name" type="text" placeholder="Name this melody…" data-i18n-attr="placeholder:gen.action.name_placeholder">
+                            <button id="save-btn" type="button" data-i18n="gen.action.save">Save</button>
                             <span id="save-hint" class="hint" aria-live="polite"></span>
                         </div>
                     </div>
@@ -379,8 +379,8 @@
                 <section id="mixer" aria-label="Mixer">
                     <div class="panel-header">
                         <div class="panel-title-group">
-                            <span class="panel-title">Mixer</span>
-                            <span class="panel-badge">volume, pan &amp; effects</span>
+                            <span class="panel-title" data-i18n="gen.mixer.title">Mixer</span>
+                            <span class="panel-badge" data-i18n="gen.mixer.sub">volume, pan &amp; effects</span>
                         </div>
                         <select id="reverb-preset" class="mixer-inline-select" aria-label="Reverb type">
                             <option value="hall" selected>Hall</option>
@@ -389,10 +389,10 @@
                         </select>
                     </div>
                     <div class="mixer-subtabs" role="tablist" aria-label="Mixer sections">
-                        <button type="button" role="tab" class="mixer-subtab active" data-section="tracks" aria-selected="true">Tracks</button>
-                        <button type="button" role="tab" class="mixer-subtab" data-section="fx" aria-selected="false">FX</button>
-                        <button type="button" role="tab" class="mixer-subtab" data-section="eq" aria-selected="false">EQ</button>
-                        <button type="button" role="tab" class="mixer-subtab" data-section="master" aria-selected="false">Master</button>
+                        <button type="button" role="tab" class="mixer-subtab active" data-section="tracks" aria-selected="true" data-i18n="gen.mixer.tracks">Tracks</button>
+                        <button type="button" role="tab" class="mixer-subtab" data-section="fx" aria-selected="false" data-i18n="gen.mixer.fx">FX</button>
+                        <button type="button" role="tab" class="mixer-subtab" data-section="eq" aria-selected="false" data-i18n="gen.mixer.eq">EQ</button>
+                        <button type="button" role="tab" class="mixer-subtab" data-section="master" aria-selected="false" data-i18n="gen.mixer.master">Master</button>
                     </div>
                     <div class="mixer-console">
                         <div class="mixer-group" data-mixer-section="tracks">
