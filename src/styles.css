@@ -1817,6 +1817,68 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
   padding: 12px 14px 14px;
 }
 
+/* Secondary toggles inside the Adjust disclosure (Repeat, Record mode). */
+.exercise-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
+}
+
+.exercise-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  font-weight: 500;
+}
+
+.exercise-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+
+.exercise-toggle-track {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background-color 180ms;
+  flex-shrink: 0;
+}
+
+.exercise-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms;
+}
+
+.exercise-toggle input:checked + .exercise-toggle-track {
+  background: var(--accent);
+}
+
+.exercise-toggle input:checked + .exercise-toggle-track::after {
+  transform: translateX(14px);
+  background: #fff;
+}
+
+.exercise-toggle input:focus-visible + .exercise-toggle-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.exercise-toggle-label { color: var(--text-primary); }
+
 /* ---- Theory audio-visual ---- */
 .theory-audio-btn {
   display: inline-flex;
@@ -2590,8 +2652,8 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
 .exercise-pitch-status.miss  { color: var(--warning); }
 
 .exercise-play-btn {
-  width: 72px;
-  height: 72px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   background: var(--accent);
   color: #fff;
@@ -2600,6 +2662,7 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
   transition: background-color 150ms, transform 150ms, box-shadow 200ms;
   flex-shrink: 0;
   box-shadow: 0 4px 14px rgba(56, 191, 136, 0.35);
@@ -2612,6 +2675,42 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
 }
 
 .exercise-play-btn:active { transform: scale(0.96); }
+
+.exercise-play-btn .exercise-stop-icon,
+.exercise-play-btn.is-playing .exercise-play-icon { display: none; }
+.exercise-play-btn.is-playing .exercise-stop-icon { display: block; }
+
+/* REC badge — only visible when record mode is on */
+.exercise-play-rec-badge {
+  position: absolute;
+  top: 2px;
+  right: -4px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 2px solid var(--bg-card);
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 160ms, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.exercise-play-btn.record-mode-on .exercise-play-rec-badge {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.exercise-play-btn.record-mode-on.is-playing .exercise-play-rec-badge {
+  animation: rec-badge-pulse 900ms ease-in-out infinite;
+}
+
+@keyframes rec-badge-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
 
 .exercise-record-btn {
   display: inline-flex;
