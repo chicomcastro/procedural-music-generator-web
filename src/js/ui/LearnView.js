@@ -18,8 +18,11 @@ function readPrefs() {
     return {
       clef: SUPPORTED_CLEFS.includes(v.clef) ? v.clef : 'treble',
       tempo: Number.isFinite(v.tempo) ? Math.max(40, Math.min(200, v.tempo)) : 110,
+      // Repeat each example twice by default — feels more like a practice loop.
+      repeat: v.repeat !== false,
+      recordMode: v.recordMode === true,
     };
-  } catch { return { clef: 'treble', tempo: 110 }; }
+  } catch { return { clef: 'treble', tempo: 110, repeat: true, recordMode: false }; }
 }
 
 function writePrefs(prefs) {
@@ -27,6 +30,8 @@ function writePrefs(prefs) {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
       clef: prefs.clef,
       tempo: prefs.tempo,
+      repeat: !!prefs.repeat,
+      recordMode: !!prefs.recordMode,
     }));
   } catch { /* ignore */ }
 }
@@ -618,43 +623,104 @@ async function playStep(step, opts) {
   const startTime = ctx.currentTime + 0.05;
   const beatDur = 60 / opts.tempo;
   const xnotes = transposeNotes(step.notes, opts.transpose, opts.octaveShift);
+  const loops = opts.repeat ? 2 : 1;
+  const interLoopGap = opts.repeat ? beatDur : 0;  // a one-beat breather between passes
 
-  let totalDur = 0;
+  // The duration of ONE pass through the example (the cursor cycles per pass).
+  let passDur = 0;
+  // entriesPerPass = how many staff entries OSMD will advance through in one pass.
+  // melodic = one entry per beat; chord = one entry; progression = one per chord.
+  let entriesPerPass = 0;
+
   if (step.style === 'chord' && Array.isArray(xnotes) && typeof xnotes[0] === 'number') {
-    for (const m of xnotes) playOneNote(ctx, dest, m, startTime, beatDur * 4 * 0.95, 'triangle', 0.06);
-    totalDur = beatDur * 4;
+    passDur = beatDur * 4;
+    entriesPerPass = 1;
   } else if (step.style === 'progression') {
-    let t = startTime;
-    const chordDur = beatDur * 4;
-    for (const chord of xnotes) {
-      for (const m of chord) playOneNote(ctx, dest, m, t, chordDur * 0.92, 'triangle', 0.06);
-      t += chordDur;
-    }
-    totalDur = chordDur * xnotes.length;
+    passDur = beatDur * 4 * xnotes.length;
+    entriesPerPass = xnotes.length;
   } else {
-    for (let i = 0; i < xnotes.length; i++) {
-      const v = xnotes[i];
-      if (Array.isArray(v)) {
-        for (const m of v) playOneNote(ctx, dest, m, startTime + i * beatDur, beatDur * 0.85, 'triangle', 0.07);
-      } else {
-        playOneNote(ctx, dest, v, startTime + i * beatDur, beatDur * 0.85, 'sine', 0.10);
-      }
-    }
-    totalDur = beatDur * xnotes.length;
+    passDur = beatDur * xnotes.length;
+    entriesPerPass = xnotes.length;
   }
 
-  // Drive the play button pulse + progress bar under the sheet.
+  for (let loop = 0; loop < loops; loop++) {
+    const offset = loop * (passDur + interLoopGap);
+    if (step.style === 'chord' && Array.isArray(xnotes) && typeof xnotes[0] === 'number') {
+      for (const m of xnotes) playOneNote(ctx, dest, m, startTime + offset, beatDur * 4 * 0.95, 'triangle', 0.06);
+    } else if (step.style === 'progression') {
+      let t = startTime + offset;
+      const chordDur = beatDur * 4;
+      for (const chord of xnotes) {
+        for (const m of chord) playOneNote(ctx, dest, m, t, chordDur * 0.92, 'triangle', 0.06);
+        t += chordDur;
+      }
+    } else {
+      for (let i = 0; i < xnotes.length; i++) {
+        const v = xnotes[i];
+        if (Array.isArray(v)) {
+          for (const m of v) playOneNote(ctx, dest, m, startTime + offset + i * beatDur, beatDur * 0.85, 'triangle', 0.07);
+        } else {
+          playOneNote(ctx, dest, v, startTime + offset + i * beatDur, beatDur * 0.85, 'sine', 0.10);
+        }
+      }
+    }
+  }
+
+  const totalDur = passDur * loops + interLoopGap * (loops - 1);
+
+  // Optionally start mic-recording + pitch detection alongside the example.
+  if (opts.recordMode) {
+    await startRecording(step, opts);
+  }
+
+  // Drive UI: play-button pulse, progress bar under the sheet, and the OSMD
+  // cursor in lockstep with audio.
   if (typeof setPlayingState === 'function') setPlayingState(true);
+  // Show OSMD's cursor on the staff so the user sees which note is sounding.
+  try {
+    exerciseOSMD?.cursor?.show();
+    exerciseOSMD?.cursor?.reset();
+  } catch { /* ignore */ }
   const startMs = performance.now();
   const totalMs = totalDur * 1000;
+  let lastEntry = -1;
+  let lastLoop = -1;
   if (playbackTimer) clearInterval(playbackTimer);
   playbackTimer = setInterval(() => {
-    const pct = Math.min(100, ((performance.now() - startMs) / totalMs) * 100);
+    const elapsed = performance.now() - startMs;
+    const pct = Math.min(100, (elapsed / totalMs) * 100);
     setPlaybackProgress(pct);
+
+    // Compute the current loop and the index inside the loop.
+    const passSpanMs = (passDur + interLoopGap) * 1000;
+    const currentLoop = Math.min(loops - 1, Math.floor(elapsed / passSpanMs));
+    const inLoopMs = elapsed - currentLoop * passSpanMs;
+    const entry = Math.min(entriesPerPass - 1, Math.max(0, Math.floor(inLoopMs / (passDur / entriesPerPass) / 1000 * 1000)));
+    // If we entered a new loop, reset the cursor to the top of the staff.
+    if (currentLoop !== lastLoop && currentLoop >= 0) {
+      try { exerciseOSMD?.cursor?.reset(); } catch { /* ignore */ }
+      lastLoop = currentLoop;
+      lastEntry = -1;
+    }
+    // Advance the cursor as we cross entry boundaries.
+    while (lastEntry < entry) {
+      try { exerciseOSMD?.cursor?.next(); } catch { break; }
+      lastEntry += 1;
+    }
+
     if (pct >= 100) {
       clearInterval(playbackTimer);
       playbackTimer = null;
       setPlayingState(false);
+      // Stop the optional recording at the end of playback.
+      if (opts.recordMode && mediaRecorder?.state === 'recording') {
+        try { mediaRecorder.stop(); } catch { /* ignore */ }
+      }
+      // Keep the cursor visible briefly so the user sees where it stopped,
+      // then hide unless pitch-detection is still running for record mode.
+      setTimeout(() => {
+        if (!pitchAudioCtx) hideStaffCursor();
+      }, 400);
     }
   }, 60);
 }
@@ -685,19 +751,11 @@ function attachRecording(moduleId, stepIndex) {
   }
 }
 
-async function toggleRecording() {
-  if (mediaRecorder && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
-    stopPitchDetection();
-    return;
-  }
-  if (!navigator.mediaDevices?.getUserMedia) {
-    setRecordHint('Recording not supported in this browser.');
-    return;
-  }
+async function startRecording(step, opts) {
+  if (mediaRecorder && mediaRecorder.state === 'recording') return;
+  if (!navigator.mediaDevices?.getUserMedia) return;
   if (activeModuleIdx < 0) return;
   const mod = MODULES[activeModuleIdx];
-  const step = mod.steps[activeStepIdx];
   if (!step || step.type !== 'exercise') return;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -713,15 +771,12 @@ async function toggleRecording() {
       recordings[key] = dataUrl;
       writeRecordings(recordings);
       attachRecording(mod.id, activeStepIdx);
-      setRecordingUI(false);
-      setRecordHint('Saved! Play back above or re-record.');
+      stopPitchDetection();
     });
     mediaRecorder.start();
-    setRecordingUI(true);
-    setRecordHint('Recording + listening for pitch — tap again to stop.');
-    startPitchDetection(step, exerciseOpts);
+    startPitchDetection(step, opts);
   } catch (_err) {
-    setRecordHint('Microphone access denied.');
+    // Mic permission denied or unavailable — fall back to silent playback.
   }
 }
 
@@ -734,19 +789,6 @@ function blobToDataUrl(blob) {
   });
 }
 
-function setRecordingUI(recording) {
-  const btn = document.getElementById('exercise-record');
-  const lbl = btn?.querySelector('.exercise-record-label');
-  if (!btn) return;
-  btn.classList.toggle('recording', recording);
-  if (lbl) lbl.textContent = recording ? 'Stop' : 'Record';
-}
-
-function setRecordHint(text) {
-  const el = document.getElementById('exercise-record-hint');
-  if (el) el.textContent = text;
-}
-
 /* ---- View state ---- */
 let activeModuleIdx = -1;
 let activeStepIdx = 0;
@@ -755,6 +797,8 @@ const exerciseOpts = {
   octaveShift: 0,
   transpose: 0,
   tempo: 110,
+  repeat: true,
+  recordMode: false,
 };
 
 /* ---- Cards on the main Learn page ---- */
@@ -848,10 +892,13 @@ function openExercise(moduleIdx, stepIdx = 0) {
   if (moduleIdx < 0 || moduleIdx >= MODULES.length) return;
   activeModuleIdx = moduleIdx;
   activeStepIdx = Math.max(0, Math.min(stepIdx, MODULES[moduleIdx].steps.length - 1));
-  // Restore persisted clef + tempo; transpose is always per-step (no carry-over).
+  // Restore persisted clef + tempo + repeat + record-mode. Transpose is always
+  // per-step (no carry-over).
   const prefs = readPrefs();
   exerciseOpts.clef = prefs.clef;
   exerciseOpts.tempo = prefs.tempo;
+  exerciseOpts.repeat = prefs.repeat;
+  exerciseOpts.recordMode = prefs.recordMode;
   exerciseOpts.transpose = 0;
   // octaveShift is recomputed inside renderActiveStep so it fits the step's
   // notes inside the chosen clef's tessitura.
@@ -885,6 +932,12 @@ function syncOpsUI() {
   });
   const oct = document.getElementById('exercise-octave-label');
   if (oct) oct.textContent = (exerciseOpts.octaveShift > 0 ? '+' : '') + String(exerciseOpts.octaveShift);
+  const repeatChk = document.getElementById('exercise-repeat');
+  if (repeatChk) repeatChk.checked = !!exerciseOpts.repeat;
+  const recordChk = document.getElementById('exercise-record-mode');
+  if (recordChk) recordChk.checked = !!exerciseOpts.recordMode;
+  const playBtn = document.getElementById('exercise-play');
+  if (playBtn) playBtn.classList.toggle('record-mode-on', !!exerciseOpts.recordMode);
   updateKeyLabel();
   if (typeof updateControlsSummary === 'function') updateControlsSummary();
 }
@@ -1250,7 +1303,6 @@ function closeExercise() {
   if (mediaRecorder && mediaRecorder.state === 'recording') {
     try { mediaRecorder.stop(); } catch {}
   }
-  setRecordingUI(false);
   const overlay = document.getElementById('learn-exercise-overlay');
   if (overlay) overlay.classList.add('hidden');
   if (recordingObjectUrl) {
@@ -1340,9 +1392,28 @@ export function initLearnView({ audioApi }) {
     if (activeModuleIdx < 0) return;
     const step = MODULES[activeModuleIdx].steps[activeStepIdx];
     if (!step || step.type !== 'exercise') return;
+    // Tapping Play while playback is already running stops everything.
+    if (playbackTimer || mediaRecorder?.state === 'recording') {
+      stopAllNotes();
+      if (mediaRecorder?.state === 'recording') {
+        try { mediaRecorder.stop(); } catch { /* ignore */ }
+      }
+      return;
+    }
     playStep(step, exerciseOpts);
   });
-  document.getElementById('exercise-record')?.addEventListener('click', toggleRecording);
+
+  document.getElementById('exercise-repeat')?.addEventListener('change', (e) => {
+    exerciseOpts.repeat = !!e.target.checked;
+    writePrefs(exerciseOpts);
+  });
+
+  document.getElementById('exercise-record-mode')?.addEventListener('change', (e) => {
+    exerciseOpts.recordMode = !!e.target.checked;
+    writePrefs(exerciseOpts);
+    const playBtn = document.getElementById('exercise-play');
+    if (playBtn) playBtn.classList.toggle('record-mode-on', exerciseOpts.recordMode);
+  });
 
   document.getElementById('exercise-transpose-down')?.addEventListener('click', () => {
     if (activeModuleIdx < 0) return;

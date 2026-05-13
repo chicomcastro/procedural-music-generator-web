@@ -843,6 +843,18 @@
                                         <input id="exercise-tempo" type="range" min="40" max="200" step="1" value="110" aria-label="Exercise tempo">
                                     </div>
                                 </div>
+                                <div class="exercise-toggles">
+                                    <label class="exercise-toggle" for="exercise-repeat">
+                                        <input id="exercise-repeat" type="checkbox" checked>
+                                        <span class="exercise-toggle-track"></span>
+                                        <span class="exercise-toggle-label" data-i18n="exercise.repeat">Repeat 2×</span>
+                                    </label>
+                                    <label class="exercise-toggle" for="exercise-record-mode">
+                                        <input id="exercise-record-mode" type="checkbox">
+                                        <span class="exercise-toggle-track"></span>
+                                        <span class="exercise-toggle-label" data-i18n="exercise.record_mode">Record me playing</span>
+                                    </label>
+                                </div>
                             </details>
 
                             <div class="exercise-stage-block exercise-only">
@@ -868,11 +880,9 @@
 
                                 <div class="exercise-playback">
                                     <button id="exercise-play" type="button" class="exercise-play-btn" aria-label="Play example">
-                                        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-                                    </button>
-                                    <button id="exercise-record" type="button" class="exercise-record-btn" aria-label="Record yourself" title="Record yourself">
-                                        <span class="exercise-record-dot"></span>
-                                        <span class="exercise-record-label" data-i18n="exercise.record">Record</span>
+                                        <svg class="exercise-play-icon" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                                        <svg class="exercise-stop-icon" width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+                                        <span class="exercise-play-rec-badge" aria-hidden="true">REC</span>
                                     </button>
                                 </div>
                                 <audio id="exercise-recording" controls hidden></audio>
