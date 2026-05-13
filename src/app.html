@@ -787,80 +787,112 @@
                 <div id="learn-exercise-overlay" class="exercise-stage overlay hidden" role="dialog" aria-modal="true" aria-labelledby="exercise-title">
                     <div class="exercise-shell">
                         <header class="exercise-head">
-                            <div class="exercise-head-left">
-                                <span class="learn-card-tag" id="exercise-tag"></span>
-                                <span class="exercise-progress" id="exercise-progress">Step 1</span>
+                            <button id="exercise-back-arrow" type="button" class="exercise-nav-btn" aria-label="Previous step">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+                            </button>
+                            <div class="exercise-head-meta">
+                                <span class="exercise-module-name" id="exercise-module-name">—</span>
+                                <span class="exercise-tag-chip" id="exercise-tag"></span>
                             </div>
-                            <button id="exercise-close" type="button" class="exercise-close" aria-label="Close exercise">&times;</button>
+                            <button id="exercise-close" type="button" class="exercise-nav-btn" aria-label="Close exercise">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
                         </header>
-                        <div id="exercise-step-dots" class="exercise-step-dots" aria-label="Step navigation"></div>
-                        <h2 id="exercise-title" class="exercise-title">—</h2>
-                        <div id="exercise-desc" class="exercise-desc">—</div>
 
-                        <div class="exercise-controls-row exercise-only">
-                            <div class="exercise-control">
-                                <span class="exercise-control-label" data-i18n="exercise.key">Key</span>
-                                <div class="exercise-stepper">
-                                    <button type="button" class="exercise-step-btn" id="exercise-transpose-down" aria-label="Transpose down">−</button>
-                                    <span id="exercise-key-label">C</span>
-                                    <button type="button" class="exercise-step-btn" id="exercise-transpose-up" aria-label="Transpose up">+</button>
+                        <div id="exercise-step-rail" class="exercise-step-rail" aria-label="Step navigation"></div>
+
+                        <div class="exercise-content" id="exercise-content">
+                            <h2 id="exercise-title" class="exercise-title">—</h2>
+                            <div id="exercise-desc" class="exercise-desc">—</div>
+
+                            <details id="exercise-controls-disclosure" class="exercise-controls-disclosure exercise-only">
+                                <summary class="exercise-controls-summary">
+                                    <span class="exercise-controls-summary-left">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                                        <span data-i18n="exercise.adjust">Adjust</span>
+                                    </span>
+                                    <span class="exercise-controls-summary-info" id="exercise-controls-info">C · 110 BPM · Treble</span>
+                                </summary>
+                                <div class="exercise-controls-row">
+                                    <div class="exercise-control">
+                                        <span class="exercise-control-label" data-i18n="exercise.key">Key</span>
+                                        <div class="exercise-stepper">
+                                            <button type="button" class="exercise-step-btn" id="exercise-transpose-down" aria-label="Transpose down">−</button>
+                                            <span id="exercise-key-label">C</span>
+                                            <button type="button" class="exercise-step-btn" id="exercise-transpose-up" aria-label="Transpose up">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="exercise-control">
+                                        <span class="exercise-control-label" data-i18n="exercise.octave">Octave</span>
+                                        <div class="exercise-stepper">
+                                            <button type="button" class="exercise-step-btn" id="exercise-octave-down" aria-label="Octave down">−</button>
+                                            <span id="exercise-octave-label">0</span>
+                                            <button type="button" class="exercise-step-btn" id="exercise-octave-up" aria-label="Octave up">+</button>
+                                        </div>
+                                    </div>
+                                    <div class="exercise-control">
+                                        <span class="exercise-control-label" data-i18n="exercise.clef">Clef</span>
+                                        <div id="exercise-clef" class="exercise-clef-row" role="radiogroup" aria-label="Clef">
+                                            <button type="button" class="exercise-pill" data-clef="treble">𝄞 Treble</button>
+                                            <button type="button" class="exercise-pill" data-clef="bass">𝄢 Bass</button>
+                                            <button type="button" class="exercise-pill" data-clef="alto">𝄡 Alto</button>
+                                        </div>
+                                    </div>
+                                    <div class="exercise-control">
+                                        <span class="exercise-control-label"><span data-i18n="exercise.tempo">Tempo</span> <em id="exercise-tempo-display">110</em></span>
+                                        <input id="exercise-tempo" type="range" min="40" max="200" step="1" value="110" aria-label="Exercise tempo">
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="exercise-control">
-                                <span class="exercise-control-label" data-i18n="exercise.octave">Octave</span>
-                                <div class="exercise-stepper">
-                                    <button type="button" class="exercise-step-btn" id="exercise-octave-down" aria-label="Octave down">−</button>
-                                    <span id="exercise-octave-label">0</span>
-                                    <button type="button" class="exercise-step-btn" id="exercise-octave-up" aria-label="Octave up">+</button>
+                            </details>
+
+                            <div class="exercise-stage-block exercise-only">
+                                <div id="exercise-sheet" class="exercise-sheet" aria-label="Sheet music"></div>
+                                <div id="exercise-playback-progress" class="exercise-playback-progress" hidden>
+                                    <div class="exercise-playback-fill"></div>
                                 </div>
-                            </div>
-                            <div class="exercise-control">
-                                <span class="exercise-control-label" data-i18n="exercise.clef">Clef</span>
-                                <div id="exercise-clef" class="exercise-clef-row" role="radiogroup" aria-label="Clef">
-                                    <button type="button" class="exercise-pill" data-clef="treble">𝄞 Treble</button>
-                                    <button type="button" class="exercise-pill" data-clef="bass">𝄢 Bass</button>
-                                    <button type="button" class="exercise-pill" data-clef="alto">𝄡 Alto</button>
+
+                                <div id="exercise-pitch" class="exercise-pitch-inline" hidden>
+                                    <span class="exercise-pitch-chip">
+                                        <span class="exercise-pitch-chip-label" data-i18n="exercise.target">Target</span>
+                                        <strong id="exercise-pitch-target">—</strong>
+                                    </span>
+                                    <span class="exercise-pitch-chip exercise-pitch-chip-you">
+                                        <span class="exercise-pitch-chip-label" data-i18n="exercise.you_play">You're playing</span>
+                                        <strong id="exercise-pitch-current">—</strong>
+                                    </span>
+                                    <span id="exercise-pitch-status" class="exercise-pitch-status" data-i18n="exercise.listening">listening…</span>
+                                    <div class="exercise-pitch-progress" aria-hidden="true">
+                                        <div id="exercise-pitch-fill"></div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="exercise-control">
-                                <span class="exercise-control-label"><span data-i18n="exercise.tempo">Tempo</span> <em id="exercise-tempo-display">110</em></span>
-                                <input id="exercise-tempo" type="range" min="40" max="200" step="1" value="110" aria-label="Exercise tempo">
+
+                                <div class="exercise-playback">
+                                    <button id="exercise-play" type="button" class="exercise-play-btn" aria-label="Play example">
+                                        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                                    </button>
+                                    <button id="exercise-record" type="button" class="exercise-record-btn" aria-label="Record yourself" title="Record yourself">
+                                        <span class="exercise-record-dot"></span>
+                                        <span class="exercise-record-label" data-i18n="exercise.record">Record</span>
+                                    </button>
+                                </div>
+                                <audio id="exercise-recording" controls hidden></audio>
                             </div>
                         </div>
-
-                        <div id="exercise-sheet" class="exercise-sheet exercise-only" aria-label="Sheet music"></div>
-
-                        <div class="exercise-controls exercise-only">
-                            <button id="exercise-play" type="button" class="exercise-play-btn" aria-label="Play example">
-                                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-                            </button>
-                            <button id="exercise-record" type="button" class="exercise-record-btn" aria-label="Record yourself" title="Record yourself">
-                                <span class="exercise-record-dot"></span>
-                                <span class="exercise-record-label" data-i18n="exercise.record">Record</span>
-                            </button>
-                        </div>
-                        <p id="exercise-record-hint" class="exercise-record-hint hint exercise-only" data-i18n="exercise.record_hint">Tap record to play along live, or capture your attempt — we'll save it locally.</p>
-
-                        <div id="exercise-pitch" class="exercise-pitch exercise-only" hidden>
-                            <div class="exercise-pitch-row">
-                                <span class="exercise-pitch-label" data-i18n="exercise.you_play">You're playing</span>
-                                <span id="exercise-pitch-current">—</span>
-                            </div>
-                            <div class="exercise-pitch-row">
-                                <span class="exercise-pitch-label" data-i18n="exercise.target">Target</span>
-                                <span id="exercise-pitch-target">—</span>
-                                <span id="exercise-pitch-status" class="exercise-pitch-status" data-i18n="exercise.listening">listening…</span>
-                            </div>
-                            <div class="exercise-pitch-progress" aria-hidden="true">
-                                <div id="exercise-pitch-fill"></div>
-                            </div>
-                        </div>
-                        <audio id="exercise-recording" class="exercise-only" controls hidden></audio>
 
                         <footer class="exercise-foot">
-                            <button id="exercise-back" type="button" class="view-cta-secondary" data-i18n="exercise.back">← Back</button>
-                            <button id="exercise-next" type="button" class="view-cta" data-i18n="exercise.next">Next →</button>
+                            <button id="exercise-next" type="button" class="exercise-next-btn" data-i18n="exercise.done">Mark done →</button>
                         </footer>
+                    </div>
+
+                    <div id="module-complete-flash" class="module-complete-flash hidden" aria-hidden="true">
+                        <div class="module-complete-card" role="alert">
+                            <div class="confetti-shower" aria-hidden="true"></div>
+                            <div class="module-complete-check">
+                                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                            </div>
+                            <h2 class="module-complete-title" data-i18n="exercise.complete_title">Module complete!</h2>
+                            <p class="module-complete-sub" id="module-complete-sub">—</p>
+                        </div>
                     </div>
                 </div>
 

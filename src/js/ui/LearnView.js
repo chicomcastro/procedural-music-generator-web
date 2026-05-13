@@ -520,6 +520,8 @@ function playOneNote(ctx, dest, midi, when, dur, wave = 'sine', vel = 0.1) {
   activeOscillators.push(osc);
 }
 
+let playbackTimer = null;
+
 async function playStep(step, opts) {
   if (!audioApiRef) return;
   stopAllNotes();
@@ -531,27 +533,44 @@ async function playStep(step, opts) {
   const beatDur = 60 / opts.tempo;
   const xnotes = transposeNotes(step.notes, opts.transpose, opts.octaveShift);
 
+  let totalDur = 0;
   if (step.style === 'chord' && Array.isArray(xnotes) && typeof xnotes[0] === 'number') {
     for (const m of xnotes) playOneNote(ctx, dest, m, startTime, beatDur * 4 * 0.95, 'triangle', 0.06);
-    return;
-  }
-  if (step.style === 'progression') {
+    totalDur = beatDur * 4;
+  } else if (step.style === 'progression') {
     let t = startTime;
     const chordDur = beatDur * 4;
     for (const chord of xnotes) {
       for (const m of chord) playOneNote(ctx, dest, m, t, chordDur * 0.92, 'triangle', 0.06);
       t += chordDur;
     }
-    return;
-  }
-  for (let i = 0; i < xnotes.length; i++) {
-    const v = xnotes[i];
-    if (Array.isArray(v)) {
-      for (const m of v) playOneNote(ctx, dest, m, startTime + i * beatDur, beatDur * 0.85, 'triangle', 0.07);
-    } else {
-      playOneNote(ctx, dest, v, startTime + i * beatDur, beatDur * 0.85, 'sine', 0.10);
+    totalDur = chordDur * xnotes.length;
+  } else {
+    for (let i = 0; i < xnotes.length; i++) {
+      const v = xnotes[i];
+      if (Array.isArray(v)) {
+        for (const m of v) playOneNote(ctx, dest, m, startTime + i * beatDur, beatDur * 0.85, 'triangle', 0.07);
+      } else {
+        playOneNote(ctx, dest, v, startTime + i * beatDur, beatDur * 0.85, 'sine', 0.10);
+      }
     }
+    totalDur = beatDur * xnotes.length;
   }
+
+  // Drive the play button pulse + progress bar under the sheet.
+  if (typeof setPlayingState === 'function') setPlayingState(true);
+  const startMs = performance.now();
+  const totalMs = totalDur * 1000;
+  if (playbackTimer) clearInterval(playbackTimer);
+  playbackTimer = setInterval(() => {
+    const pct = Math.min(100, ((performance.now() - startMs) / totalMs) * 100);
+    setPlaybackProgress(pct);
+    if (pct >= 100) {
+      clearInterval(playbackTimer);
+      playbackTimer = null;
+      setPlayingState(false);
+    }
+  }, 60);
 }
 
 function stopAllNotes() {
@@ -559,6 +578,11 @@ function stopAllNotes() {
     try { osc.stop(); } catch {}
   }
   activeOscillators = [];
+  if (playbackTimer) {
+    clearInterval(playbackTimer);
+    playbackTimer = null;
+  }
+  if (typeof setPlayingState === 'function') setPlayingState(false);
 }
 
 /* ---- Recording (mic + pitch detection together) ---- */
@@ -760,6 +784,7 @@ function syncOpsUI() {
   const oct = document.getElementById('exercise-octave-label');
   if (oct) oct.textContent = (exerciseOpts.octaveShift > 0 ? '+' : '') + String(exerciseOpts.octaveShift);
   updateKeyLabel();
+  if (typeof updateControlsSummary === 'function') updateControlsSummary();
 }
 
 function updateKeyLabel() {
@@ -778,15 +803,20 @@ function updateKeyLabel() {
   label.textContent = `${PITCH_STEPS[pc]}${sharp}`;
 }
 
+// Track which step was just completed so the rail's check can pop-animate it.
+let justCompletedStepIdx = -1;
+
 function renderActiveStep() {
   if (activeModuleIdx < 0) return;
   const mod = MODULES[activeModuleIdx];
   const step = mod.steps[activeStepIdx];
+  const isExercise = step.type === 'exercise';
 
-  // Header
-  const progressEl = document.getElementById('exercise-progress');
-  if (progressEl) progressEl.textContent = `${t('learn.step_label')} ${activeStepIdx + 1} / ${mod.steps.length} · ${mf(mod, 'title')}`;
-  document.getElementById('exercise-tag').textContent = mf(mod, 'tag');
+  // Header: module name + tag
+  const moduleNameEl = document.getElementById('exercise-module-name');
+  if (moduleNameEl) moduleNameEl.textContent = mf(mod, 'title');
+  const tagEl = document.getElementById('exercise-tag');
+  if (tagEl) tagEl.textContent = mf(mod, 'tag');
 
   // Title / description
   document.getElementById('exercise-title').textContent = sf(mod, activeStepIdx, 'title');
@@ -821,25 +851,9 @@ function renderActiveStep() {
     }
   }
 
-  // Step indicator dots
-  const dots = document.getElementById('exercise-step-dots');
-  if (dots) {
-    dots.innerHTML = '';
-    for (let i = 0; i < mod.steps.length; i++) {
-      const dot = document.createElement('span');
-      dot.className = 'exercise-step-dot';
-      const stepDone = moduleStepsDone(mod.id).has(i);
-      if (i === activeStepIdx) dot.classList.add('current');
-      if (stepDone) dot.classList.add('done');
-      if (mod.steps[i].type === 'theory') dot.classList.add('theory');
-      dot.title = `${i + 1}. ${mod.steps[i].title}`;
-      dot.addEventListener('click', () => { activeStepIdx = i; renderActiveStep(); });
-      dots.appendChild(dot);
-    }
-  }
+  renderStepRail(mod);
 
-  // Step type — show/hide exercise machinery
-  const isExercise = step.type === 'exercise';
+  // Show/hide exercise-only machinery
   document.querySelectorAll('.exercise-only').forEach(el => {
     el.style.display = isExercise ? '' : 'none';
   });
@@ -847,57 +861,247 @@ function renderActiveStep() {
     el.style.display = isExercise ? 'none' : '';
   });
 
-  // Footer buttons
-  const backBtn = document.getElementById('exercise-back');
-  const nextBtn = document.getElementById('exercise-next');
+  // Header back arrow: disable on first step of first module
+  const backBtn = document.getElementById('exercise-back-arrow');
   if (backBtn) backBtn.disabled = activeStepIdx === 0 && activeModuleIdx === 0;
+
+  // Single unified CTA — text adapts to context.
+  const nextBtn = document.getElementById('exercise-next');
   if (nextBtn) {
     const isLastStep = activeStepIdx === mod.steps.length - 1;
     const isLastModule = activeModuleIdx === MODULES.length - 1;
-    nextBtn.textContent = isLastStep ? (isLastModule ? t('exercise.finish') : t('exercise.next_module')) : t('exercise.next');
+    const alreadyDone = moduleStepsDone(mod.id).has(activeStepIdx);
+    if (isLastStep && isLastModule) nextBtn.textContent = t('exercise.finish');
+    else if (isLastStep) nextBtn.textContent = t('exercise.next_module');
+    else if (alreadyDone) nextBtn.textContent = t('exercise.done_already');
+    else nextBtn.textContent = t('exercise.done');
   }
 
   // Sheet music + recording
   attachRecording(mod.id, activeStepIdx);
   if (isExercise) {
-    setPitchStatus('listening…', 'idle');
-    document.getElementById('exercise-pitch').hidden = true;
+    setPitchStatus(t('exercise.listening'), 'idle');
+    const pitchEl = document.getElementById('exercise-pitch');
+    if (pitchEl) pitchEl.hidden = true;
     syncOpsUI();
     renderExerciseSheet(step, exerciseOpts);
+    updateControlsSummary();
   } else {
-    // Hide sheet for theory
     const sheet = document.getElementById('exercise-sheet');
     if (sheet) sheet.textContent = '';
   }
+
+  // Reset playback progress
+  setPlaybackProgress(0);
+  showPlaybackProgress(false);
+  const playBtn = document.getElementById('exercise-play');
+  if (playBtn) playBtn.classList.remove('is-playing');
+}
+
+// Render the new step-rail (replaces dots): icon + number, connectors.
+function renderStepRail(mod) {
+  const rail = document.getElementById('exercise-step-rail');
+  if (!rail) return;
+  rail.innerHTML = '';
+  const done = moduleStepsDone(mod.id);
+  for (let i = 0; i < mod.steps.length; i++) {
+    const st = mod.steps[i];
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'exercise-step-rail-item';
+    if (done.has(i)) btn.classList.add('done');
+    if (i === activeStepIdx) btn.classList.add('current');
+    if (i === justCompletedStepIdx) btn.classList.add('just-completed');
+    btn.setAttribute('aria-label', `${i + 1}. ${sf(mod, i, 'title')}`);
+
+    const icon = document.createElement('span');
+    icon.className = 'exercise-step-rail-icon';
+    icon.innerHTML = done.has(i)
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>'
+      : String(i + 1);
+    btn.appendChild(icon);
+
+    const type = document.createElement('span');
+    type.className = 'exercise-step-rail-type';
+    type.textContent = st.type === 'theory' ? '📖' : '🎵';
+    btn.appendChild(type);
+
+    btn.addEventListener('click', () => {
+      if (i === activeStepIdx) return;
+      navigateToStep(i);
+    });
+    rail.appendChild(btn);
+
+    if (i < mod.steps.length - 1) {
+      const conn = document.createElement('span');
+      conn.className = 'exercise-step-rail-connector';
+      if (done.has(i)) conn.classList.add('done');
+      rail.appendChild(conn);
+    }
+  }
+  // Clear the pop after one render so it doesn't replay.
+  justCompletedStepIdx = -1;
+}
+
+function updateControlsSummary() {
+  const info = document.getElementById('exercise-controls-info');
+  if (!info) return;
+  const keyEl = document.getElementById('exercise-key-label');
+  const key = keyEl ? keyEl.textContent : 'C';
+  const clefBtn = document.querySelector('#exercise-clef .exercise-pill.active');
+  const clef = clefBtn ? clefBtn.textContent.trim() : 'Treble';
+  info.textContent = `${key} · ${exerciseOpts.tempo} ${t('exercise.bpm')} · ${clef}`;
 }
 
 function gotoStep(delta) {
   if (activeModuleIdx < 0) return;
   const mod = MODULES[activeModuleIdx];
-  // Mark current as done before moving forward (only if exercise)
-  if (delta > 0) markStepDone(mod.id, activeStepIdx);
+  const wasLastIncompleteOfModule = activeStepIdx === mod.steps.length - 1
+    && delta > 0
+    && !moduleIsComplete(mod);
+
+  // Mark current as done before moving forward
+  if (delta > 0) {
+    markStepDone(mod.id, activeStepIdx);
+    justCompletedStepIdx = activeStepIdx;
+    pulseCtaSuccess();
+  }
+
+  // If we just completed the last step of a module, celebrate before moving on.
+  if (wasLastIncompleteOfModule && moduleIsComplete(mod)) {
+    triggerModuleComplete(mod, () => doStepNavigation(delta));
+    return;
+  }
+  doStepNavigation(delta);
+}
+
+function doStepNavigation(delta) {
+  const mod = MODULES[activeModuleIdx];
   const nextIdx = activeStepIdx + delta;
+  let newModuleIdx = activeModuleIdx;
+  let newStepIdx = activeStepIdx;
   if (nextIdx < 0) {
     if (activeModuleIdx === 0) return;
-    activeModuleIdx -= 1;
-    const prevMod = MODULES[activeModuleIdx];
-    activeStepIdx = prevMod.steps.length - 1;
+    newModuleIdx = activeModuleIdx - 1;
+    const prevMod = MODULES[newModuleIdx];
+    newStepIdx = prevMod.steps.length - 1;
   } else if (nextIdx >= mod.steps.length) {
     if (activeModuleIdx >= MODULES.length - 1) {
-      // Final step done
       closeExercise();
       return;
     }
-    activeModuleIdx += 1;
-    activeStepIdx = 0;
+    newModuleIdx = activeModuleIdx + 1;
+    newStepIdx = 0;
   } else {
-    activeStepIdx = nextIdx;
+    newStepIdx = nextIdx;
   }
   stopAllNotes();
   stopPitchDetection();
   renderCards();
   renderContinueCard();
-  renderActiveStep();
+  animateStepTransition(delta, () => {
+    activeModuleIdx = newModuleIdx;
+    activeStepIdx = newStepIdx;
+    renderActiveStep();
+  });
+}
+
+// Navigate directly to a specific step within the current module (rail click).
+function navigateToStep(stepIdx) {
+  if (activeModuleIdx < 0) return;
+  const delta = stepIdx > activeStepIdx ? 1 : -1;
+  stopAllNotes();
+  stopPitchDetection();
+  animateStepTransition(delta, () => {
+    activeStepIdx = stepIdx;
+    renderActiveStep();
+  });
+}
+
+// Cross-fade with slide. Caller swaps state inside the callback (mid-transition).
+function animateStepTransition(delta, swap) {
+  const content = document.getElementById('exercise-content');
+  if (!content || typeof swap !== 'function') {
+    if (typeof swap === 'function') swap();
+    return;
+  }
+  const outClass = delta > 0 ? 'slide-out-left' : 'slide-out-right';
+  const inClass = delta > 0 ? 'slide-in-from-right' : 'slide-in-from-left';
+  content.classList.remove('slide-in-from-right', 'slide-in-from-left');
+  content.classList.add(outClass);
+  // Wait for the out animation, then swap and animate in.
+  setTimeout(() => {
+    content.classList.remove(outClass);
+    swap();
+    content.classList.add(inClass);
+    setTimeout(() => content.classList.remove(inClass), 280);
+  }, 170);
+}
+
+function pulseCtaSuccess() {
+  const btn = document.getElementById('exercise-next');
+  if (!btn) return;
+  btn.classList.remove('is-completing');
+  void btn.offsetWidth;  // force reflow so the animation can restart
+  btn.classList.add('is-completing');
+  setTimeout(() => btn.classList.remove('is-completing'), 460);
+}
+
+/* ---- Module-complete celebration ---- */
+function triggerModuleComplete(mod, onContinue) {
+  const flash = document.getElementById('module-complete-flash');
+  const sub = document.getElementById('module-complete-sub');
+  if (!flash || !sub) { onContinue?.(); return; }
+  const total = MODULES.length;
+  const completed = totalCompletedModules();
+  sub.textContent = t('exercise.complete_sub')
+    .replace('{module}', mf(mod, 'title'))
+    .replace('{modulesDone}', String(completed))
+    .replace('{modulesTotal}', String(total));
+  spawnConfetti(flash.querySelector('.confetti-shower'));
+  flash.classList.remove('hidden');
+  flash.setAttribute('aria-hidden', 'false');
+  setTimeout(() => {
+    flash.classList.add('hidden');
+    flash.setAttribute('aria-hidden', 'true');
+    onContinue?.();
+  }, 2100);
+}
+
+function spawnConfetti(host) {
+  if (!host) return;
+  host.innerHTML = '';
+  const colors = ['#38bf88', '#e8a735', '#5b9eff', '#f06292', '#bb86fc'];
+  const count = 28;
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'confetti-piece';
+    const left = Math.round(Math.random() * 100);
+    const delay = Math.round(Math.random() * 250);
+    const color = colors[i % colors.length];
+    const drift = Math.round((Math.random() - 0.5) * 60);
+    piece.style.left = `${left}%`;
+    piece.style.background = color;
+    piece.style.animationDelay = `${delay}ms`;
+    piece.style.setProperty('--drift', `${drift}px`);
+    host.appendChild(piece);
+  }
+}
+
+/* ---- Playback progress (sheet music) ---- */
+function showPlaybackProgress(visible) {
+  const el = document.getElementById('exercise-playback-progress');
+  if (el) el.hidden = !visible;
+}
+function setPlaybackProgress(pct) {
+  const fill = document.querySelector('#exercise-playback-progress .exercise-playback-fill');
+  if (fill) fill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+}
+function setPlayingState(isPlaying) {
+  const btn = document.getElementById('exercise-play');
+  if (btn) btn.classList.toggle('is-playing', isPlaying);
+  showPlaybackProgress(isPlaying);
+  if (!isPlaying) setPlaybackProgress(0);
 }
 
 function closeExercise() {
@@ -990,7 +1194,7 @@ export function initLearnView({ audioApi }) {
   });
 
   document.getElementById('exercise-close')?.addEventListener('click', closeExercise);
-  document.getElementById('exercise-back')?.addEventListener('click', () => gotoStep(-1));
+  document.getElementById('exercise-back-arrow')?.addEventListener('click', () => gotoStep(-1));
   document.getElementById('exercise-next')?.addEventListener('click', () => gotoStep(1));
   document.getElementById('exercise-play')?.addEventListener('click', () => {
     if (activeModuleIdx < 0) return;
