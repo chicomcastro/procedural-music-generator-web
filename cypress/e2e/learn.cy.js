@@ -28,27 +28,26 @@ describe('Learn view — exercise flow', () => {
   it('Resume opens the exercise overlay on the first step', () => {
     cy.get('#learn-continue-btn').click();
     cy.get('#learn-exercise-overlay').should('not.have.class', 'hidden');
-    cy.get('#exercise-progress').should('contain', 'Step 1');
+    cy.get('#exercise-module-name').should('contain', 'The Major Scale');
+    cy.get('.exercise-step-rail-item.current').should('have.length', 1);
+    cy.get('.exercise-step-rail-item').eq(0).should('have.class', 'current');
   });
 
-  it('Next advances to the second step and updates the dot indicator', () => {
+  it('Next advances to the second step and updates the rail indicator', () => {
     cy.get('#learn-continue-btn').click();
-    cy.get('#exercise-step-dots .exercise-step-dot.current')
-      .invoke('attr', 'title')
-      .should('contain', '1.');
+    cy.get('.exercise-step-rail-item').eq(0).should('have.class', 'current');
     cy.get('#exercise-next').click();
-    cy.get('#exercise-progress').should('contain', 'Step 2');
-    cy.get('#exercise-step-dots .exercise-step-dot.current')
-      .invoke('attr', 'title')
-      .should('contain', '2.');
+    // Step rail animates; allow a moment for the slide transition
+    cy.get('.exercise-step-rail-item').eq(0).should('have.class', 'done');
+    cy.get('.exercise-step-rail-item').eq(1).should('have.class', 'current');
   });
 
   it('Back returns to the previous step', () => {
     cy.get('#learn-continue-btn').click();
     cy.get('#exercise-next').click();
-    cy.get('#exercise-progress').should('contain', 'Step 2');
-    cy.get('#exercise-back').click();
-    cy.get('#exercise-progress').should('contain', 'Step 1');
+    cy.get('.exercise-step-rail-item').eq(1).should('have.class', 'current');
+    cy.get('#exercise-back-arrow').click();
+    cy.get('.exercise-step-rail-item').eq(0).should('have.class', 'current');
   });
 
   it('Lesson map opens with all groups', () => {
@@ -65,7 +64,9 @@ describe('Learn view — exercise flow', () => {
 
   it('Transposes the exercise with the Key stepper', () => {
     cy.get('#learn-continue-btn').click();
-    cy.get('#exercise-next').click(); // ascend to first exercise
+    cy.get('#exercise-next').click(); // advance to first exercise step
+    // Adjust controls live inside a <details> that is collapsed by default
+    cy.get('#exercise-controls-disclosure > summary').click();
     cy.get('#exercise-key-label').invoke('text').then((before) => {
       cy.get('#exercise-transpose-up').click();
       cy.get('#exercise-key-label').invoke('text').should('not.equal', before);
@@ -75,6 +76,7 @@ describe('Learn view — exercise flow', () => {
   it('Tempo slider updates the tempo display', () => {
     cy.get('#learn-continue-btn').click();
     cy.get('#exercise-next').click();
+    cy.get('#exercise-controls-disclosure > summary').click();
     cy.get('#exercise-tempo').invoke('val', 140).trigger('input');
     cy.get('#exercise-tempo-display').should('have.text', '140');
   });
