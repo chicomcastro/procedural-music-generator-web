@@ -5,6 +5,53 @@ import { getModuleField as mf, getStepField as sf, getStepArray as sfa } from '.
 const PROGRESS_KEY = 'seedsong-learn-progress-v2';
 const RECORDINGS_KEY = 'seedsong-learn-recordings';
 const STREAK_KEY = 'seedsong-learn-streak';
+const PREFS_KEY = 'seedsong-learn-exercise-prefs';
+
+const SUPPORTED_CLEFS = ['treble', 'bass', 'alto'];
+// Approximate centre of each clef's tessitura (MIDI). Used to auto-pick an
+// octave shift that keeps a step's notes within a comfortable range.
+const TESSITURA_CENTER = { treble: 71, bass: 50, alto: 60 };
+
+function readPrefs() {
+  try {
+    const v = JSON.parse(localStorage.getItem(PREFS_KEY)) || {};
+    return {
+      clef: SUPPORTED_CLEFS.includes(v.clef) ? v.clef : 'treble',
+      tempo: Number.isFinite(v.tempo) ? Math.max(40, Math.min(200, v.tempo)) : 110,
+    };
+  } catch { return { clef: 'treble', tempo: 110 }; }
+}
+
+function writePrefs(prefs) {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      clef: prefs.clef,
+      tempo: prefs.tempo,
+    }));
+  } catch { /* ignore */ }
+}
+
+function flattenStepNotes(notes) {
+  const flat = [];
+  const visit = (v) => {
+    if (Array.isArray(v)) v.forEach(visit);
+    else if (typeof v === 'number') flat.push(v);
+  };
+  visit(notes);
+  return flat;
+}
+
+// Compute the integer octave shift that lands the median of the step's notes
+// closest to the chosen clef's tessitura centre. Excludes any user transpose
+// (transpose is applied on top of the shift downstream).
+function autoOctaveForClef(notes, clef) {
+  const center = TESSITURA_CENTER[clef] ?? 71;
+  const flat = flattenStepNotes(notes);
+  if (flat.length === 0) return 0;
+  const sorted = [...flat].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  return Math.round((center - median) / 12);
+}
 
 /* ---- Streak ---- */
 function todayKey() {
@@ -762,15 +809,31 @@ function openExercise(moduleIdx, stepIdx = 0) {
   if (moduleIdx < 0 || moduleIdx >= MODULES.length) return;
   activeModuleIdx = moduleIdx;
   activeStepIdx = Math.max(0, Math.min(stepIdx, MODULES[moduleIdx].steps.length - 1));
-  exerciseOpts.clef = 'treble';
-  exerciseOpts.octaveShift = 0;
+  // Restore persisted clef + tempo; transpose is always per-step (no carry-over).
+  const prefs = readPrefs();
+  exerciseOpts.clef = prefs.clef;
+  exerciseOpts.tempo = prefs.tempo;
   exerciseOpts.transpose = 0;
-  exerciseOpts.tempo = 110;
+  // octaveShift is recomputed inside renderActiveStep so it fits the step's
+  // notes inside the chosen clef's tessitura.
+  exerciseOpts.octaveShift = 0;
   syncOpsUI();
   const overlay = document.getElementById('learn-exercise-overlay');
   if (!overlay) return;
   overlay.classList.remove('hidden');
   renderActiveStep();
+}
+
+// Re-derive octaveShift from the current step + clef so notes fit the clef's
+// tessitura. Called when a new step is shown or when the clef is changed.
+function normalizeOctaveForCurrentStep() {
+  if (activeModuleIdx < 0) return;
+  const mod = MODULES[activeModuleIdx];
+  const step = mod.steps[activeStepIdx];
+  if (!step) return;
+  const notes = step.notes ?? step.audio;
+  if (!notes) { exerciseOpts.octaveShift = 0; return; }
+  exerciseOpts.octaveShift = autoOctaveForClef(notes, exerciseOpts.clef);
 }
 
 function syncOpsUI() {
@@ -877,6 +940,11 @@ function renderActiveStep() {
     else nextBtn.textContent = t('exercise.done');
   }
 
+  // Per-step normalization: reset transpose and refit octave for the chosen
+  // clef so this step's notes land inside the clef's tessitura.
+  exerciseOpts.transpose = 0;
+  normalizeOctaveForCurrentStep();
+
   // Sheet music + recording
   attachRecording(mod.id, activeStepIdx);
   if (isExercise) {
@@ -887,6 +955,7 @@ function renderActiveStep() {
     renderExerciseSheet(step, exerciseOpts);
     updateControlsSummary();
   } else {
+    syncOpsUI();
     const sheet = document.getElementById('exercise-sheet');
     if (sheet) sheet.textContent = '';
   }
@@ -1234,6 +1303,9 @@ export function initLearnView({ audioApi }) {
     const btn = e.target.closest('.exercise-pill[data-clef]');
     if (!btn) return;
     exerciseOpts.clef = btn.dataset.clef;
+    // Re-fit the step's notes to the newly chosen clef's tessitura.
+    normalizeOctaveForCurrentStep();
+    writePrefs(exerciseOpts);
     syncOpsUI();
     const step = MODULES[activeModuleIdx].steps[activeStepIdx];
     if (step?.type === 'exercise') renderExerciseSheet(step, exerciseOpts);
@@ -1242,6 +1314,8 @@ export function initLearnView({ audioApi }) {
     exerciseOpts.tempo = Number(e.target.value) || 110;
     const disp = document.getElementById('exercise-tempo-display');
     if (disp) disp.textContent = String(exerciseOpts.tempo);
+    writePrefs(exerciseOpts);
+    if (typeof updateControlsSummary === 'function') updateControlsSummary();
   });
 
   document.getElementById('learn-exercise-overlay')?.addEventListener('click', (e) => {
