@@ -293,13 +293,12 @@ function render() {
             <input class="section-block-name" value="${escapeHtml(s.name)}" aria-label="Section name">
           </div>
           <div class="section-block-meta">
-            <span>seed ${s.seed}</span>
-            <span class="section-meta-sep">·</span>
-            <span>${TONIC_LABELS[s.tonic]} ${SCALE_LABELS[s.scale] || s.scale}</span>
-            <span class="section-meta-sep">·</span>
-            <span>${s.bars} bars · ${s.bpm} BPM</span>
-            <span class="section-meta-sep">·</span>
-            <span>${Math.round(s.density * 100)}% density · ${s.voice}</span>
+            <span class="section-meta-chip" title="Seed">⌗ ${s.seed}</span>
+            <span class="section-meta-chip" title="Key">${TONIC_LABELS[s.tonic]} ${SCALE_LABELS[s.scale] || s.scale}</span>
+            <span class="section-meta-chip" title="Length">${s.bars} bars</span>
+            <span class="section-meta-chip" title="Tempo">${s.bpm} BPM</span>
+            <span class="section-meta-chip" title="Density">${Math.round(s.density * 100)}%</span>
+            <span class="section-meta-chip section-meta-chip-voice" title="Voice">${s.voice}</span>
           </div>
           <div class="section-block-tracks">${trackChips}</div>
         </div>

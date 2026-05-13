@@ -808,7 +808,33 @@ button {
 .section-block.section-block-active {
   border-color: var(--accent);
   background: linear-gradient(0deg, var(--accent-glow), var(--bg-card));
-  box-shadow: 0 0 0 2px var(--accent-glow);
+  box-shadow: 0 0 0 1px var(--accent), 0 8px 22px -10px rgba(56, 191, 136, 0.4);
+}
+
+.section-block.section-block-active .section-block-index {
+  background: var(--accent);
+  color: #fff;
+  position: relative;
+}
+
+/* Equalizer-style "playing" badge on the active section. */
+.section-block.section-block-active .section-block-index::after {
+  content: '';
+  display: inline-block;
+  margin-left: 6px;
+  width: 10px;
+  height: 12px;
+  vertical-align: -2px;
+  background:
+    linear-gradient(currentColor, currentColor) left   bottom / 2px var(--bar1, 60%) no-repeat,
+    linear-gradient(currentColor, currentColor) center bottom / 2px var(--bar2, 40%) no-repeat,
+    linear-gradient(currentColor, currentColor) right  bottom / 2px var(--bar3, 80%) no-repeat;
+  animation: section-eq 720ms ease-in-out infinite alternate;
+}
+
+@keyframes section-eq {
+  0%   { --bar1: 30%; --bar2: 80%; --bar3: 50%; }
+  100% { --bar1: 80%; --bar2: 30%; --bar3: 90%; }
 }
 
 .section-block {
@@ -819,7 +845,13 @@ button {
   display: flex;
   flex-direction: column;
   cursor: grab;
-  transition: opacity 150ms, border-color 150ms, transform 150ms;
+  transition: opacity 150ms, border-color 150ms, transform 150ms, box-shadow 200ms;
+  animation: section-block-in 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes section-block-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .section-block-main {
@@ -896,9 +928,9 @@ button {
 
 .section-block-meta {
   font-family: monospace;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-secondary);
-  margin-top: 6px;
+  margin-top: 8px;
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -908,6 +940,28 @@ button {
 .section-block-meta .section-meta-sep {
   color: var(--text-muted);
   opacity: 0.5;
+}
+
+/* Pill-style chips for each piece of meta — easier to scan than a "·"-joined run. */
+.section-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: monospace;
+  font-size: 11px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.section-meta-chip-voice {
+  text-transform: capitalize;
+  color: var(--text-primary);
+  border-color: var(--border-hover);
 }
 
 .section-block-tracks {
@@ -1012,10 +1066,10 @@ button {
 
 .section-block-btn {
   background: transparent;
-  border: 1px solid var(--border-hover);
-  border-radius: 6px;
-  width: 32px;
-  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
   cursor: pointer;
   color: var(--text-secondary);
   display: flex;
@@ -1023,8 +1077,10 @@ button {
   justify-content: center;
   font-family: inherit;
   font-size: 14px;
-  transition: color 150ms, border-color 150ms;
+  transition: color 150ms, border-color 150ms, background-color 150ms, transform 100ms;
 }
+
+.section-block-btn:active { transform: scale(0.92); }
 
 .section-block-btn:hover {
   color: var(--accent);
@@ -1569,6 +1625,11 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
 
 .exercise-step-rail-item:not(.current):not(.done) { opacity: 0.55; }
 .exercise-step-rail-item:hover { opacity: 1; }
+.exercise-step-rail-item:focus { outline: none; }
+.exercise-step-rail-item:focus-visible .exercise-step-rail-icon {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 
 .exercise-step-rail-icon {
   width: 30px;
@@ -2508,6 +2569,20 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
   max-width: 100%;
   width: 100%;
   height: auto;
+}
+
+/* OSMD cursor: tint it with the accent colour so it reads as "your target".
+   OSMD renders the cursor as an <img> overlay positioned absolutely. We use
+   filters because OSMD doesn't expose easy hooks for cursor colour. */
+.exercise-sheet img[id^="cursorImg"] {
+  filter: hue-rotate(180deg) saturate(2.4) brightness(0.95);
+  opacity: 0.4;
+  transition: opacity 160ms, filter 200ms;
+}
+
+.exercise-sheet img[id^="cursorImg"].cursor-match {
+  opacity: 0.85;
+  filter: hue-rotate(180deg) saturate(3.2) brightness(1.1);
 }
 
 /* status colour variants used by JS */
@@ -5518,4 +5593,33 @@ input[type="text"]:focus {
   .feed-hint {
     display: none;
   }
+}
+
+/* ---------------------------------------------------------------------
+   Reduced motion — respect the OS-level preference. We keep colour
+   transitions (they read as state, not motion) but disable transforms,
+   slide-ins and the looping play / step pulses.
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .exercise-content.slide-out-left,
+  .exercise-content.slide-out-right,
+  .exercise-content.slide-in-from-right,
+  .exercise-content.slide-in-from-left {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .exercise-play-btn.is-playing,
+  .exercise-step-rail-item.current .exercise-step-rail-icon {
+    animation: none !important;
+  }
+  .confetti-piece { display: none !important; }
 }
