@@ -384,7 +384,14 @@ async function renderExerciseSheet(step, opts) {
     // when transitioning from theory to exercise) and re-render once if the
     // width was still 0.
     const doRender = () => {
-      try { exerciseOSMD.render(); } catch (_e) { /* ignore */ }
+      try {
+        // Scale down on narrow viewports so OSMD packs >=2 measures per
+        // system. Default zoom is 1; on mobile (~390px) 0.7 gives clearer
+        // multi-bar lines without losing notehead readability.
+        const w = container.clientWidth;
+        exerciseOSMD.zoom = w < 500 ? 0.7 : w < 720 ? 0.85 : 1.0;
+        exerciseOSMD.render();
+      } catch (_e) { /* ignore */ }
     };
     requestAnimationFrame(() => {
       doRender();
@@ -473,9 +480,38 @@ async function startPitchDetection(step, opts) {
   pitchSustainNote = null;
   const panel = document.getElementById('exercise-pitch');
   if (panel) panel.hidden = false;
+  syncStaffCursorToTarget();
   updatePitchTarget();
   pitchLoop();
   return true;
+}
+
+// OSMD ships a built-in cursor that highlights the current staff entry.
+// We show it while pitch detection is running so the user can see which
+// note is being listened for, on the staff itself.
+function syncStaffCursorToTarget() {
+  if (!exerciseOSMD || !exerciseOSMD.cursor) return;
+  try {
+    exerciseOSMD.cursor.show();
+    exerciseOSMD.cursor.reset();
+    const target = Math.min(pitchTargetIdx, Math.max(0, pitchTargetSequence.length - 1));
+    for (let i = 0; i < target; i++) {
+      try { exerciseOSMD.cursor.next(); } catch { break; }
+    }
+  } catch { /* ignore */ }
+}
+
+function hideStaffCursor() {
+  if (!exerciseOSMD || !exerciseOSMD.cursor) return;
+  try { exerciseOSMD.cursor.hide(); } catch { /* ignore */ }
+}
+
+// Briefly flash the cursor green to signal a matched note.
+function flashStaffCursorMatch() {
+  if (!exerciseOSMD?.cursor?.cursorElement) return;
+  const el = exerciseOSMD.cursor.cursorElement;
+  el.classList.add('cursor-match');
+  setTimeout(() => el.classList.remove('cursor-match'), 320);
 }
 
 function updatePitchTarget() {
@@ -514,6 +550,8 @@ function pitchLoop() {
         if (Date.now() - pitchSustainStart >= PITCH_SUSTAIN_MS) {
           pitchTargetIdx++;
           updatePitchTarget();
+          try { exerciseOSMD?.cursor?.next(); } catch { /* ignore */ }
+          flashStaffCursorMatch();
           if (pitchTargetIdx >= pitchTargetSequence.length) setPitchStatus('Nailed it 🎉', 'match');
           else setPitchStatus('✓ matched', 'match');
           pitchSustainNote = null;
@@ -542,6 +580,7 @@ function stopPitchDetection() {
   pitchBuf = null;
   const panel = document.getElementById('exercise-pitch');
   if (panel) panel.hidden = true;
+  hideStaffCursor();
 }
 
 /* ---- Audio playback ---- */
@@ -972,6 +1011,7 @@ function renderStepRail(mod) {
   const rail = document.getElementById('exercise-step-rail');
   if (!rail) return;
   rail.innerHTML = '';
+  rail.setAttribute('role', 'tablist');
   const done = moduleStepsDone(mod.id);
   for (let i = 0; i < mod.steps.length; i++) {
     const st = mod.steps[i];
@@ -981,17 +1021,23 @@ function renderStepRail(mod) {
     if (done.has(i)) btn.classList.add('done');
     if (i === activeStepIdx) btn.classList.add('current');
     if (i === justCompletedStepIdx) btn.classList.add('just-completed');
-    btn.setAttribute('aria-label', `${i + 1}. ${sf(mod, i, 'title')}`);
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', i === activeStepIdx ? 'true' : 'false');
+    btn.setAttribute('aria-label', `${i + 1}. ${sf(mod, i, 'title')} (${st.type === 'theory' ? 'theory' : 'exercise'}${done.has(i) ? ', done' : ''})`);
+    // Roving tabindex: only the active tab is in the tab order.
+    btn.tabIndex = i === activeStepIdx ? 0 : -1;
 
     const icon = document.createElement('span');
     icon.className = 'exercise-step-rail-icon';
+    icon.setAttribute('aria-hidden', 'true');
     icon.innerHTML = done.has(i)
-      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>'
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
       : String(i + 1);
     btn.appendChild(icon);
 
     const type = document.createElement('span');
     type.className = 'exercise-step-rail-type';
+    type.setAttribute('aria-hidden', 'true');
     type.textContent = st.type === 'theory' ? '📖' : '🎵';
     btn.appendChild(type);
 
@@ -999,6 +1045,7 @@ function renderStepRail(mod) {
       if (i === activeStepIdx) return;
       navigateToStep(i);
     });
+    btn.addEventListener('keydown', (e) => handleStepRailKeydown(e, i, mod.steps.length));
     rail.appendChild(btn);
 
     if (i < mod.steps.length - 1) {
@@ -1010,6 +1057,30 @@ function renderStepRail(mod) {
   }
   // Clear the pop after one render so it doesn't replay.
   justCompletedStepIdx = -1;
+}
+
+// Keyboard navigation inside the step rail (ArrowLeft/Right + Home/End).
+// Same pattern as a tablist — focus moves with the keys, Enter/Space activates.
+function handleStepRailKeydown(e, i, total) {
+  let target = -1;
+  switch (e.key) {
+    case 'ArrowRight': target = (i + 1) % total; break;
+    case 'ArrowLeft':  target = (i - 1 + total) % total; break;
+    case 'Home':       target = 0; break;
+    case 'End':        target = total - 1; break;
+    case 'Enter':
+    case ' ':
+      if (i !== activeStepIdx) {
+        e.preventDefault();
+        navigateToStep(i);
+      }
+      return;
+    default: return;
+  }
+  e.preventDefault();
+  const items = document.querySelectorAll('#exercise-step-rail .exercise-step-rail-item');
+  const btn = items[target];
+  if (btn) btn.focus();
 }
 
 function updateControlsSummary() {
@@ -1324,9 +1395,13 @@ export function initLearnView({ audioApi }) {
   document.addEventListener('keydown', (e) => {
     const overlay = document.getElementById('learn-exercise-overlay');
     if (!overlay || overlay.classList.contains('hidden')) return;
+    // Let the step rail keep its own arrow-key handling when focused.
+    const focusedInRail = document.activeElement?.closest('#exercise-step-rail');
+    // Don't hijack arrows while the user is typing into an input either.
+    const inField = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
     if (e.key === 'Escape') closeExercise();
-    else if (e.key === ' ') { e.preventDefault(); document.getElementById('exercise-play')?.click(); }
-    else if (e.key === 'ArrowRight') { e.preventDefault(); gotoStep(1); }
-    else if (e.key === 'ArrowLeft') { e.preventDefault(); gotoStep(-1); }
+    else if (e.key === ' ' && !inField) { e.preventDefault(); document.getElementById('exercise-play')?.click(); }
+    else if (e.key === 'ArrowRight' && !focusedInRail && !inField) { e.preventDefault(); gotoStep(1); }
+    else if (e.key === 'ArrowLeft' && !focusedInRail && !inField) { e.preventDefault(); gotoStep(-1); }
   });
 }
