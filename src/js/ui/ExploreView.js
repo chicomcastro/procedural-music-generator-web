@@ -23,6 +23,15 @@ let currentParams = null;
 let currentSong = null;
 let isPlaying = false;
 let activeOscillators = [];
+
+// History of previous candidates (params + song). Lives in memory only —
+// refresh resets it. ↩ button + ArrowDown bring back the last one.
+const cardHistory = [];
+const HISTORY_LIMIT = 20;
+// Fingerprints of the last N candidates we displayed — used to nudge variety.
+const recentFingerprints = [];
+const FINGERPRINT_WINDOW = 5;
+function fingerprintOf(p) { return `${p.scale}|${p.tonic}|${p.voice}`; }
 let stopHandle = null;
 
 /* ---- "More like this" ---- */
@@ -59,7 +68,9 @@ function getLikedTaste() {
   };
 }
 
-function pickWeighted(map, fallbackArr, exploreChance = 0.35) {
+// Higher exploreChance = more "wild" picks vs. drawing from learned taste.
+// Bumped to 0.55 so the feed feels less repetitive once the user has likes.
+function pickWeighted(map, fallbackArr, exploreChance = 0.55) {
   if (Math.random() < exploreChance) return fallbackArr[Math.floor(Math.random() * fallbackArr.length)];
   const entries = Object.entries(map);
   if (entries.length === 0) return fallbackArr[Math.floor(Math.random() * fallbackArr.length)];
@@ -223,7 +234,32 @@ function stopPreviewPlayback() {
 
 function loadNextCard() {
   stopPreviewPlayback();
-  const candidate = generateRandomCandidate();
+  // Push the just-displayed card onto the history stack so ↩ can revisit it.
+  if (currentParams && currentSong) {
+    cardHistory.push({ params: currentParams, song: currentSong });
+    if (cardHistory.length > HISTORY_LIMIT) cardHistory.shift();
+  }
+  // Diversity guard: redraw up to 3 times if the candidate is too similar
+  // (same scale|tonic|voice) to the last 5 we showed.
+  let candidate = generateRandomCandidate();
+  for (let i = 0; i < 3; i++) {
+    if (!recentFingerprints.includes(fingerprintOf(candidate.params))) break;
+    candidate = generateRandomCandidate();
+  }
+  recentFingerprints.push(fingerprintOf(candidate.params));
+  if (recentFingerprints.length > FINGERPRINT_WINDOW) recentFingerprints.shift();
+  showCandidate(candidate);
+  updateBackButton();
+}
+
+// Re-show a previously stored card (from cardHistory). Doesn't push it again.
+function showCard(card) {
+  stopPreviewPlayback();
+  showCandidate(card);
+  updateBackButton();
+}
+
+function showCandidate(candidate) {
   currentParams = candidate.params;
   currentSong = candidate.song;
   const seedEl = document.getElementById('feed-seed');
@@ -465,8 +501,49 @@ function flashShareBtn(text) {
 function swipeAndAdvance(direction, action) {
   const card = document.getElementById('feed-card');
   if (card) card.classList.add(`swipe-${direction}`);
+  if (action === 'like') spawnLikeBurst();
   recordFeedback(action);
   setTimeout(() => loadNextCard(), 280);
+}
+
+// Spawn ~5 floating hearts inside the Like button's burst overlay. Each
+// piece drifts in a slightly different direction so it feels organic.
+function spawnLikeBurst() {
+  const like = document.getElementById('feed-like');
+  const host = like?.querySelector('.like-burst');
+  if (!like || !host) return;
+  host.innerHTML = '';
+  like.classList.remove('burst');
+  void like.offsetWidth;  // force reflow so the animation can restart
+  like.classList.add('burst');
+  for (let i = 0; i < 5; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'like-burst-piece';
+    const dx = (Math.random() - 0.5) * 60;
+    const dy = -28 - Math.random() * 24;
+    piece.style.setProperty('--dx', `${dx}px`);
+    piece.style.setProperty('--dy', `${dy}px`);
+    piece.style.animationDelay = `${i * 35}ms`;
+    piece.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+    host.appendChild(piece);
+  }
+  setTimeout(() => like.classList.remove('burst'), 800);
+}
+
+// Pop the last seen card off the history stack and re-display it.
+function goBack() {
+  if (cardHistory.length === 0) return;
+  const prev = cardHistory.pop();
+  showCard(prev);
+  // Trim the fingerprint window so the diversity guard doesn't fight against
+  // showing this one again later — we're rewinding, not picking new.
+  if (recentFingerprints.length > 0) recentFingerprints.pop();
+}
+
+function updateBackButton() {
+  const btn = document.getElementById('feed-back');
+  if (!btn) return;
+  btn.disabled = cardHistory.length === 0;
 }
 
 export function initExploreView({ audioApi, onLoadSeed }) {
@@ -485,6 +562,7 @@ export function initExploreView({ audioApi, onLoadSeed }) {
 
   skipBtn?.addEventListener('click', () => swipeAndAdvance('left', 'skip'));
   likeBtn?.addEventListener('click', () => swipeAndAdvance('right', 'like'));
+  document.getElementById('feed-back')?.addEventListener('click', goBack);
   saveBtn?.addEventListener('click', () => {
     if (!currentParams) return;
     recordFeedback('save');
@@ -537,6 +615,7 @@ export function initExploreView({ audioApi, onLoadSeed }) {
     if (e.key === 'ArrowLeft') { swipeAndAdvance('left', 'skip'); e.preventDefault(); }
     else if (e.key === 'ArrowRight') { swipeAndAdvance('right', 'like'); e.preventDefault(); }
     else if (e.key === 'ArrowUp') { saveBtn?.click(); e.preventDefault(); }
+    else if (e.key === 'ArrowDown') { goBack(); e.preventDefault(); }
     else if (e.key === ' ') { playBtn?.click(); e.preventDefault(); }
   });
 
