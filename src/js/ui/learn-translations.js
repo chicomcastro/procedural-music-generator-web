@@ -16,7 +16,7 @@ export const TR = {
         { title: 'Padrão de tons e semitons', text: `A escala maior é construída a partir de um padrão fixo de intervalos: <strong>T-T-S-T-T-T-S</strong> (T = tom / 2 semitons, S = semitom / 1 semitom). Começando em Dó, todas as teclas brancas em ordem dão Dó maior: C D E F G A B C. Os semitons caem entre E–F e B–C. É esse padrão que dá à escala o som brilhante e "resolvido".` },
         { title: 'Ascendente', description: 'Ouça a escala de Dó maior subindo, uma nota por tempo.' },
         { title: 'Descendente', description: 'A mesma escala tocada ao contrário — sinta como ela resolve voltando à tônica.' },
-        { title: 'Com ritmo', description: 'Trecho da escala maior com semínima–colcheia–colcheia. Veja como o ritmo reformula uma escala familiar.' },
+        { title: 'Com pausas', description: 'A mesma escala, mas cada segundo tempo é silencioso. Repare como a pausa reformula uma linha familiar.' },
         { title: 'Melodia cantável', description: 'Uma melodia curta e marcante usando só notas da escala maior — o tipo de frase que gruda na cabeça.' },
       ],
     },
@@ -28,7 +28,7 @@ export const TR = {
         { title: 'Patrón de tonos y semitonos', text: `La escala mayor se construye con un patrón fijo de intervalos: <strong>T-T-S-T-T-T-S</strong> (T = tono / 2 semitonos, S = semitono / 1 semitono). Empezando en Do, todas las teclas blancas en orden dan Do mayor: C D E F G A B C. Los semitonos caen entre E–F y B–C. Ese patrón es lo que hace que la escala suene brillante y "resuelta".` },
         { title: 'Ascendente', description: 'Escucha la escala de Do mayor subiendo, una nota por pulso.' },
         { title: 'Descendente', description: 'La misma escala al revés — siente cómo resuelve al volver a la tónica.' },
-        { title: 'Con ritmo', description: 'Fragmento de la escala mayor con negra–corchea–corchea. Mira cómo el ritmo transforma una escala conocida.' },
+        { title: 'Con pausas', description: 'La misma escala, pero cada segundo pulso queda en silencio. Mira cómo la pausa transforma una línea familiar.' },
         { title: 'Melodía cantable', description: 'Una melodía corta y pegadiza usando solo notas de la escala mayor — el tipo de frase que se queda en la cabeza.' },
       ],
     },
@@ -639,7 +639,7 @@ export const TR = {
       ],
     },
   },
-  'walking-diatonic': {
+  'walking-bass-diatonic': {
     pt: {
       title: 'Caminhadas diatônicas',
       summary: 'Use os graus da escala para conectar fundamentais — base do walking de jazz mainstream.',
@@ -663,7 +663,7 @@ export const TR = {
       ],
     },
   },
-  'walking-chromatic': {
+  'walking-bass-chromatic': {
     pt: {
       title: 'Notas de aproximação cromática',
       summary: 'Um semitom antes da próxima fundamental faz qualquer walking soar a jazz.',
@@ -687,7 +687,7 @@ export const TR = {
       ],
     },
   },
-  'walking-cycle': {
+  'walking-bass-fifths': {
     pt: {
       title: 'Walking pelo ciclo de 5as',
       summary: 'Padrões icônicos sobre standards de jazz movidos por 5as descendentes.',
@@ -709,7 +709,7 @@ export const TR = {
       ],
     },
   },
-  'walking-inversions': {
+  'walking-bass-inversions': {
     pt: {
       title: 'Inversões — 3ª e 5ª no baixo',
       summary: 'Pouse em outras notas do acorde além da fundamental para condução de voz mais rica.',
@@ -733,53 +733,53 @@ export const TR = {
       ],
     },
   },
-  'walking-double-time': {
+  'walking-bass-doubletime': {
     pt: {
-      title: 'Double-time & Síncope',
-      summary: 'Duas notas por tempo ou acentos antecipados — adicionam urgência e groove.',
+      title: 'Densidade & Pausas',
+      summary: 'Duas ferramentas opostas: linhas mais densas e silêncios estratégicos.',
       tag: 'Baixo · Walking',
       steps: [
-        { title: 'Dobrando o ritmo', text: `Em vez de uma nota por tempo, toque duas (colcheias). Cria sensação de velocidade dobrada sem mudar o andamento. Síncopes empurram a nota para fora do tempo, gerando groove.` },
-        { title: 'Walking em double-time', description: 'Linha de baixo em colcheias.' },
-        { title: 'Empurrão sincopado', description: 'Acentos deslocados em relação ao tempo.' },
-        { title: 'Walking com pausas', description: 'Inserindo silêncios no walking para criar respiro.' },
+        { title: 'Mais movimento ou mais espaço', text: `Quando você já tem o pulso de quatro semínimas por compasso, pode esculpir a linha em duas direções opostas. <strong>Mais densa</strong> — encha cada tempo com notas do acorde e de aproximação para o baixo nunca parar. <strong>Mais esparsa</strong> — deixe um tempo em pausa para a harmonia respirar. As duas moldam o fraseado; você escolhe conforme a seção.` },
+        { title: 'Walking denso', description: 'Linha cheia de notas de acorde e de escala — cada tempo cai em uma nota com função clara.' },
+        { title: 'Walking com pausa no tempo 2', description: 'O tempo 2 de cada compasso é silencioso — a linha respira, e os tempos 1, 3 e 4 ganham peso.' },
+        { title: 'Walking com pausa no tempo 4', description: 'Silêncio no tempo 4 deixa um espaço antes da mudança de acorde — um truque de fraseado bem comum.' },
       ],
     },
     es: {
-      title: 'Double-time y Síncopa',
-      summary: 'Dos notas por pulso o acentos adelantados — añaden urgencia y groove.',
+      title: 'Densidad y Silencios',
+      summary: 'Dos herramientas opuestas: líneas más densas y silencios estratégicos.',
       tag: 'Bajo · Walking',
       steps: [
-        { title: 'Doblando el ritmo', text: `En lugar de una nota por pulso, toca dos (corcheas). Crea sensación de velocidad doble sin cambiar el tempo. Las síncopas empujan la nota fuera del pulso, generando groove.` },
-        { title: 'Walking en double-time', description: 'Línea de bajo en corcheas.' },
-        { title: 'Empuje sincopado', description: 'Acentos desplazados respecto al pulso.' },
-        { title: 'Walking con silencios', description: 'Insertando silencios en el walking para crear respiro.' },
+        { title: 'Más movimiento o más espacio', text: `Cuando ya tienes el pulso de cuatro negras por compás, puedes esculpir la línea en dos direcciones opuestas. <strong>Más densa</strong> — llena cada pulso con notas del acorde y de aproximación para que el bajo no pare. <strong>Más espaciada</strong> — deja un pulso en silencio para que la armonía respire. Las dos moldean el fraseo; eliges según la sección.` },
+        { title: 'Walking denso', description: 'Una línea cargada de notas del acorde y de la escala — cada pulso cae en una nota con función clara.' },
+        { title: 'Walking con silencio en el pulso 2', description: 'El pulso 2 de cada compás queda silencioso — la línea respira, y los pulsos 1, 3 y 4 ganan peso.' },
+        { title: 'Walking con silencio en el pulso 4', description: 'Silencio en el pulso 4 deja un espacio antes de cada cambio — un truco de fraseo muy usado.' },
       ],
     },
   },
-  'walking-triplets': {
+  'walking-bass-triplets': {
     pt: {
-      title: 'Tercinas & Shuffle',
-      summary: 'A tercina swingada é a alma do feel de jazz e do blues shuffled.',
+      title: 'Padrões de Boogie',
+      summary: 'O baixo boogie-shuffle: um padrão repetido sobre notas do acorde que define o estilo.',
       tag: 'Baixo · Walking',
       steps: [
-        { title: 'Três notas por tempo', text: `A tercina divide o tempo em três partes iguais. Quando você toca o "shuffle", está na verdade tocando a primeira e a terceira de uma tercina — daí o feel característico do jazz e do blues.` },
-        { title: 'Tercina no tempo 4', description: 'Walking com tercina no último tempo de cada compasso.' },
-        { title: 'Padrão de baixo em shuffle', description: 'Linha de baixo com feel de shuffle clássico.' },
+        { title: 'Um padrão, não um walking', text: `O boogie e o blues shuffled se apoiam em um <strong>padrão repetido sobre notas do acorde</strong>, e não em um walking improvisado. A figura clássica em cada acorde é <strong>1 – 3 – 5 – 6 – ♭7 – 6 – 5 – 3</strong> — sobe pelo acorde, toca as cores 6 e ♭7, e volta. Mude a figura inteira para a fundamental de cada acorde.` },
+        { title: 'Nota de conexão no tempo 4', description: 'Os tempos 1–3 desenham o acorde; o tempo 4 é uma passagem cromática que leva à fundamental do próximo acorde.' },
+        { title: 'Padrão de baixo boogie', description: 'A figura clássica do boogie em cada acorde: fundamental, 3ª, 5ª, 6ª, ♭7, 6ª, 5ª, 3ª.' },
       ],
     },
     es: {
-      title: 'Tresillos y Shuffle',
-      summary: 'El tresillo swingueado es el alma del feel de jazz y del blues shuffled.',
+      title: 'Patrones de Boogie',
+      summary: 'El bajo boogie-shuffle: un patrón repetido sobre notas del acorde que define el estilo.',
       tag: 'Bajo · Walking',
       steps: [
-        { title: 'Tres notas por pulso', text: `El tresillo divide el pulso en tres partes iguales. Cuando tocas el "shuffle", en realidad estás tocando la primera y la tercera de un tresillo — de ahí el feel característico del jazz y el blues.` },
-        { title: 'Tresillo en el pulso 4', description: 'Walking con tresillo en el último pulso de cada compás.' },
-        { title: 'Patrón de bajo en shuffle', description: 'Línea de bajo con feel de shuffle clásico.' },
+        { title: 'Un patrón, no un walking', text: `El boogie y el blues shuffled se apoyan en un <strong>patrón repetido sobre notas del acorde</strong>, y no en un walking improvisado. La figura clásica por acorde es <strong>1 – 3 – 5 – 6 – ♭7 – 6 – 5 – 3</strong> — sube por el acorde, toca los colores 6 y ♭7, y vuelve. Mueve la figura entera a la fundamental de cada acorde.` },
+        { title: 'Nota de conexión en el pulso 4', description: 'Los pulsos 1–3 dibujan el acorde; el pulso 4 es un paso cromático que lleva a la fundamental del próximo acorde.' },
+        { title: 'Patrón de bajo boogie', description: 'La figura clásica del boogie en cada acorde: fundamental, 3ª, 5ª, 6ª, ♭7, 6ª, 5ª, 3ª.' },
       ],
     },
   },
-  'walking-12bar': {
+  'walking-bass-blues': {
     pt: {
       title: 'Walking no blues de 12 compassos',
       summary: 'Um chorus inteiro de walking bass sobre o blues. Som de noite de sábado.',
@@ -803,7 +803,7 @@ export const TR = {
       ],
     },
   },
-  'walking-ii-v-i': {
+  'walking-bass-iivi': {
     pt: {
       title: 'Walking ii–V–I (Jazz)',
       summary: 'A progressão de baixo mais tocada do jazz. Domine isso e você toca em qualquer jam.',
@@ -811,7 +811,7 @@ export const TR = {
       steps: [
         { title: 'A cadência jazz central', text: `Walking sobre ii–V–I em Dó: Dm7 – G7 – Cmaj7. Cada compasso tem 4 notas — domine os padrões de aproximação para chegar nas mudanças.` },
         { title: 'Walking básico ii–V–I', description: 'A versão simples — fundamentais e graus conjuntos.' },
-        { title: 'Com fills em double-time', description: 'Acrescentando colcheias para criar tensão.' },
+        { title: 'Com preenchimentos de acorde', description: 'Linha mais movimentada que toca mais notas do acorde e da escala em cada compasso — 8 semínimas por acorde em vez de 4.' },
         { title: 'Com substituições', description: 'Trocas harmônicas: usando o trítono ou aproximações elaboradas.' },
       ],
     },
@@ -822,36 +822,36 @@ export const TR = {
       steps: [
         { title: 'La cadencia jazz central', text: `Walking sobre ii–V–I en Do: Dm7 – G7 – Cmaj7. Cada compás tiene 4 notas — domina los patrones de aproximación para llegar a los cambios.` },
         { title: 'Walking básico ii–V–I', description: 'La versión simple — fundamentales y grados conjuntos.' },
-        { title: 'Con fills en double-time', description: 'Añadiendo corcheas para crear tensión.' },
+        { title: 'Con relleno de acorde', description: 'Una línea más movida que toca más notas del acorde y de la escala en cada compás — 8 negras por acorde en vez de 4.' },
         { title: 'Con sustituciones', description: 'Trueques armónicos: usando el tritono o aproximaciones elaboradas.' },
       ],
     },
   },
-  'reading-rhythm': {
+  'reading-rhythms': {
     pt: {
-      title: 'Semínimas, colcheias e pausas',
-      summary: 'Os blocos mínimos da notação rítmica.',
+      title: 'Semínimas e pausas',
+      summary: 'A primeira leitura rítmica: uma nota por tempo, e silêncio onde a pausa cai.',
       tag: 'Leitura',
       steps: [
-        { title: 'Pulsos e subdivisões', text: `A semínima vale 1 tempo. A colcheia, meio tempo (duas colcheias = 1 semínima). A pausa segue a mesma duração de cada figura. Saber ler isso é a base da leitura rítmica.` },
-        { title: 'Semínimas constantes', description: 'Linha melódica em semínimas, uma por tempo.' },
-        { title: 'Adicionando colcheias', description: 'Mistura de semínimas e colcheias.' },
-        { title: 'Melodia com ritmo misto', description: 'Frase com várias durações combinadas.' },
+        { title: 'Tempo a tempo', text: `Uma <strong>semínima</strong> vale um tempo — em 4/4, quatro delas preenchem o compasso. Uma <strong>pausa de semínima</strong> é um tempo em silêncio. Juntar notas e pausas é a forma mais simples do ritmo ganhar caráter: onde você coloca o silêncio é tão expressivo quanto onde coloca o som.` },
+        { title: 'Semínimas constantes', description: 'Uma nota em cada tempo. Sinta o pulso constante.' },
+        { title: 'Pausa no tempo 3', description: 'O terceiro tempo é silencioso. Repare como a pausa muda o fraseado.' },
+        { title: 'Pergunta e resposta', description: 'Duas frases de três notas cada, separadas por uma única pausa — como uma pergunta com uma pausa antes da resposta.' },
       ],
     },
     es: {
-      title: 'Negras, corcheas y silencios',
-      summary: 'Los bloques mínimos de la notación rítmica.',
+      title: 'Negras y silencios',
+      summary: 'La primera lectura rítmica: una nota por pulso, y silencio donde cae la pausa.',
       tag: 'Lectura',
       steps: [
-        { title: 'Pulsos y subdivisiones', text: `La negra vale 1 pulso. La corchea, medio pulso (dos corcheas = 1 negra). El silencio respeta la misma duración de cada figura. Saber leer esto es la base de la lectura rítmica.` },
-        { title: 'Negras constantes', description: 'Línea melódica en negras, una por pulso.' },
-        { title: 'Añadiendo corcheas', description: 'Mezcla de negras y corcheas.' },
-        { title: 'Melodía con ritmo mixto', description: 'Frase con varias duraciones combinadas.' },
+        { title: 'Pulso a pulso', text: `Una <strong>negra</strong> vale un pulso — en 4/4, cuatro de ellas llenan un compás. Un <strong>silencio de negra</strong> es un pulso en silencio. Juntar notas y silencios es la forma más simple de que el ritmo gane carácter: dónde colocas el silencio es tan expresivo como dónde colocas el sonido.` },
+        { title: 'Negras constantes', description: 'Una nota en cada pulso. Siente el pulso constante.' },
+        { title: 'Silencio en el pulso 3', description: 'El tercer pulso queda en silencio. Mira cómo el silencio cambia el fraseo.' },
+        { title: 'Pregunta y respuesta', description: 'Dos frases de tres notas cada una, separadas por un único silencio — como una pregunta con una pausa antes de la respuesta.' },
       ],
     },
   },
-  'duet-basics': {
+  'duets': {
     pt: {
       title: 'Duo a duas vozes — básico',
       summary: 'Ouça como duas melodias se movem juntas. Os padrões mais simples de contraponto.',
@@ -879,7 +879,7 @@ export const TR = {
       ],
     },
   },
-  'final-challenge': {
+  'challenge-mixed': {
     pt: {
       title: 'Desafio final',
       summary: 'Tudo junto: cor de escala, voicing, ritmo e um pouco de baixo.',
@@ -887,7 +887,7 @@ export const TR = {
       steps: [
         { title: 'Escala + arpejo', description: 'Identifique a escala e o arpejo usados.' },
         { title: 'Mudança de acorde com notas de passagem', description: 'Identifique a progressão e as notas de passagem.' },
-        { title: 'Baixo + acorde final', description: 'Final integrando walking bass e acorde — o coroamento do curso.' },
+        { title: 'Acorde sobre baixo caminhando', description: 'Quatro voicings de Dó maior com a nota grave subindo de grau em grau — o acorde fica, o baixo caminha.' },
       ],
     },
     es: {
@@ -897,7 +897,7 @@ export const TR = {
       steps: [
         { title: 'Escala + arpegio', description: 'Identifica la escala y el arpegio usados.' },
         { title: 'Cambio de acorde con notas de paso', description: 'Identifica la progresión y las notas de paso.' },
-        { title: 'Bajo + acorde final', description: 'Final integrando walking bass y acorde — la coronación del curso.' },
+        { title: 'Acorde sobre bajo que camina', description: 'Cuatro voicings de Do mayor con la nota grave subiendo por grados — el acorde se mantiene, el bajo camina.' },
       ],
     },
   },

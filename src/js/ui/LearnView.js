@@ -231,7 +231,10 @@ function buildMusicXMLFor(step, opts) {
     }
   } else {
     for (const note of notes) {
-      if (Array.isArray(note)) {
+      if (note == null) {
+        // null = quarter rest. Lets exercises model pauses on specific beats.
+        currentMeasure.push('<note><rest/><duration>1</duration><type>quarter</type></note>');
+      } else if (Array.isArray(note)) {
         const sorted = [...note].sort((a, b) => a - b);
         sorted.forEach((m, i) => pushQuarter(m, i > 0));
       } else {
@@ -350,7 +353,11 @@ function renderStackDiagram({ notes = [], labels = [] }) {
 function transposeNotes(notes, semitones, octaveShift) {
   const totalShift = semitones + octaveShift * 12;
   if (!notes || totalShift === 0) return notes;
-  const apply = (n) => Array.isArray(n) ? n.map(x => x + totalShift) : n + totalShift;
+  // null = rest, passes through untouched.
+  const apply = (n) => {
+    if (n == null) return null;
+    return Array.isArray(n) ? n.map(x => x + totalShift) : n + totalShift;
+  };
   if (Array.isArray(notes) && Array.isArray(notes[0])) {
     return notes.map(c => c.map(m => m + totalShift));
   }
@@ -517,7 +524,8 @@ async function startPitchDetection(step, opts) {
   } else if (step.style === 'chord') {
     pitchTargetSequence = [...xnotes];
   } else {
-    pitchTargetSequence = xnotes.flat();
+    // Drop rests (nulls) — pitch detection only listens for actual notes.
+    pitchTargetSequence = xnotes.flat().filter(n => n != null);
   }
   pitchTargetIdx = 0;
   pitchSustainStart = 0;
@@ -696,6 +704,7 @@ async function playStep(step, opts) {
     } else {
       for (let i = 0; i < xnotes.length; i++) {
         const v = xnotes[i];
+        if (v == null) continue;  // rest beat — schedule no sound
         if (Array.isArray(v)) {
           for (const m of v) playOneNote(ctx, dest, m, startTime + offset + i * beatDur, beatDur * 0.85, 'triangle', 0.07);
         } else {
