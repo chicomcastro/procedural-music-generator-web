@@ -67,7 +67,8 @@ describe('Learn curriculum data', () => {
     for (const mod of MODULES) {
       for (const step of mod.steps) {
         if (step.type !== 'exercise') continue;
-        const flat = step.notes.flat();
+        // null entries are quarter rests — skip them in the pitch-range check.
+        const flat = step.notes.flat().filter(n => n != null);
         for (const m of flat) {
           expect(m, `${mod.id} ${step.title}`).toBeGreaterThanOrEqual(21);
           expect(m).toBeLessThanOrEqual(108);
