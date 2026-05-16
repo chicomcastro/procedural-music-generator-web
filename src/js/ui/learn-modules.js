@@ -362,8 +362,8 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Dorian melody',
-        description: 'Short tune highlighting the Dorian raised 6th — the colour that distinguishes it from natural minor.',
-        notes: [62, 65, 67, 65, 64, 65, 67, 69, 67, 65],
+        description: 'A tune that leans on B — the raised 6th that distinguishes D Dorian from D natural minor.',
+        notes: [62, 65, 67, 71, 69, 71, 67, 65, 64, 62],
         style: 'melody',
       },
       {
@@ -546,8 +546,8 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Cmaj7 arpeggio melody',
-        description: 'A melodic line outlining the major 7 chord — climbs the chord and resolves down to the root.',
-        notes: [60, 64, 67, 71, 72, 71, 67, 64],
+        description: 'A melodic line that climbs the major 7 arpeggio to the octave, then settles back on the root.',
+        notes: [60, 64, 67, 71, 72, 71, 67, 64, 60],
         style: 'melody',
       },
       {
@@ -681,8 +681,8 @@ export const MODULES = [
       },
       {
         type: 'exercise',
-        title: 'Riff over the loop',
-        description: 'A repeating melodic riff that fits all four chords — typical pop topline.',
+        title: 'Riff that adapts per chord',
+        description: 'Four bars of a recurring rhythmic shape, each one re-aimed at the chord tones of the current chord.',
         notes: [64, 67, 64, 67, 71, 74, 71, 67, 69, 72, 69, 65, 65, 69, 72, 65],
         style: 'melody',
       },
@@ -725,7 +725,7 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Bass walk between chords',
-        description: 'Stepwise bass connecting each chord root.',
+        description: 'Bass line outlining each chord — root and 3rd or 5th — with a stepwise connector landing on the next root.',
         notes: [48, 52, 55, 57, 60, 57, 53, 55],
         style: 'melody',
       },
@@ -772,7 +772,7 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Walking blues bassline',
-        description: 'A walking bass line that hits chord tones over each bar of the form.',
+        description: 'A walking bass over the condensed 6-bar shape (same as the chord exercise above): I, IV, I, V, IV, I.',
         notes: [48, 52, 55, 57, 53, 57, 60, 62, 48, 52, 55, 57, 55, 59, 62, 64, 53, 57, 60, 62, 48, 52, 55, 57],
         style: 'melody',
       },
@@ -858,8 +858,8 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Descending bass line',
-        description: 'Just the bass walk down — feel its inevitability.',
-        notes: [57, 55, 53, 52],
+        description: 'Half notes — each chord root holds for two beats so the descent feels inevitable.',
+        notes: [{ m: 57, t: 'h' }, { m: 55, t: 'h' }, { m: 53, t: 'h' }, { m: 52, t: 'h' }],
         style: 'melody',
       },
     ],
@@ -900,8 +900,8 @@ export const MODULES = [
       },
       {
         type: 'exercise',
-        title: 'Descending bass walk',
-        description: 'The signature descending bass line through all 8 chords.',
+        title: 'Pachelbel bass',
+        description: 'The signature bass line — eight chord roots that sweep across the form: C G A E F C F G.',
         notes: [48, 55, 57, 52, 53, 48, 53, 55],
         style: 'melody',
       },
@@ -1073,8 +1073,8 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Walking-bass cycle',
-        description: 'The bass line walking through the same falling 5ths.',
-        notes: [60, 64, 67, 70, 65, 69, 72, 70, 58, 62, 65, 63, 63, 67, 70, 68],
+        description: 'A bass line walking through all five falling 5ths, four quarters per chord.',
+        notes: [60, 64, 67, 70, 65, 69, 72, 70, 58, 62, 65, 63, 63, 67, 70, 68, 56, 60, 63, 66],
         style: 'melody',
       },
     ],
@@ -1158,7 +1158,7 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Adding the 3rd',
-        description: 'Beat 3 = 3rd of the chord. Adds chord colour.',
+        description: 'Each bar walks 1 – 3 – 5 – 3 over its chord. The 3rd on beats 2 and 4 adds chord colour.',
         notes: [48, 52, 55, 52, 53, 57, 60, 57, 55, 59, 62, 59, 48, 52, 55, 52],
         style: 'melody',
       },
@@ -1224,8 +1224,8 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Approach from below',
-        description: 'Last beat is one half-step below the next chord root.',
-        notes: [48, 52, 55, 52, 53, 57, 60, 54, 55, 59, 62, 56, 48, 52, 55, 47],
+        description: 'Last beat of each bar is one half-step below the next chord root — E→F, F♯→G, B→C, B→C.',
+        notes: [48, 52, 55, 52, 53, 57, 60, 54, 55, 59, 62, 47, 48, 52, 55, 47],
         style: 'melody',
       },
       {
@@ -1459,9 +1459,13 @@ export const MODULES = [
       },
       {
         type: 'exercise',
-        title: 'With chord-tone fills',
-        description: 'A busier line that hits more chord and scale tones across each bar — 8 quarter notes per chord instead of 4.',
-        notes: [50, 53, 55, 57, 56, 55, 53, 50, 55, 59, 62, 64, 65, 64, 62, 59, 60, 64, 67, 71, 72, 71, 67, 64],
+        title: 'With double-time fills',
+        description: 'The same ii–V–I walk in eighth notes — eight notes per bar instead of four. Pure forward motion.',
+        notes: [
+          { m: 50, t: 'e' }, { m: 53, t: 'e' }, { m: 55, t: 'e' }, { m: 57, t: 'e' }, { m: 56, t: 'e' }, { m: 55, t: 'e' }, { m: 53, t: 'e' }, { m: 50, t: 'e' },
+          { m: 55, t: 'e' }, { m: 59, t: 'e' }, { m: 62, t: 'e' }, { m: 64, t: 'e' }, { m: 65, t: 'e' }, { m: 64, t: 'e' }, { m: 62, t: 'e' }, { m: 59, t: 'e' },
+          { m: 60, t: 'e' }, { m: 64, t: 'e' }, { m: 67, t: 'e' }, { m: 71, t: 'e' }, { m: 72, t: 'e' }, { m: 71, t: 'e' }, { m: 67, t: 'e' }, { m: 64, t: 'e' },
+        ],
         style: 'melody',
       },
       {
@@ -1478,13 +1482,13 @@ export const MODULES = [
     id: 'reading-rhythms',
     group: 'Reading',
     tag: 'Reading',
-    title: 'Quarter notes and rests',
-    summary: 'The first rhythm reading: one note per beat, and silence where the rest sits.',
+    title: 'Quarters, eighths and rests',
+    summary: 'Three rhythm primitives — one beat, half a beat, and silence.',
     steps: [
       {
         type: 'theory',
         title: 'Beat by beat',
-        text: `A <strong>quarter note</strong> takes one beat — in 4/4 time, four of them fill a bar. A <strong>quarter rest</strong> is one silent beat. Combining notes and rests is the simplest way rhythm gets its character: where you place a silence is just as expressive as where you place a sound.`,
+        text: `A <strong>quarter note</strong> takes one beat — in 4/4 time, four of them fill a bar. An <strong>eighth note</strong> takes half a beat, so two of them fit in one beat. A <strong>quarter rest</strong> is one silent beat. Combining these three primitives is the simplest way rhythm gets its character: where you place a silence or a faster note is just as expressive as where you place a sound.`,
       },
       {
         type: 'exercise',
@@ -1502,9 +1506,12 @@ export const MODULES = [
       },
       {
         type: 'exercise',
-        title: 'Question and answer',
-        description: 'Two phrases of three notes each, separated by a single rest — like a question with a pause before the answer.',
-        notes: [60, 62, 64, null, 67, 65, 64, null],
+        title: 'Adding eighth notes',
+        description: 'Each second beat is split into two eighth notes — twice as fast. Listen to the ride feeling.',
+        notes: [
+          60, { m: 62, t: 'e' }, { m: 64, t: 'e' }, 65,
+          67, { m: 65, t: 'e' }, { m: 64, t: 'e' }, 60,
+        ],
         style: 'melody',
       },
     ],

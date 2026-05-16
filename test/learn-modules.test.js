@@ -64,12 +64,22 @@ describe('Learn curriculum data', () => {
   });
 
   it('exercises produce midi values inside a sane range', () => {
+    // Walks every supported note shape (number, null, number array, object
+    // { m, t, r }) and asserts each pitch lives in piano range.
+    const collect = (note, out) => {
+      if (note == null) return;
+      if (typeof note === 'number') { out.push(note); return; }
+      if (Array.isArray(note)) { note.forEach(n => collect(n, out)); return; }
+      if (note.r) return;
+      if (Array.isArray(note.m)) note.m.forEach(n => collect(n, out));
+      else if (typeof note.m === 'number') out.push(note.m);
+    };
     for (const mod of MODULES) {
       for (const step of mod.steps) {
         if (step.type !== 'exercise') continue;
-        // null entries are quarter rests — skip them in the pitch-range check.
-        const flat = step.notes.flat().filter(n => n != null);
-        for (const m of flat) {
+        const out = [];
+        for (const n of step.notes) collect(n, out);
+        for (const m of out) {
           expect(m, `${mod.id} ${step.title}`).toBeGreaterThanOrEqual(21);
           expect(m).toBeLessThanOrEqual(108);
         }
