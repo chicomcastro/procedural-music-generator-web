@@ -1,71 +1,19 @@
+import { t } from '../i18n/i18n.js';
+
 const STORAGE_KEY = 'seedsong-onboarding-done';
 
+// Each step's title/text live in i18n keys onboarding.<key>.title / .text.
+// Updated to cover the current sidebar-based app instead of the old tabs flow.
 const STEPS = [
-  {
-    target: '#hero',
-    title: 'Welcome to SeedSong',
-    text: 'A procedural music generator that creates infinite melodies from a single seed number. Let\'s take a quick tour!',
-    position: 'bottom',
-  },
-  {
-    target: '#score-section',
-    title: 'Score Canvas',
-    text: 'Your song visualized as a piano roll. Multi-section songs show Intro, Verse, Chorus, and Outro. Click a bar to lock it — locked bars survive regeneration. Click notes to select, drag to move, resize edges to change duration.',
-    position: 'bottom',
-  },
-  {
-    target: '#tab-bar',
-    title: 'Tabbed Controls',
-    text: 'Switch between Generator, Mixer, History, Export, and Gallery tabs. The Piano toggle opens a playable keyboard below.',
-    position: 'bottom',
-  },
-  {
-    target: '#presets-row',
-    title: 'Genre & Mood Presets',
-    text: 'One-click presets set tonic, scale, tempo, density, swing, voice, and effects. Genre row (Lo-fi, Jazz, Classical...) and Mood row (Chill, Energetic, Dreamy...) give instant starting points.',
-    position: 'bottom',
-    activateTab: 'generator',
-  },
-  {
-    target: '.gen-grid',
-    title: 'Generator Controls',
-    text: 'Fine-tune tonic, scale, chord progression, bars, song structure (single/short/full), melody voice, chord voice, contour, and rhythm template.',
-    position: 'bottom',
-    activateTab: 'generator',
-  },
-  {
-    target: '.gen-section-actions',
-    title: 'Seed & Sharing',
-    text: 'The seed is the DNA of your song — same seed = same song. Randomize to explore, Share to copy a URL that recreates the exact piece. Save to keep it in your history.',
-    position: 'top',
-    activateTab: 'generator',
-  },
-  {
-    target: '#panel-mixer',
-    title: 'Mixer Console',
-    text: 'Per-track volume faders (MEL, CHD, BASS, DRM, CLK) with pan knobs and mute/solo buttons. Reverb presets (Room/Hall/Cathedral), delay, chorus sends. 3-band EQ and master volume. All settings persist across reloads.',
-    position: 'bottom',
-    activateTab: 'mixer',
-  },
-  {
-    target: '#transport-bar',
-    title: 'Transport Bar',
-    text: 'Play/pause, stop, record, and click track. Progress bar with time display. Adjust BPM and time signature on the right. Press Space for play/pause.',
-    position: 'top',
-  },
-  {
-    target: '#panel-export',
-    title: 'Export',
-    text: 'Download as multi-track MIDI (Format 1 with separate tracks per instrument) or WAV audio. Preview Clip renders a quick 2-bar snippet.',
-    position: 'bottom',
-    activateTab: 'export',
-  },
-  {
-    target: '#theme-toggle',
-    title: 'Theme & Shortcuts',
-    text: 'Toggle dark/light theme. Press ? to see all keyboard shortcuts. Your preferences are saved.',
-    position: 'below-fixed',
-  },
+  { key: 'welcome',   target: null,                                       position: 'center' },
+  { key: 'sidebar',   target: '#sidebar-toggle',                          position: 'right' },
+  { key: 'generator', target: '#presets-row',                             position: 'bottom', activateView: 'generator' },
+  { key: 'score',     target: '#score-section',                           position: 'bottom', activateView: 'generator' },
+  { key: 'explore',   target: '.sidebar-link[data-view="explore"]',       position: 'right',  activateView: 'explore' },
+  { key: 'radio',     target: '.sidebar-link[data-view="radio"]',         position: 'right',  activateView: 'radio' },
+  { key: 'learn',     target: '.sidebar-link[data-view="learn"]',         position: 'right',  activateView: 'learn' },
+  { key: 'compose',   target: '.sidebar-link[data-view="compose"]',       position: 'right',  activateView: 'compose' },
+  { key: 'settings',  target: '.sidebar-link[data-view="settings"]',      position: 'right',  activateView: 'settings' },
 ];
 
 let currentStep = 0;
@@ -94,24 +42,19 @@ function cleanup() {
   });
 }
 
-function activateTab(panelName) {
-  const tabBar = document.getElementById('tab-bar');
-  if (!tabBar) return;
-  for (const t of tabBar.querySelectorAll('[role="tab"]')) {
-    t.setAttribute('aria-selected', t.dataset.panel === panelName ? 'true' : 'false');
-  }
-  for (const p of document.querySelectorAll('.tab-panel')) {
-    p.classList.toggle('hidden', p.id !== `panel-${panelName}`);
-  }
+function activateView(viewName) {
+  if (!viewName) return;
+  // Navigate via the hash route so Sidebar's view-change pipeline fires.
+  window.location.hash = `#/${viewName}`;
 }
 
 function renderStep() {
   cleanup();
   const step = STEPS[currentStep];
 
-  if (step.activateTab) activateTab(step.activateTab);
+  if (step.activateView) activateView(step.activateView);
 
-  const target = document.querySelector(step.target);
+  const target = step.target ? document.querySelector(step.target) : null;
 
   cardEl.classList.remove('visible');
   cardEl.style.transition = 'opacity 150ms';
@@ -130,18 +73,20 @@ function renderStep() {
     const isFirst = currentStep === 0;
     const isLast = currentStep === STEPS.length - 1;
 
+    const title = t(`onboarding.${step.key}.title`);
+    const text = t(`onboarding.${step.key}.text`);
     cardEl.innerHTML = `
       <div class="onboarding-step-num">${stepNum}</div>
-      <div class="onboarding-title">${step.title}</div>
-      <div class="onboarding-text">${step.text}</div>
+      <div class="onboarding-title">${title}</div>
+      <div class="onboarding-text">${text}</div>
       <div class="onboarding-progress">
         ${STEPS.map((_, i) => `<span class="onboarding-dot${i === currentStep ? ' active' : i < currentStep ? ' done' : ''}"></span>`).join('')}
       </div>
       <div class="onboarding-actions">
-        <button class="onboarding-skip" type="button">Skip tour</button>
+        <button class="onboarding-skip" type="button">${t('onboarding.skip')}</button>
         <div class="onboarding-nav">
-          ${isFirst ? '' : '<button class="onboarding-prev" type="button">Back</button>'}
-          <button class="onboarding-next" type="button">${isLast ? 'Finish' : 'Next'}</button>
+          ${isFirst ? '' : `<button class="onboarding-prev" type="button">${t('onboarding.back')}</button>`}
+          <button class="onboarding-next" type="button">${isLast ? t('onboarding.finish') : t('onboarding.next')}</button>
         </div>
       </div>
     `;
@@ -222,7 +167,7 @@ function prev() {
 
 function finish() {
   cleanup();
-  activateTab('generator');
+  activateView('generator');
   window.removeEventListener('keydown', handleKeydown);
   backdropEl.remove();
   cardEl.remove();

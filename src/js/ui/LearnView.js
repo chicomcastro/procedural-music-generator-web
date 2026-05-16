@@ -357,6 +357,17 @@ function transposeNotes(notes, semitones, octaveShift) {
   return notes.map(apply);
 }
 
+// Cache rendered SVG by configuration so step-to-step navigation doesn't
+// re-parse + re-render the same MusicXML. Keys include every input that
+// affects the visual output. FIFO-capped at 20 entries.
+const sheetCache = new Map();
+const SHEET_CACHE_LIMIT = 20;
+
+function cacheKey(modId, stepIdx, opts, containerWidth) {
+  const zoomBucket = containerWidth < 500 ? 'm' : containerWidth < 720 ? 't' : 'd';
+  return `${modId}::${stepIdx}::${opts.clef}::${opts.transpose}::${opts.octaveShift}::${zoomBucket}`;
+}
+
 async function renderExerciseSheet(step, opts) {
   const container = document.getElementById('exercise-sheet');
   if (!container) return;
@@ -365,6 +376,25 @@ async function renderExerciseSheet(step, opts) {
   try {
     await loadOSMD();
     if (!window.opensheetmusicdisplay) throw new Error('OSMD not available');
+
+    // Try the cache first.
+    const mod = MODULES[activeModuleIdx];
+    const containerWidth = container.clientWidth;
+    const key = mod ? cacheKey(mod.id, activeStepIdx, opts, containerWidth) : null;
+    if (key && containerWidth > 0 && sheetCache.has(key)) {
+      container.innerHTML = sheetCache.get(key);
+      container.classList.remove('exercise-sheet-loading');
+      // Re-bind OSMD's cursor onto the restored DOM by re-running render so
+      // cursor APIs keep working. If that's too slow we can drop this — but
+      // load() is the expensive part, render() against a parsed sheet is fast.
+      try {
+        const w = container.clientWidth;
+        exerciseOSMD.zoom = w < 500 ? 0.7 : w < 720 ? 0.85 : 1.0;
+        exerciseOSMD.render();
+      } catch (_e) { /* ignore — cached SVG is still on screen */ }
+      return;
+    }
+
     if (!exerciseOSMD || exerciseOSMD.container !== container) {
       exerciseOSMD = new window.opensheetmusicdisplay.OpenSheetMusicDisplay(container, {
         backend: 'svg',
@@ -396,6 +426,15 @@ async function renderExerciseSheet(step, opts) {
         const w = container.clientWidth;
         exerciseOSMD.zoom = w < 500 ? 0.7 : w < 720 ? 0.85 : 1.0;
         exerciseOSMD.render();
+        // Stash the rendered SVG so the next visit to this step skips OSMD.
+        if (mod && w > 0) {
+          const k = cacheKey(mod.id, activeStepIdx, opts, w);
+          sheetCache.set(k, container.innerHTML);
+          if (sheetCache.size > SHEET_CACHE_LIMIT) {
+            const first = sheetCache.keys().next().value;
+            sheetCache.delete(first);
+          }
+        }
       } catch (_e) { /* ignore */ }
     };
     requestAnimationFrame(() => {

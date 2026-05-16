@@ -21,6 +21,7 @@ import { initGallery } from './ui/Gallery.js';
 import { startOnboarding, shouldShowOnboarding } from './ui/Onboarding.js';
 import { initSidebar, onViewChange } from './ui/Sidebar.js';
 import { initExploreView, stopExplorePlayback, refreshExplore } from './ui/ExploreView.js';
+import { initRadioView, stopRadioPlayback, refreshRadio } from './ui/RadioView.js';
 import { initComposeView, stopComposePlayback } from './ui/ComposeView.js';
 import { initLearnView } from './ui/LearnView.js';
 import { initSettingsView } from './ui/SettingsView.js';
@@ -759,6 +760,30 @@ function syncTransportPills() {
 }
 syncTransportPills();
 
+// Update the inline "current state" pills inside the Voices/Performance/Duet
+// disclosure summaries so the user can see the current values without expanding.
+function syncGenSummaries() {
+  const voicesInfo = document.getElementById('gen-voices-info');
+  if (voicesInfo) {
+    const melTxt = voiceSelect.options[voiceSelect.selectedIndex]?.text || '';
+    const chTxt = chordVoiceSelect.options[chordVoiceSelect.selectedIndex]?.text || '';
+    voicesInfo.textContent = `${melTxt} · ${chTxt}`;
+  }
+  const perfInfo = document.getElementById('gen-perf-info');
+  if (perfInfo) {
+    const d = Math.round(Number(densityInput.value) * 100);
+    const s = Math.round(Number(swingInput.value) * 100);
+    perfInfo.textContent = `${d}% · ${s}% swing`;
+  }
+  const duetInfo = document.getElementById('gen-duet-info');
+  if (duetInfo) {
+    const enabled = document.getElementById('duet-enabled')?.checked;
+    duetInfo.textContent = enabled ? 'On' : 'Off';
+  }
+}
+// Run once at startup so the summary labels match initial form state.
+syncGenSummaries();
+
 function openTransportDropdown() {
   if (!transportDropdown) return;
   transportDropdown.classList.add('visible');
@@ -831,11 +856,12 @@ clickModeBtn.addEventListener('click', () => {
 );
 
 barsSelect.addEventListener('change', () => { clearActivePreset(); clearLockedBars(); regenerateSong({ keepSeed: true }); });
-voiceSelect.addEventListener('change', () => { pushUrlState(); checkUnsaved(); });
-chordVoiceSelect.addEventListener('change', () => { pushUrlState(); checkUnsaved(); });
+voiceSelect.addEventListener('change', () => { pushUrlState(); checkUnsaved(); syncGenSummaries(); });
+chordVoiceSelect.addEventListener('change', () => { pushUrlState(); checkUnsaved(); syncGenSummaries(); });
 
 /* ---- Duet controls ---- */
 duetEnabledInput.addEventListener('change', () => {
+  syncGenSummaries();
   document.getElementById('daw-main').classList.toggle('duet-enabled', duetEnabledInput.checked);
   if (duetEnabledInput.checked) {
     visibleTrackSet.add('melody2');
@@ -899,12 +925,14 @@ densityInput.addEventListener('input', (e) => {
   densityDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
   clearActivePreset();
   regenerateSong({ keepSeed: true });
+  syncGenSummaries();
 });
 
 swingInput.addEventListener('input', (e) => {
   swingDisplay.textContent = `${Math.round(e.target.value * 100)}%`;
   clearActivePreset();
   regenerateSong({ keepSeed: true });
+  syncGenSummaries();
 });
 
 velocityInput.addEventListener('input', (e) => {
@@ -1240,14 +1268,17 @@ function loadSeedIntoGenerator(p) {
 initI18n();
 initSidebar();
 initExploreView({ audioApi, onLoadSeed: loadSeedIntoGenerator });
+initRadioView({ audioApi, onLoadSeed: loadSeedIntoGenerator });
 initComposeView({ onLoadSeed: loadSeedIntoGenerator, audioApi });
 initLearnView({ audioApi });
 initSettingsView();
 
 onViewChange((view) => {
   if (view !== 'explore') stopExplorePlayback();
+  if (view !== 'radio') stopRadioPlayback();
   if (view !== 'compose') stopComposePlayback();
   if (view === 'explore') refreshExplore();
+  if (view === 'radio') refreshRadio();
   // Stop main scheduler if user leaves Generator
   if (view !== 'generator' && scheduler && scheduler.isPlaying) {
     scheduler.stop();

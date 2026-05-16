@@ -492,6 +492,145 @@ button {
   min-height: 0;
 }
 
+/* ---- Radio view ---- */
+.radio-shell {
+  padding: 22px 22px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 980px;
+}
+
+.radio-toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.radio-empty {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 40px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+.radio-empty[hidden],
+.radio-stage[hidden] { display: none !important; }
+.radio-empty-icon { color: var(--text-muted); }
+.radio-empty-text { color: var(--text-secondary); max-width: 40ch; margin: 0; line-height: 1.55; }
+
+.radio-stage {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 22px;
+}
+
+.radio-now-card {
+  display: grid;
+  grid-template-columns: minmax(220px, 360px) 1fr;
+  gap: 22px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  align-items: stretch;
+}
+
+.radio-now-canvas-wrap {
+  background: var(--bg-input);
+  border-radius: 10px;
+  aspect-ratio: 2 / 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.radio-canvas { width: 100%; height: 100%; display: block; }
+
+.radio-now-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+}
+
+.radio-now-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.radio-now-seed {
+  margin: 0;
+  font-family: monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.radio-now-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+.radio-now-actions { margin-top: 14px; display: flex; gap: 8px; }
+
+.radio-queue {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 20px;
+}
+
+.radio-queue-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 12px;
+}
+
+.radio-queue-label em { font-family: monospace; font-style: normal; color: var(--text-primary); }
+
+.radio-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.radio-queue-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.radio-queue-seed {
+  font-family: monospace;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 110px;
+}
+
+.radio-queue-tag {
+  font-family: monospace;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 700px) {
+  .radio-shell { padding: 16px 16px 24px; }
+  .radio-now-card { grid-template-columns: 1fr; padding: 14px; }
+  .radio-now-canvas-wrap { aspect-ratio: 16 / 9; }
+}
+
 .explore-head {
   display: flex;
   justify-content: space-between;
@@ -647,8 +786,53 @@ button {
 
 .feed-action-skip:hover { color: var(--danger); border-color: var(--danger); }
 .feed-action-save:hover { color: #6cb6ff; border-color: #6cb6ff; }
-.feed-action-like { width: 68px; height: 68px; }
+.feed-action-like { width: 68px; height: 68px; position: relative; overflow: visible; }
 .feed-action-like:hover { background: #ff5d8f; color: #fff; border-color: #ff5d8f; }
+
+.feed-action-back { width: 48px; height: 48px; }
+.feed-action-back:hover:not(:disabled) { color: var(--text-primary); border-color: var(--text-primary); }
+.feed-action-back:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Heart burst that fires when the user likes a seed. Five hearts drift up
+   from the like button and fade. Pure CSS, triggered by toggling .burst. */
+.like-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.like-burst::before,
+.like-burst::after,
+.feed-action-like.burst .like-burst {
+  /* base styles handled below; this block kept tidy */
+}
+
+.feed-action-like.burst .like-burst {
+  animation: like-burst-host 720ms ease-out;
+}
+
+.like-burst-piece {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  color: #ff5d8f;
+  opacity: 0;
+  animation: like-burst-piece 720ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes like-burst-host {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes like-burst-piece {
+  0%   { opacity: 1; transform: translate(0, 0) scale(0.6); }
+  100% { opacity: 0; transform: translate(var(--dx, 0), var(--dy, -36px)) scale(1.1); }
+}
 
 .feed-action.fly-skip { animation: fly-skip 350ms ease-out forwards; }
 .feed-action.fly-like { animation: fly-like 350ms ease-out forwards; }
@@ -3321,6 +3505,56 @@ kbd {
 .gen-section:last-child {
   border-bottom: none;
   padding-bottom: 4px;
+}
+
+/* Collapsible advanced sections (Voices, Performance, Duet). */
+details.gen-section-disclosure { padding: 14px 0; }
+details.gen-section-disclosure > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  user-select: none;
+  padding: 4px 2px;
+  border-radius: 6px;
+  transition: background-color 140ms;
+}
+details.gen-section-disclosure > summary::-webkit-details-marker { display: none; }
+details.gen-section-disclosure > summary:hover { background: var(--bg-input); }
+details.gen-section-disclosure > summary::after {
+  content: '▸';
+  color: var(--text-muted);
+  font-size: 11px;
+  transition: transform 200ms;
+}
+details.gen-section-disclosure[open] > summary::after { transform: rotate(90deg); }
+details.gen-section-disclosure > summary .gen-section-title { margin: 0; }
+.gen-section-summary { /* shared positioning */ }
+.gen-section-info {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+details.gen-section-disclosure[open] .gen-section-info { display: none; }
+details.gen-section-disclosure > *:not(summary) {
+  animation: gen-disclosure-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes gen-disclosure-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.gen-toggle-inline {
+  margin-right: 12px;
 }
 
 .gen-section-title {

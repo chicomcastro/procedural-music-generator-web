@@ -68,6 +68,11 @@
                 <span data-i18n="sidebar.explore">Explore</span>
                 <span class="sidebar-badge" data-i18n="sidebar.badge.new">New</span>
             </a>
+            <a class="sidebar-link" data-view="radio" href="#/radio">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11h16v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M8 6 19 4l1 5"/><circle cx="9" cy="16" r="2.5"/><line x1="14" y1="14" x2="18" y2="14"/><line x1="14" y1="18" x2="18" y2="18"/></svg>
+                <span data-i18n="sidebar.radio">Radio</span>
+                <span class="sidebar-badge" data-i18n="sidebar.badge.new">New</span>
+            </a>
             <a class="sidebar-link" data-view="compose" href="#/compose">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="6" height="12" rx="1"/><rect x="11" y="9" width="6" height="9" rx="1"/><rect x="19" y="6" width="2" height="12" rx="1"/></svg>
                 <span data-i18n="sidebar.compose">Compose</span>
@@ -247,8 +252,11 @@
                         </div>
                     </div>
 
-                    <div class="gen-section">
-                        <h3 class="gen-section-title" data-i18n="gen.section.voices">Voices</h3>
+                    <details class="gen-section gen-section-disclosure" id="gen-voices-disclosure">
+                        <summary class="gen-section-summary">
+                            <h3 class="gen-section-title" data-i18n="gen.section.voices">Voices</h3>
+                            <span class="gen-section-info" id="gen-voices-info">Piano · Pad</span>
+                        </summary>
                         <div class="gen-grid">
                             <div class="gen-field">
                                 <label for="voice" data-i18n="gen.field.melody">Melody</label>
@@ -279,10 +287,13 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
+                    </details>
 
-                    <div class="gen-section">
-                        <h3 class="gen-section-title" data-i18n="gen.section.perf">Performance</h3>
+                    <details class="gen-section gen-section-disclosure" id="gen-perf-disclosure">
+                        <summary class="gen-section-summary">
+                            <h3 class="gen-section-title" data-i18n="gen.section.perf">Performance</h3>
+                            <span class="gen-section-info" id="gen-perf-info">65% · 0% swing</span>
+                        </summary>
                         <div class="gen-grid">
                             <div class="gen-field">
                                 <label for="contour" data-i18n="gen.field.contour">Contour</label>
@@ -323,16 +334,16 @@
                                 <span id="velocity-display">80%</span>
                             </div>
                         </div>
-                    </div>
+                    </details>
 
-                    <div class="gen-section gen-section-duet">
-                        <div class="gen-section-header">
+                    <details class="gen-section gen-section-disclosure gen-section-duet" id="gen-duet-disclosure">
+                        <summary class="gen-section-summary">
                             <h3 class="gen-section-title" data-i18n="gen.section.duet">Duet</h3>
-                            <label class="gen-toggle" for="duet-enabled">
+                            <label class="gen-toggle gen-toggle-inline" for="duet-enabled" onclick="event.stopPropagation();">
                                 <input id="duet-enabled" type="checkbox">
                                 <span data-i18n="gen.duet.enable">Enable second melody</span>
                             </label>
-                        </div>
+                        </summary>
                         <div class="duet-controls">
                             <div class="gen-grid">
                                 <div class="gen-field">
@@ -354,7 +365,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </details>
 
                     <div class="gen-section gen-section-actions">
                         <div class="gen-actions-row">
@@ -660,6 +671,9 @@
                 </div>
 
                 <div class="feed-actions">
+                    <button id="feed-back" type="button" class="feed-action feed-action-back" aria-label="Previous seed" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg>
+                    </button>
                     <button id="feed-skip" type="button" class="feed-action feed-action-skip" aria-label="Skip">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                     </button>
@@ -668,10 +682,11 @@
                     </button>
                     <button id="feed-like" type="button" class="feed-action feed-action-like" aria-label="Like">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        <span class="like-burst" aria-hidden="true"></span>
                     </button>
                 </div>
 
-                <p class="hint feed-hint"><kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>Space</kbd> <span data-i18n="explore.hint">skip · save · like · play</span></p>
+                <p class="hint feed-hint"><kbd>↓</kbd> <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>Space</kbd> <span data-i18n="explore.hint">back · skip · save · like · play</span></p>
             </div>
 
             <div class="wrapped-overlay overlay hidden" id="wrapped-overlay" role="dialog" aria-modal="true" aria-labelledby="wrapped-title">
@@ -688,6 +703,60 @@
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                             <span data-i18n="explore.download">Download</span>
                         </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="app-view hidden" id="view-radio" data-view="radio" aria-label="Radio view">
+            <div class="radio-shell">
+                <header class="view-head">
+                    <div>
+                        <h2 class="view-title" data-i18n="radio.title">Radio</h2>
+                        <p class="view-sub" data-i18n="radio.sub">Endless playlist drawn from seeds you've liked. Like more in Explore to enrich it.</p>
+                    </div>
+                    <div class="view-actions radio-toolbar">
+                        <button id="radio-play" type="button" class="view-cta">
+                            <span class="radio-play-icon" aria-hidden="true">▶</span>
+                            <span id="radio-play-label" data-i18n="radio.play">Play radio</span>
+                        </button>
+                        <button id="radio-skip" type="button" class="view-cta-ghost" disabled>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                            <span data-i18n="radio.skip">Skip</span>
+                        </button>
+                        <button id="radio-shuffle" type="button" class="view-cta-ghost" title="Shuffle" disabled>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+                            <span data-i18n="radio.shuffle">Reshuffle</span>
+                        </button>
+                    </div>
+                </header>
+
+                <div id="radio-empty" class="radio-empty" hidden>
+                    <div class="radio-empty-icon" aria-hidden="true">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    </div>
+                    <p class="radio-empty-text" data-i18n="radio.empty">Like at least 3 seeds in Explore to fill your Radio.</p>
+                    <a class="view-cta-ghost" href="#/explore" data-i18n="radio.empty_cta">Go to Explore →</a>
+                </div>
+
+                <div id="radio-stage" class="radio-stage" hidden>
+                    <div class="radio-now-card">
+                        <div class="radio-now-canvas-wrap">
+                            <canvas id="radio-canvas" class="radio-canvas" aria-label="Now playing preview"></canvas>
+                        </div>
+                        <div class="radio-now-meta">
+                            <span class="radio-now-eyebrow" data-i18n="radio.now_playing">Now playing</span>
+                            <h3 class="radio-now-seed" id="radio-now-seed">—</h3>
+                            <div class="radio-now-tags" id="radio-now-tags"></div>
+                            <div class="radio-now-actions">
+                                <button id="radio-now-open" type="button" class="view-cta-ghost" data-i18n="radio.open_in_generator">Open in Generator →</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="radio-queue">
+                        <span class="radio-queue-label"><span data-i18n="radio.up_next">Up next</span> · <em id="radio-queue-remaining">0</em></span>
+                        <div id="radio-queue-list" class="radio-queue-list"></div>
                     </div>
                 </div>
             </div>
