@@ -926,6 +926,49 @@
                                 </div>
                             </details>
 
+                            <div id="generator-panel" class="generator-panel" hidden>
+                                <div class="generator-grid">
+                                    <label class="generator-field">
+                                        <span class="generator-field-label" data-i18n="generator.key">Key</span>
+                                        <select id="generator-tonic">
+                                            <option value="0">C</option><option value="1">C♯</option><option value="2">D</option><option value="3">E♭</option>
+                                            <option value="4">E</option><option value="5">F</option><option value="6">F♯</option><option value="7">G</option>
+                                            <option value="8">A♭</option><option value="9">A</option><option value="10">B♭</option><option value="11">B</option>
+                                        </select>
+                                    </label>
+                                    <label class="generator-field">
+                                        <span class="generator-field-label" data-i18n="generator.scale">Scale</span>
+                                        <select id="generator-scale">
+                                            <option value="major">Major</option>
+                                            <option value="natural_minor">Natural minor</option>
+                                            <option value="dorian">Dorian</option>
+                                            <option value="mixolydian">Mixolydian</option>
+                                        </select>
+                                    </label>
+                                    <label class="generator-field">
+                                        <span class="generator-field-label" data-i18n="generator.progression">Progression</span>
+                                        <select id="generator-progression">
+                                            <option value="I-V-vi-IV">I – V – vi – IV (Pop)</option>
+                                            <option value="I-vi-IV-V">I – vi – IV – V (50s)</option>
+                                            <option value="ii-V-I">ii – V – I (Jazz)</option>
+                                            <option value="12-bar-blues">12-bar blues</option>
+                                            <option value="Andalusian">vi – V – IV – iii (Andalusian)</option>
+                                        </select>
+                                    </label>
+                                    <label class="generator-field">
+                                        <span class="generator-field-label"><span data-i18n="generator.tempo">Tempo</span> <em id="generator-tempo-display">100</em></span>
+                                        <input id="generator-tempo" type="range" min="60" max="180" step="1" value="100" aria-label="Generator tempo">
+                                    </label>
+                                    <label class="generator-field generator-field-seed">
+                                        <span class="generator-field-label" data-i18n="generator.seed">Seed</span>
+                                        <div class="generator-seed-group">
+                                            <input id="generator-seed" type="number" min="0" max="4294967295" step="1">
+                                            <button id="generator-reroll" type="button" class="view-cta-ghost" data-i18n="generator.roll">Roll a new seed</button>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
                             <div class="exercise-stage-block exercise-only">
                                 <div id="exercise-sheet" class="exercise-sheet" aria-label="Sheet music"></div>
                                 <div id="exercise-playback-progress" class="exercise-playback-progress" hidden>
