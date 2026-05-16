@@ -1,8 +1,11 @@
 import { MODULES, GROUPS } from './learn-modules.js';
 import { t, onLangChange } from '../i18n/i18n.js';
 import { getModuleField as mf, getStepField as sf, getStepArray as sfa } from './learn-translations.js';
+import { generateWalkingBass, progressionToChords } from '../generate/walking-bass.js';
+import { randomSeed } from '../generate/rng.js';
 
 const PROGRESS_KEY = 'seedsong-learn-progress-v2';
+const GENERATOR_PREFS_KEY = 'seedsong-learn-generator-prefs';
 const RECORDINGS_KEY = 'seedsong-learn-recordings';
 const STREAK_KEY = 'seedsong-learn-streak';
 const PREFS_KEY = 'seedsong-learn-exercise-prefs';
@@ -240,19 +243,26 @@ function notePitches(note) {
   return [];
 }
 
-function noteXmlFor(note, type) {
+function noteXmlFor(note, type, beamRole) {
   const [ticks, xmlType, dotted, triplet] = TYPE_INFO[type] || TYPE_INFO.q;
   const dotTag = dotted ? '<dot/>' : '';
   const mod = triplet ? '<time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification>' : '';
+  const beamTag = beamRole ? `<beam number="1">${beamRole}</beam>` : '';
   if (isRest(note)) {
     return `<note><rest/><duration>${ticks}</duration><type>${xmlType}</type>${dotTag}${mod}</note>`;
   }
   const pitches = notePitches(note);
   return pitches.map((m, i) => {
     const chordTag = i > 0 ? '<chord/>' : '';
-    return `<note>${chordTag}<pitch>${midiToPitchXml(m)}</pitch><duration>${ticks}</duration><type>${xmlType}</type>${dotTag}${mod}</note>`;
+    const localBeam = i === 0 ? beamTag : '';
+    return `<note>${chordTag}<pitch>${midiToPitchXml(m)}</pitch><duration>${ticks}</duration><type>${xmlType}</type>${dotTag}${mod}${localBeam}</note>`;
   }).join('');
 }
+
+// Note types that draw with flags (and therefore can be beamed when adjacent
+// within a beat).
+const FLAGGABLE_TYPES = new Set(['e', 'ed', 'et', 's']);
+function isFlaggableType(t) { return FLAGGABLE_TYPES.has(t); }
 
 function buildMusicXMLFor(step, opts) {
   const measureCap = 4 * DIVISIONS;  // 48 ticks per 4/4 bar
@@ -296,10 +306,38 @@ function buildMusicXMLFor(step, opts) {
     }
     currentMeasure = [];
   } else {
-    for (const note of notes) {
+    // First pass: compute the type of each note and where it lives in time.
+    // Then assign beam roles to runs of flaggable notes that share a beat
+    // and aren't broken up by quarters or rests — that's what makes pairs
+    // of eighths and triplet groups draw with proper beams.
+    const items = notes.map(note => {
       const tType = (note && typeof note === 'object' && !Array.isArray(note) && note.t) || 'q';
-      currentMeasure.push(noteXmlFor(note, tType));
-      ticksInMeasure += ticksOf(tType);
+      return { note, type: tType, ticks: ticksOf(tType) };
+    });
+    let tick = 0;
+    for (const it of items) {
+      it.beatStart = Math.floor(tick / DIVISIONS);
+      it.beatEnd   = Math.floor((tick + it.ticks - 1) / DIVISIONS);
+      it.tickStart = tick;
+      tick += it.ticks;
+    }
+    const beams = items.map(() => null);
+    for (let i = 0; i < items.length; i++) {
+      const cur = items[i];
+      if (isRest(cur.note) || !isFlaggableType(cur.type)) continue;
+      const prev = items[i - 1];
+      const next = items[i + 1];
+      const sameBeatPrev = prev && !isRest(prev.note) && isFlaggableType(prev.type) && prev.beatStart === cur.beatStart;
+      const sameBeatNext = next && !isRest(next.note) && isFlaggableType(next.type) && next.beatStart === cur.beatStart;
+      if (sameBeatPrev && sameBeatNext) beams[i] = 'continue';
+      else if (sameBeatNext) beams[i] = 'begin';
+      else if (sameBeatPrev) beams[i] = 'end';
+      // Isolated flaggable note: leave null so it renders with a flag.
+    }
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      currentMeasure.push(noteXmlFor(it.note, it.type, beams[i]));
+      ticksInMeasure += it.ticks;
       if (ticksInMeasure >= measureCap) flushMeasure();
     }
     if (ticksInMeasure > 0) {
@@ -309,7 +347,10 @@ function buildMusicXMLFor(step, opts) {
   }
 
   const clefXml = CLEFS[opts.clef] || CLEFS.treble;
-  const measuresXml = measures.map((m, i) => `
+  const symbols = step.chordSymbols;  // one per bar, optional
+  const measuresXml = measures.map((m, i) => {
+    const harmonyXml = symbols && symbols[i] ? harmonyTagFor(symbols[i]) : '';
+    return `
     <measure number="${i + 1}">
       ${i === 0 ? `<attributes>
         <divisions>${DIVISIONS}</divisions>
@@ -317,9 +358,11 @@ function buildMusicXMLFor(step, opts) {
         <time><beats>4</beats><beat-type>4</beat-type></time>
         ${clefXml}
       </attributes>` : ''}
+      ${harmonyXml}
       ${m}
     </measure>
-  `).join('');
+  `;
+  }).join('');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
@@ -329,6 +372,29 @@ function buildMusicXMLFor(step, opts) {
   </part-list>
   <part id="P1">${measuresXml}</part>
 </score-partwise>`;
+}
+
+// Build a MusicXML <harmony> element from a chord symbol like "Cm7" / "G7" /
+// "F#maj7" / "Bdim". OSMD renders these as chord names floating above the
+// staff. Returns '' for unparseable input so the staff still renders.
+function harmonyTagFor(symbol) {
+  if (!symbol || typeof symbol !== 'string') return '';
+  const m = symbol.match(/^([A-G])([#b]?)(.*)$/);
+  if (!m) return '';
+  const stepLetter = m[1];
+  const alter = m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0;
+  const tail = (m[3] || '').toLowerCase();
+  let kind = 'major';
+  if (tail === '' || tail === 'maj') kind = 'major';
+  else if (tail === 'm' || tail === 'min') kind = 'minor';
+  else if (tail === '7') kind = 'dominant';
+  else if (tail === 'maj7' || tail === 'M7') kind = 'major-seventh';
+  else if (tail === 'm7' || tail === 'min7') kind = 'minor-seventh';
+  else if (tail === 'dim' || tail === '°') kind = 'diminished';
+  else if (tail === 'sus' || tail === 'sus4') kind = 'suspended-fourth';
+  else kind = 'major';
+  const alterTag = alter !== 0 ? `<root-alter>${alter}</root-alter>` : '';
+  return `<harmony><root><root-step>${stepLetter}</root-step>${alterTag}</root><kind text="${escapeText(symbol)}">${kind}</kind></harmony>`;
 }
 
 function escapeText(s) {
@@ -425,17 +491,6 @@ function transposeNotes(notes, semitones, octaveShift) {
   return notes.map(apply);
 }
 
-// Cache rendered SVG by configuration so step-to-step navigation doesn't
-// re-parse + re-render the same MusicXML. Keys include every input that
-// affects the visual output. FIFO-capped at 20 entries.
-const sheetCache = new Map();
-const SHEET_CACHE_LIMIT = 20;
-
-function cacheKey(modId, stepIdx, opts, containerWidth) {
-  const zoomBucket = containerWidth < 500 ? 'm' : containerWidth < 720 ? 't' : 'd';
-  return `${modId}::${stepIdx}::${opts.clef}::${opts.transpose}::${opts.octaveShift}::${zoomBucket}`;
-}
-
 async function renderExerciseSheet(step, opts) {
   const container = document.getElementById('exercise-sheet');
   if (!container) return;
@@ -445,23 +500,11 @@ async function renderExerciseSheet(step, opts) {
     await loadOSMD();
     if (!window.opensheetmusicdisplay) throw new Error('OSMD not available');
 
-    // Try the cache first.
-    const mod = MODULES[activeModuleIdx];
-    const containerWidth = container.clientWidth;
-    const key = mod ? cacheKey(mod.id, activeStepIdx, opts, containerWidth) : null;
-    if (key && containerWidth > 0 && sheetCache.has(key)) {
-      container.innerHTML = sheetCache.get(key);
-      container.classList.remove('exercise-sheet-loading');
-      // Re-bind OSMD's cursor onto the restored DOM by re-running render so
-      // cursor APIs keep working. If that's too slow we can drop this — but
-      // load() is the expensive part, render() against a parsed sheet is fast.
-      try {
-        const w = container.clientWidth;
-        exerciseOSMD.zoom = w < 500 ? 0.7 : w < 720 ? 0.85 : 1.0;
-        exerciseOSMD.render();
-      } catch (_e) { /* ignore — cached SVG is still on screen */ }
-      return;
-    }
+    // We used to cache the rendered SVG between visits to the same step.
+    // Restoring innerHTML then calling osmd.render() to rebind the cursor
+    // overwrote the cached DOM with whatever OSMD had loaded last — meaning
+    // the sheet froze on the previous step's content. Cache removed; load()
+    // + render() is fast enough for our use case.
 
     if (!exerciseOSMD || exerciseOSMD.container !== container) {
       exerciseOSMD = new window.opensheetmusicdisplay.OpenSheetMusicDisplay(container, {
@@ -494,15 +537,6 @@ async function renderExerciseSheet(step, opts) {
         const w = container.clientWidth;
         exerciseOSMD.zoom = w < 500 ? 0.7 : w < 720 ? 0.85 : 1.0;
         exerciseOSMD.render();
-        // Stash the rendered SVG so the next visit to this step skips OSMD.
-        if (mod && w > 0) {
-          const k = cacheKey(mod.id, activeStepIdx, opts, w);
-          sheetCache.set(k, container.innerHTML);
-          if (sheetCache.size > SHEET_CACHE_LIMIT) {
-            const first = sheetCache.keys().next().value;
-            sheetCache.delete(first);
-          }
-        }
       } catch (_e) { /* ignore */ }
     };
     requestAnimationFrame(() => {
@@ -1085,11 +1119,89 @@ function updateKeyLabel() {
 // Track which step was just completed so the rail's check can pop-animate it.
 let justCompletedStepIdx = -1;
 
+/* ---- Walking-bass generator ---- */
+const generatorState = {
+  tonic: 0,
+  scale: 'major',
+  progression: 'I-V-vi-IV',
+  tempo: 100,
+  seed: 12345,
+};
+
+function readGeneratorPrefs() {
+  try {
+    const v = JSON.parse(localStorage.getItem(GENERATOR_PREFS_KEY)) || {};
+    if (Number.isFinite(v.tonic)) generatorState.tonic = ((v.tonic % 12) + 12) % 12;
+    if (typeof v.scale === 'string') generatorState.scale = v.scale;
+    if (typeof v.progression === 'string') generatorState.progression = v.progression;
+    if (Number.isFinite(v.tempo)) generatorState.tempo = Math.max(40, Math.min(220, v.tempo));
+    if (Number.isFinite(v.seed)) generatorState.seed = v.seed >>> 0;
+  } catch { /* ignore */ }
+}
+
+function writeGeneratorPrefs() {
+  try { localStorage.setItem(GENERATOR_PREFS_KEY, JSON.stringify(generatorState)); } catch { /* ignore */ }
+}
+
+// Build the runtime "step" shape that buildMusicXMLFor expects: a notes array
+// of plain quarter midi numbers plus an aligned chordSymbols array (one per
+// bar) that becomes <harmony> in the MusicXML.
+function buildGeneratorStep() {
+  const chords = progressionToChords(generatorState.progression, generatorState.tonic);
+  const out = generateWalkingBass({
+    seed: generatorState.seed,
+    tonicPc: generatorState.tonic,
+    scale: generatorState.scale,
+    chords,
+    bassMidi: 40,  // E2 — a sensible bass-clef bottom
+  });
+  return {
+    title: 'Walking-bass generator',
+    type: 'exercise',
+    style: 'melody',
+    notes: out.notes,
+    chordSymbols: out.chordSymbols,
+  };
+}
+
+// Push the controls' current values into the DOM (called on entry + lang change).
+function syncGeneratorUI() {
+  const e = (id) => document.getElementById(id);
+  if (e('generator-tonic')) e('generator-tonic').value = String(generatorState.tonic);
+  if (e('generator-scale')) e('generator-scale').value = generatorState.scale;
+  if (e('generator-progression')) e('generator-progression').value = generatorState.progression;
+  if (e('generator-tempo')) e('generator-tempo').value = String(generatorState.tempo);
+  const td = e('generator-tempo-display');
+  if (td) td.textContent = String(generatorState.tempo);
+  if (e('generator-seed')) e('generator-seed').value = String(generatorState.seed);
+}
+
+// Re-derive the step + draw the staff. Used on every control change.
+function regenerateAndRender() {
+  if (activeModuleIdx < 0) return;
+  const mod = MODULES[activeModuleIdx];
+  const step = mod.steps[activeStepIdx];
+  if (!step || step.type !== 'generator') return;
+  const runtime = buildGeneratorStep();
+  // Use the generator's chosen tempo for playback, but the rest of the
+  // exercise options stay as-is (clef defaults to bass for this module).
+  exerciseOpts.tempo = generatorState.tempo;
+  exerciseOpts.transpose = 0;
+  exerciseOpts.octaveShift = 0;
+  // Cache key needs to include generator state — invalidate by clearing once.
+  renderExerciseSheet(runtime, exerciseOpts);
+  syncOpsUI();
+}
+
 function renderActiveStep() {
   if (activeModuleIdx < 0) return;
   const mod = MODULES[activeModuleIdx];
   const step = mod.steps[activeStepIdx];
   const isExercise = step.type === 'exercise';
+  const isGenerator = step.type === 'generator';
+  // Generator steps share the same staff + playback as exercises, so they
+  // should treat themselves as "exercise-like" for show/hide purposes.
+  const isExerciseLike = isExercise || isGenerator;
 
   // Header: module name + tag
   const moduleNameEl = document.getElementById('exercise-module-name');
@@ -1132,13 +1244,15 @@ function renderActiveStep() {
 
   renderStepRail(mod);
 
-  // Show/hide exercise-only machinery
+  // Show/hide exercise-only machinery (generator steps reuse the same UI).
   document.querySelectorAll('.exercise-only').forEach(el => {
-    el.style.display = isExercise ? '' : 'none';
+    el.style.display = isExerciseLike ? '' : 'none';
   });
   document.querySelectorAll('.theory-only').forEach(el => {
-    el.style.display = isExercise ? 'none' : '';
+    el.style.display = isExerciseLike ? 'none' : '';
   });
+  const generatorPanel = document.getElementById('generator-panel');
+  if (generatorPanel) generatorPanel.hidden = !isGenerator;
 
   // Header back arrow: disable on first step of first module
   const backBtn = document.getElementById('exercise-back-arrow');
@@ -1169,6 +1283,15 @@ function renderActiveStep() {
     if (pitchEl) pitchEl.hidden = true;
     syncOpsUI();
     renderExerciseSheet(step, exerciseOpts);
+    updateControlsSummary();
+  } else if (isGenerator) {
+    // Hydrate the panel from persisted state and render the first line.
+    readGeneratorPrefs();
+    // Walking-bass: default to the bass clef.
+    exerciseOpts.clef = 'bass';
+    syncGeneratorUI();
+    syncOpsUI();
+    regenerateAndRender();
     updateControlsSummary();
   } else {
     syncOpsUI();
@@ -1582,6 +1705,37 @@ export function initLearnView({ audioApi }) {
     if (disp) disp.textContent = String(exerciseOpts.tempo);
     writePrefs(exerciseOpts);
     if (typeof updateControlsSummary === 'function') updateControlsSummary();
+  });
+
+  /* ---- Generator panel listeners ---- */
+  const bindGen = (id, key, parser = (v) => v) => {
+    document.getElementById(id)?.addEventListener('change', (e) => {
+      generatorState[key] = parser(e.target.value);
+      writeGeneratorPrefs();
+      regenerateAndRender();
+    });
+  };
+  bindGen('generator-tonic', 'tonic', (v) => Number(v) || 0);
+  bindGen('generator-scale', 'scale');
+  bindGen('generator-progression', 'progression');
+  document.getElementById('generator-tempo')?.addEventListener('input', (e) => {
+    generatorState.tempo = Number(e.target.value) || 100;
+    const td = document.getElementById('generator-tempo-display');
+    if (td) td.textContent = String(generatorState.tempo);
+    writeGeneratorPrefs();
+    regenerateAndRender();
+  });
+  document.getElementById('generator-seed')?.addEventListener('change', (e) => {
+    generatorState.seed = (Number(e.target.value) || 0) >>> 0;
+    writeGeneratorPrefs();
+    regenerateAndRender();
+  });
+  document.getElementById('generator-reroll')?.addEventListener('click', () => {
+    generatorState.seed = randomSeed();
+    const seedInput = document.getElementById('generator-seed');
+    if (seedInput) seedInput.value = String(generatorState.seed);
+    writeGeneratorPrefs();
+    regenerateAndRender();
   });
 
   document.getElementById('learn-exercise-overlay')?.addEventListener('click', (e) => {

@@ -1400,17 +1400,18 @@ export const MODULES = [
     id: 'walking-bass-triplets',
     group: 'Walking Bass',
     tag: 'Bass · Walking',
-    title: 'Boogie Patterns',
-    summary: 'The boogie-shuffle bass: a repeating chord-tone pattern that defines the genre.',
+    title: 'Boogie, Triplets & Shuffle',
+    summary: 'Chord-tone patterns, triplet fills and the shuffle 8th — three idioms that define swing and blues bass.',
     steps: [
       {
         type: 'theory',
-        title: 'A pattern, not a walk',
-        text: `Boogie and shuffled blues lean on a repeating <strong>chord-tone pattern</strong> rather than a freshly-improvised walk. The classic shape per chord is <strong>1 – 3 – 5 – 6 – ♭7 – 6 – 5 – 3</strong> — climbs through the chord, hits the colour notes 6 and ♭7, then comes back down. Move that whole shape to each chord's root.`,
+        title: 'Patterns, triplets and the shuffle 8th',
+        text: `Three idioms in one module. <strong>Boogie</strong> leans on a repeating chord-tone pattern (1-3-5-6-♭7-6-5-3) rather than a freshly-improvised walk. <strong>Triplet fills</strong> compress three notes into a single beat — usually on beat 4, propelling the line into the next bar. The <strong>shuffle 8th</strong> turns "1-and-2-and" into long-short, long-short by splitting each beat into a triplet-quarter + triplet-eighth (the long lands on the beat; the short is the "and" pushed late).`,
         audio: [48, 52, 55, 57, 58, 57, 55, 52, 53, 57, 60, 62, 63, 62, 60, 57],
         references: [
           'Boogie-woogie pianists',
           'Blues bassists like Willie Dixon',
+          'Pete Johnson, Albert Ammons',
         ],
       },
       {
@@ -1425,6 +1426,30 @@ export const MODULES = [
         title: 'Boogie bass pattern',
         description: 'The classic boogie shape per chord: root, 3rd, 5th, 6th, ♭7, 6th, 5th, 3rd.',
         notes: [48, 52, 55, 57, 58, 57, 55, 52, 53, 57, 60, 62, 63, 62, 60, 57],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'Triplet fill on beat 4',
+        description: 'Quarters on beats 1-3, then three triplet eighths on beat 4 sweep into the next bar.',
+        notes: [
+          48, 52, 55, { m: 53, t: 'et' }, { m: 54, t: 'et' }, { m: 55, t: 'et' },
+          53, 57, 60, { m: 58, t: 'et' }, { m: 59, t: 'et' }, { m: 60, t: 'et' },
+          55, 59, 62, { m: 49, t: 'et' }, { m: 48, t: 'et' }, { m: 47, t: 'et' },
+          48, 52, 55, 52,
+        ],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'Shuffle 8th feel',
+        description: 'Each beat is a triplet-quarter + triplet-eighth pair — the "long-short" that drives every shuffle bassline. Eight notes per bar.',
+        notes: [
+          { m: 48, t: 'qt' }, { m: 52, t: 'et' }, { m: 55, t: 'qt' }, { m: 57, t: 'et' },
+          { m: 58, t: 'qt' }, { m: 57, t: 'et' }, { m: 55, t: 'qt' }, { m: 52, t: 'et' },
+          { m: 53, t: 'qt' }, { m: 57, t: 'et' }, { m: 60, t: 'qt' }, { m: 62, t: 'et' },
+          { m: 63, t: 'qt' }, { m: 62, t: 'et' }, { m: 60, t: 'qt' }, { m: 57, t: 'et' },
+        ],
         style: 'melody',
       },
     ],
@@ -1512,6 +1537,30 @@ export const MODULES = [
         description: 'Chromatic substitution: ii → ♭II → I (tritone substitute).',
         notes: [50, 53, 57, 60, 61, 64, 67, 70, 60, 64, 67, 64],
         style: 'melody',
+      },
+    ],
+  },
+  // ================= WALKING BASS — BONUS GENERATOR =================
+  {
+    id: 'walking-bass-generator',
+    group: 'Walking Bass',
+    tag: 'Bass · Bonus',
+    title: 'Bonus — Walking-Bass Generator',
+    summary: 'Pick a key, a progression and a seed — get an infinite supply of walking-bass studies, with chord symbols on the staff.',
+    steps: [
+      {
+        type: 'theory',
+        title: 'A practice machine',
+        text: `Use this to drill walking-bass over real changes. Pick a <strong>key</strong>, a <strong>tempo</strong> and a <strong>chord progression</strong>; the generator builds a line that lands on the chord root every bar and fills beats 2-4 with chord tones, scale tones and chromatic approach. The <strong>seed</strong> makes results reproducible: same seed + same inputs = same line, every time. Press <em>Roll a new seed</em> for fresh material.`,
+        references: [
+          "Hal Galper's bass-line studies",
+          'Mike Richmond, Modern Walking Bass',
+        ],
+      },
+      {
+        type: 'generator',
+        title: 'Generate a walking line',
+        description: 'Tweak the controls; the staff redraws. Chord symbols sit above each bar.',
       },
     ],
   },

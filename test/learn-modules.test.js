@@ -22,18 +22,19 @@ describe('Learn curriculum data', () => {
     expect(set.size).toBe(ids.length);
   });
 
-  it('every step is theory or exercise with the right shape', () => {
+  it('every step is theory, exercise or generator with the right shape', () => {
     for (const mod of MODULES) {
       for (const [i, step] of mod.steps.entries()) {
         const ctx = `${mod.id} step ${i}`;
-        expect(['theory', 'exercise'], `${ctx} type`).toContain(step.type);
+        expect(['theory', 'exercise', 'generator'], `${ctx} type`).toContain(step.type);
         expect(step.title, `${ctx} title`).toBeTypeOf('string');
         if (step.type === 'theory') {
           expect(step.text, `${ctx} text`).toBeTypeOf('string');
-        } else {
+        } else if (step.type === 'exercise') {
           expect(['melody', 'chord', 'progression', 'rhythm']).toContain(step.style);
           expect(Array.isArray(step.notes), `${ctx} notes`).toBe(true);
         }
+        // Generator steps build their notes at runtime — no static shape needed.
       }
     }
   });
@@ -44,9 +45,11 @@ describe('Learn curriculum data', () => {
     }
   });
 
-  it('non-challenge modules have at least 2 melodic exercises', () => {
+  it('non-challenge modules have at least 2 melodic exercises (or are generator modules)', () => {
     for (const mod of MODULES) {
       if (mod.group === 'Challenges') continue;
+      // Generator modules build their melody at runtime — skip the static count.
+      if (mod.steps.some(s => s.type === 'generator')) continue;
       const melodyCount = mod.steps.filter(s => s.type === 'exercise' && s.style === 'melody').length;
       expect(melodyCount, `${mod.id} should have ≥ 2 melodic exercises (has ${melodyCount})`).toBeGreaterThanOrEqual(2);
     }
