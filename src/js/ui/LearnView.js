@@ -39,8 +39,13 @@ function writePrefs(prefs) {
 function flattenStepNotes(notes) {
   const flat = [];
   const visit = (v) => {
-    if (Array.isArray(v)) v.forEach(visit);
-    else if (typeof v === 'number') flat.push(v);
+    if (v == null) return;
+    if (Array.isArray(v)) { v.forEach(visit); return; }
+    if (typeof v === 'number') { flat.push(v); return; }
+    // Object form: { m: number | number[], t: type, r: true } or rest.
+    if (v.r) return;
+    if (Array.isArray(v.m)) v.m.forEach(x => { if (typeof x === 'number') flat.push(x); });
+    else if (typeof v.m === 'number') flat.push(v.m);
   };
   visit(notes);
   return flat;
@@ -194,60 +199,111 @@ const CLEFS = {
   alto: '<clef><sign>C</sign><line>3</line></clef>',
 };
 
+// Rhythm primitives. We use divisions=12 ticks per quarter so a single
+// measure of 4/4 = 48 ticks. That cleanly represents quarters, eighths,
+// sixteenths, dotted variants and 3-in-2 triplet eighths/quarters.
+const DIVISIONS = 12;
+const TYPE_INFO = {
+  // [ticks, MusicXML <type>, dotted?, triplet?]
+  w:  [48, 'whole',   false, false],
+  h:  [24, 'half',    false, false],
+  qd: [18, 'quarter', true,  false],
+  q:  [12, 'quarter', false, false],
+  ed: [9,  'eighth',  true,  false],
+  e:  [6,  'eighth',  false, false],
+  et: [4,  'eighth',  false, true],
+  qt: [8,  'quarter', false, true],
+  s:  [3,  '16th',    false, false],
+};
+function ticksOf(t) { return (TYPE_INFO[t] || TYPE_INFO.q)[0]; }
+function beatsOf(t) { return ticksOf(t) / DIVISIONS; }
+// What an entry is worth in beats. Plain numbers / null / number arrays =
+// 1 beat (quarter, the default). Object form reads its `t` field.
+function noteBeats(note) {
+  if (note == null) return 1;
+  if (typeof note === 'number' || Array.isArray(note)) return 1;
+  return beatsOf(note.t || 'q');
+}
+function noteTicks(note) { return Math.round(noteBeats(note) * DIVISIONS); }
+function isRest(note) {
+  if (note == null) return true;
+  if (typeof note === 'object' && !Array.isArray(note) && note.r) return true;
+  return false;
+}
+// Extract pitch(es) from a note in any of the supported shapes.
+function notePitches(note) {
+  if (isRest(note)) return [];
+  if (typeof note === 'number') return [note];
+  if (Array.isArray(note)) return note;
+  if (Array.isArray(note.m)) return note.m;
+  if (typeof note.m === 'number') return [note.m];
+  return [];
+}
+
+function noteXmlFor(note, type) {
+  const [ticks, xmlType, dotted, triplet] = TYPE_INFO[type] || TYPE_INFO.q;
+  const dotTag = dotted ? '<dot/>' : '';
+  const mod = triplet ? '<time-modification><actual-notes>3</actual-notes><normal-notes>2</normal-notes></time-modification>' : '';
+  if (isRest(note)) {
+    return `<note><rest/><duration>${ticks}</duration><type>${xmlType}</type>${dotTag}${mod}</note>`;
+  }
+  const pitches = notePitches(note);
+  return pitches.map((m, i) => {
+    const chordTag = i > 0 ? '<chord/>' : '';
+    return `<note>${chordTag}<pitch>${midiToPitchXml(m)}</pitch><duration>${ticks}</duration><type>${xmlType}</type>${dotTag}${mod}</note>`;
+  }).join('');
+}
+
 function buildMusicXMLFor(step, opts) {
-  const beatsPerMeasure = 4;
+  const measureCap = 4 * DIVISIONS;  // 48 ticks per 4/4 bar
   const measures = [];
   let currentMeasure = [];
-  let beatsInMeasure = 0;
+  let ticksInMeasure = 0;
 
   function flushMeasure(force) {
     if (currentMeasure.length === 0 && !force) return;
     measures.push(currentMeasure.join(''));
     currentMeasure = [];
-    beatsInMeasure = 0;
+    ticksInMeasure = 0;
   }
-  function pushQuarter(midi, isChordMember = false) {
-    const chordTag = isChordMember ? '<chord/>' : '';
-    currentMeasure.push(`<note>${chordTag}<pitch>${midiToPitchXml(midi)}</pitch><duration>1</duration><type>quarter</type></note>`);
+  function padRestToBar() {
+    const need = measureCap - ticksInMeasure;
+    if (need <= 0) return;
+    // Pad with the smallest set of rest figures (quarter, eighth, sixteenth).
+    let remaining = need;
+    const fills = [['q', 12], ['e', 6], ['s', 3]];
+    for (const [t, tk] of fills) {
+      while (remaining >= tk) {
+        currentMeasure.push(noteXmlFor({ r: true }, t));
+        remaining -= tk;
+      }
+    }
+    ticksInMeasure = measureCap;
   }
 
   const notes = step.notes;
   if (step.style === 'chord' && Array.isArray(notes) && typeof notes[0] === 'number') {
     const sorted = [...notes].sort((a, b) => a - b);
-    sorted.forEach((m, i) => {
-      const chordTag = i > 0 ? '<chord/>' : '';
-      currentMeasure.push(`<note>${chordTag}<pitch>${midiToPitchXml(m)}</pitch><duration>4</duration><type>whole</type></note>`);
-    });
+    currentMeasure.push(noteXmlFor(sorted, 'w'));
+    ticksInMeasure = measureCap;
     flushMeasure(true);
   } else if (step.style === 'progression' && Array.isArray(notes) && Array.isArray(notes[0])) {
     for (const chord of notes) {
       currentMeasure = [];
       const sorted = [...chord].sort((a, b) => a - b);
-      sorted.forEach((m, i) => {
-        const chordTag = i > 0 ? '<chord/>' : '';
-        currentMeasure.push(`<note>${chordTag}<pitch>${midiToPitchXml(m)}</pitch><duration>4</duration><type>whole</type></note>`);
-      });
+      currentMeasure.push(noteXmlFor(sorted, 'w'));
       measures.push(currentMeasure.join(''));
     }
+    currentMeasure = [];
   } else {
     for (const note of notes) {
-      if (note == null) {
-        // null = quarter rest. Lets exercises model pauses on specific beats.
-        currentMeasure.push('<note><rest/><duration>1</duration><type>quarter</type></note>');
-      } else if (Array.isArray(note)) {
-        const sorted = [...note].sort((a, b) => a - b);
-        sorted.forEach((m, i) => pushQuarter(m, i > 0));
-      } else {
-        pushQuarter(note);
-      }
-      beatsInMeasure += 1;
-      if (beatsInMeasure >= beatsPerMeasure) flushMeasure();
+      const tType = (note && typeof note === 'object' && !Array.isArray(note) && note.t) || 'q';
+      currentMeasure.push(noteXmlFor(note, tType));
+      ticksInMeasure += ticksOf(tType);
+      if (ticksInMeasure >= measureCap) flushMeasure();
     }
-    if (beatsInMeasure > 0) {
-      while (beatsInMeasure < beatsPerMeasure) {
-        currentMeasure.push('<note><rest/><duration>1</duration><type>quarter</type></note>');
-        beatsInMeasure += 1;
-      }
+    if (ticksInMeasure > 0) {
+      padRestToBar();
       flushMeasure(true);
     }
   }
@@ -256,7 +312,7 @@ function buildMusicXMLFor(step, opts) {
   const measuresXml = measures.map((m, i) => `
     <measure number="${i + 1}">
       ${i === 0 ? `<attributes>
-        <divisions>1</divisions>
+        <divisions>${DIVISIONS}</divisions>
         <key><fifths>0</fifths></key>
         <time><beats>4</beats><beat-type>4</beat-type></time>
         ${clefXml}
@@ -353,10 +409,15 @@ function renderStackDiagram({ notes = [], labels = [] }) {
 function transposeNotes(notes, semitones, octaveShift) {
   const totalShift = semitones + octaveShift * 12;
   if (!notes || totalShift === 0) return notes;
-  // null = rest, passes through untouched.
+  // Supports plain number, null (rest), number arrays (chord), and object
+  // form { m: midi | midi[], t: type, r: true }.
   const apply = (n) => {
     if (n == null) return null;
-    return Array.isArray(n) ? n.map(x => x + totalShift) : n + totalShift;
+    if (typeof n === 'number') return n + totalShift;
+    if (Array.isArray(n)) return n.map(x => x + totalShift);
+    if (n.r) return n;
+    const m = Array.isArray(n.m) ? n.m.map(x => x + totalShift) : n.m + totalShift;
+    return { ...n, m };
   };
   if (Array.isArray(notes) && Array.isArray(notes[0])) {
     return notes.map(c => c.map(m => m + totalShift));
@@ -524,8 +585,12 @@ async function startPitchDetection(step, opts) {
   } else if (step.style === 'chord') {
     pitchTargetSequence = [...xnotes];
   } else {
-    // Drop rests (nulls) — pitch detection only listens for actual notes.
-    pitchTargetSequence = xnotes.flat().filter(n => n != null);
+    // Drop rests, walk through every melodic note in order. notePitches()
+    // unpacks both plain numbers and the object form ({ m, t }).
+    for (const n of xnotes) {
+      if (isRest(n)) continue;
+      for (const p of notePitches(n)) pitchTargetSequence.push(p);
+    }
   }
   pitchTargetIdx = 0;
   pitchSustainStart = 0;
@@ -686,7 +751,9 @@ async function playStep(step, opts) {
     passDur = beatDur * 4 * xnotes.length;
     entriesPerPass = xnotes.length;
   } else {
-    passDur = beatDur * xnotes.length;
+    // Melodic: sum each note's own beat-duration so eighths/triplets cost
+    // less than quarters and we land on the right total time.
+    passDur = xnotes.reduce((acc, n) => acc + noteBeats(n) * beatDur, 0);
     entriesPerPass = xnotes.length;
   }
 
@@ -702,14 +769,18 @@ async function playStep(step, opts) {
         t += chordDur;
       }
     } else {
-      for (let i = 0; i < xnotes.length; i++) {
-        const v = xnotes[i];
-        if (v == null) continue;  // rest beat — schedule no sound
-        if (Array.isArray(v)) {
-          for (const m of v) playOneNote(ctx, dest, m, startTime + offset + i * beatDur, beatDur * 0.85, 'triangle', 0.07);
-        } else {
-          playOneNote(ctx, dest, v, startTime + offset + i * beatDur, beatDur * 0.85, 'sine', 0.10);
+      let cursor = startTime + offset;
+      for (const v of xnotes) {
+        const noteDur = noteBeats(v) * beatDur;
+        if (!isRest(v)) {
+          const pitches = notePitches(v);
+          if (pitches.length === 1) {
+            playOneNote(ctx, dest, pitches[0], cursor, noteDur * 0.85, 'sine', 0.10);
+          } else {
+            for (const m of pitches) playOneNote(ctx, dest, m, cursor, noteDur * 0.85, 'triangle', 0.07);
+          }
         }
+        cursor += noteDur;
       }
     }
   }
@@ -995,11 +1066,16 @@ function updateKeyLabel() {
   if (!label || activeModuleIdx < 0) return;
   const mod = MODULES[activeModuleIdx];
   const step = mod.steps[activeStepIdx];
+  // Walk the notes array to find the first sounding pitch — works across
+  // all supported shapes (plain number, number array chord, object form,
+  // null rests).
   const firstNote = (() => {
-    if (!step || !step.notes) return 60;
-    if (step.type !== 'exercise') return 60;
-    if (Array.isArray(step.notes[0])) return Math.min(...step.notes[0]);
-    return step.notes[0];
+    if (!step || !step.notes || step.type !== 'exercise') return 60;
+    for (const n of step.notes) {
+      const pitches = notePitches(n);
+      if (pitches.length > 0) return Math.min(...pitches);
+    }
+    return 60;
   })();
   const pc = ((firstNote + exerciseOpts.transpose) % 12 + 12) % 12;
   const sharp = PITCH_ALTERS[pc] ? '#' : '';
