@@ -53,6 +53,18 @@ export const MODULES = [
         notes: [60, 62, 64, 67, 64, 65, 64, 60],
         style: 'melody',
       },
+      {
+        type: 'exercise',
+        title: 'Broken thirds',
+        description: 'A classic scale study: every scale degree is followed by the note a third above it (1-3, 2-4, 3-5, …) — pairs of eighth notes the whole way up.',
+        notes: [
+          { m: 60, t: 'e' }, { m: 64, t: 'e' }, { m: 62, t: 'e' }, { m: 65, t: 'e' },
+          { m: 64, t: 'e' }, { m: 67, t: 'e' }, { m: 65, t: 'e' }, { m: 69, t: 'e' },
+          { m: 67, t: 'e' }, { m: 71, t: 'e' }, { m: 69, t: 'e' }, { m: 72, t: 'e' },
+          { m: 71, t: 'e' }, { m: 74, t: 'e' }, { m: 72, t: 'h' },
+        ],
+        style: 'melody',
+      },
     ],
   },
   {
@@ -101,7 +113,7 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Climbing line',
-        description: 'Stepwise melodic line with neighbour tones.',
+        description: 'A line that lifts the ear up through the scale, leaning back to the previous note before each new climb.',
         notes: [69, 71, 72, 71, 74, 76, 74, 72],
         style: 'melody',
       },
@@ -147,8 +159,8 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Bluesy lick',
-        description: 'Pentatonic minor used in a typical lick — short phrase that returns to the root.',
-        notes: [76, 79, 81, 79, 76, 74, 72, 69],
+        description: 'Pentatonic minor used in a typical lick — eighth-note pickup with a held resolution on the root.',
+        notes: [{ m: 76, t: 'e' }, { m: 79, t: 'e' }, 81, 79, { m: 76, t: 'e' }, { m: 74, t: 'e' }, 72, { m: 69, t: 'h' }],
         style: 'melody',
       },
       {
@@ -200,8 +212,8 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Country lick',
-        description: 'A typical country/folk melodic phrase that lives entirely in the pentatonic.',
-        notes: [60, 64, 67, 69, 67, 64, 62, 60],
+        description: 'A typical country/folk phrase with eighth-note grace notes and a long final root.',
+        notes: [60, { m: 64, t: 'e' }, { m: 67, t: 'e' }, 69, { m: 67, t: 'e' }, { m: 64, t: 'e' }, 62, { m: 60, t: 'h' }],
         style: 'melody',
       },
       {
@@ -409,6 +421,13 @@ export const MODULES = [
         notes: [69, 76, 79, 76, 72, 74, 72, 69],
         style: 'melody',
       },
+      {
+        type: 'exercise',
+        title: 'Mystery #4',
+        description: 'Something more exotic — listen for the augmented-2nd leap.',
+        notes: [69, 72, 76, 77, 80, 81, 80, 77, 76, 72, 71, 69],
+        style: 'melody',
+      },
     ],
   },
   // ================= CHORDS =================
@@ -504,8 +523,8 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Triad with neighbours',
-        description: 'Triad notes ornamented with chromatic neighbour tones.',
-        notes: [72, 71, 72, 76, 75, 76, 81, 76],
+        description: 'Triad notes ornamented with quick chromatic neighbour tones — the neighbours play as eighths so they decorate, not interrupt.',
+        notes: [72, { m: 71, t: 'e' }, { m: 72, t: 'e' }, 76, { m: 75, t: 'e' }, { m: 76, t: 'e' }, 81, 76],
         style: 'melody',
       },
     ],
@@ -553,8 +572,12 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Bebop-flavoured 7th line',
-        description: 'A melody that traces a dominant 7 arpeggio and resolves down a half-step — the bebop way to land on a chord change.',
-        notes: [55, 59, 62, 65, 64, 60, 64, 67, 71, 67],
+        description: 'Eighth-note line that traces a G7 arpeggio, slips down a half-step (F→E) and lands on the 3rd of Cmaj7.',
+        notes: [
+          { m: 55, t: 'e' }, { m: 59, t: 'e' }, { m: 62, t: 'e' }, { m: 65, t: 'e' },
+          { m: 64, t: 'e' }, { m: 60, t: 'e' }, { m: 64, t: 'e' }, { m: 67, t: 'e' },
+          { m: 71, t: 'h' }, { m: 67, t: 'h' },
+        ],
         style: 'melody',
       },
       {
@@ -808,15 +831,23 @@ export const MODULES = [
       {
         type: 'exercise',
         title: 'Bebop melody',
-        description: 'A short bebop-style line that outlines each chord on its strong beats.',
-        notes: [62, 65, 69, 72, 71, 67, 65, 62, 60, 64, 67, 71, 72],
+        description: 'Eighth-note line: Dm7 arpeggio up, descending G7 line, then a clean Cmaj7 arpeggio. Three bars, one chord per bar.',
+        notes: [
+          { m: 62, t: 'e' }, { m: 65, t: 'e' }, { m: 69, t: 'e' }, { m: 72, t: 'e' }, { m: 71, t: 'e' }, { m: 69, t: 'e' }, { m: 65, t: 'e' }, { m: 62, t: 'e' },
+          { m: 67, t: 'e' }, { m: 71, t: 'e' }, { m: 65, t: 'e' }, { m: 62, t: 'e' }, { m: 60, t: 'e' }, { m: 59, t: 'e' }, { m: 64, t: 'e' }, { m: 60, t: 'e' },
+          { m: 60, t: 'e' }, { m: 64, t: 'e' }, { m: 67, t: 'e' }, { m: 71, t: 'e' }, { m: 72, t: 'h' },
+        ],
         style: 'melody',
       },
       {
         type: 'exercise',
         title: 'Guide-tone line',
-        description: 'Just the 3rds and 7ths of each chord — the core of any jazz melody.',
-        notes: [65, 72, 65, 71, 64, 71],
+        description: 'Just the 3rd and 7th of each chord — sustained as half notes, the way a horn would actually voice the line.',
+        notes: [
+          { m: 65, t: 'h' }, { m: 72, t: 'h' },
+          { m: 65, t: 'h' }, { m: 71, t: 'h' },
+          { m: 64, t: 'h' }, { m: 71, t: 'h' },
+        ],
         style: 'melody',
       },
     ],
@@ -1160,6 +1191,13 @@ export const MODULES = [
         title: 'Adding the 3rd',
         description: 'Each bar walks 1 – 3 – 5 – 3 over its chord. The 3rd on beats 2 and 4 adds chord colour.',
         notes: [48, 52, 55, 52, 53, 57, 60, 57, 55, 59, 62, 59, 48, 52, 55, 52],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'Putting it together',
+        description: 'Four bars over I, IV, V, I. Each bar starts on the root and uses chord tones — same idea, mixed direction so the line never feels mechanical.',
+        notes: [48, 52, 55, 57, 53, 60, 57, 53, 55, 62, 59, 55, 48, 55, 52, 48],
         style: 'melody',
       },
     ],
