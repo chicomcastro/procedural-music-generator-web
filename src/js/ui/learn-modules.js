@@ -1142,6 +1142,7 @@ export const MODULES = [
         title: 'Walking turnaround bassline',
         description: 'The classic walking-bass turnaround.',
         notes: [48, 50, 52, 53, 55, 53, 52, 50, 48, 50, 52, 55, 53, 55, 56, 55],
+        chordSymbols: ['C', 'F', 'C', 'G'],
         style: 'melody',
       },
       {
@@ -1177,6 +1178,7 @@ export const MODULES = [
         title: 'Roots only',
         description: 'Just chord roots — the simplest walking line.',
         notes: [48, 48, 48, 48, 53, 53, 53, 53, 55, 55, 55, 55, 48, 48, 48, 48],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
       {
@@ -1184,6 +1186,7 @@ export const MODULES = [
         title: 'Roots + 5ths',
         description: 'Add the 5th on beat 3 — the second most stable note.',
         notes: [48, 55, 48, 55, 53, 60, 53, 60, 55, 62, 55, 62, 48, 55, 48, 55],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
       {
@@ -1191,6 +1194,7 @@ export const MODULES = [
         title: 'Adding the 3rd',
         description: 'Each bar walks 1 – 3 – 5 – 3 over its chord. The 3rd on beats 2 and 4 adds chord colour.',
         notes: [48, 52, 55, 52, 53, 57, 60, 57, 55, 59, 62, 59, 48, 52, 55, 52],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
       {
@@ -1198,6 +1202,7 @@ export const MODULES = [
         title: 'Putting it together',
         description: 'Four bars over I, IV, V, I. Each bar starts on the root and uses chord tones — same idea, mixed direction so the line never feels mechanical.',
         notes: [48, 52, 55, 57, 53, 60, 57, 53, 55, 62, 59, 55, 48, 55, 52, 48],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
     ],
@@ -1224,6 +1229,7 @@ export const MODULES = [
         title: 'Walking up',
         description: 'Stepwise climb: 1 → 2 → 3 → 4 → land on IV chord root.',
         notes: [48, 50, 52, 53, 53, 55, 57, 59, 60, 59, 57, 55, 53, 52, 50, 48],
+        chordSymbols: ['C', 'F', 'C', 'F'],
         style: 'melody',
       },
       {
@@ -1231,6 +1237,7 @@ export const MODULES = [
         title: 'Walking down',
         description: 'Descending diatonic walk over I → vi → IV → V.',
         notes: [60, 59, 57, 55, 57, 55, 53, 52, 53, 52, 50, 48, 55, 53, 52, 50],
+        chordSymbols: ['C', 'Am', 'F', 'G'],
         style: 'melody',
       },
       {
@@ -1238,6 +1245,7 @@ export const MODULES = [
         title: 'Walk + arpeggio mix',
         description: 'Mix scale steps with chord tones for variety.',
         notes: [48, 52, 55, 53, 53, 57, 60, 59, 55, 59, 62, 60, 48, 50, 52, 55],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
     ],
@@ -1264,6 +1272,7 @@ export const MODULES = [
         title: 'Approach from below',
         description: 'Last beat of each bar is one half-step below the next chord root — E→F, F♯→G, B→C, B→C.',
         notes: [48, 52, 55, 52, 53, 57, 60, 54, 55, 59, 62, 47, 48, 52, 55, 47],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
       {
@@ -1271,6 +1280,7 @@ export const MODULES = [
         title: 'Approach from above',
         description: 'Last beat is one half-step above the next root.',
         notes: [48, 52, 55, 54, 53, 57, 60, 56, 55, 59, 62, 49, 48, 52, 55, 49],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
       {
@@ -1278,6 +1288,7 @@ export const MODULES = [
         title: 'Mixed approach (above & below)',
         description: 'Alternate the direction for more variety.',
         notes: [48, 52, 55, 54, 53, 57, 60, 56, 55, 59, 62, 60, 48, 50, 52, 47],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
     ],
@@ -1305,6 +1316,7 @@ export const MODULES = [
         title: 'Five chords down a 5th each',
         description: 'Walking through five 7th chords, each root a 5th below the last.',
         notes: [60, 64, 67, 70, 65, 69, 72, 75, 58, 62, 65, 68, 63, 67, 70, 73, 56, 60, 63, 66],
+        chordSymbols: ['C7', 'F7', 'Bb7', 'Eb7', 'Ab7'],
         style: 'melody',
       },
       {
@@ -1312,6 +1324,7 @@ export const MODULES = [
         title: 'Cycle with chromatic approach',
         description: 'Same cycle, with a half-step approach into each new root.',
         notes: [60, 64, 67, 66, 65, 69, 72, 71, 70, 62, 65, 64, 63, 67, 70, 69, 68, 60, 63, 66],
+        chordSymbols: ['C7', 'F7', 'Bb7', 'Eb7', 'Ab7'],
         style: 'melody',
       },
     ],
@@ -1338,6 +1351,7 @@ export const MODULES = [
         title: '3rd in the bass',
         description: 'Each chord begins with its 3rd in the bass.',
         notes: [52, 55, 60, 55, 57, 60, 65, 60, 59, 62, 67, 62, 52, 55, 60, 55],
+        chordSymbols: ['C/E', 'F/A', 'G/B', 'C/E'],
         style: 'melody',
       },
       {
@@ -1345,6 +1359,7 @@ export const MODULES = [
         title: '5th in the bass',
         description: 'Walking with each bar starting on the chord 5th.',
         notes: [55, 60, 64, 60, 60, 65, 69, 65, 62, 67, 71, 67, 55, 60, 64, 60],
+        chordSymbols: ['C/G', 'F/C', 'G/D', 'C/G'],
         style: 'melody',
       },
       {
@@ -1352,6 +1367,7 @@ export const MODULES = [
         title: 'Mixing positions',
         description: 'Alternate root, 3rd, 5th over four chords for a flowing line.',
         notes: [48, 52, 55, 52, 57, 60, 65, 60, 50, 53, 57, 53, 55, 59, 62, 59],
+        chordSymbols: ['C', 'F/A', 'Dm', 'G'],
         style: 'melody',
       },
     ],
@@ -1378,6 +1394,7 @@ export const MODULES = [
         title: 'Dense walk',
         description: 'A line packed with chord and scale tones — every beat lands on a meaningful note.',
         notes: [48, 50, 52, 53, 50, 52, 53, 55, 53, 55, 57, 59, 55, 57, 59, 60],
+        chordSymbols: ['C', 'Dm', 'F', 'G'],
         style: 'melody',
       },
       {
@@ -1385,6 +1402,7 @@ export const MODULES = [
         title: 'Walk with rests on beat 2',
         description: 'Beat 2 of every bar is silent — the line breathes, and beats 1, 3, 4 carry more weight.',
         notes: [48, null, 55, 52, 53, null, 60, 57, 55, null, 62, 59, 48, null, 55, 47],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
       {
@@ -1392,6 +1410,7 @@ export const MODULES = [
         title: 'Walk with rests on beat 4',
         description: 'Silence on beat 4 leaves space before each chord change — a common phrasing trick.',
         notes: [48, 52, 55, null, 53, 57, 60, null, 55, 59, 62, null, 48, 52, 55, null],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
     ],
@@ -1419,6 +1438,7 @@ export const MODULES = [
         title: 'Connecting note on beat 4',
         description: 'Beats 1-3 outline the chord; beat 4 is a passing note that leads chromatically into the next chord root.',
         notes: [48, 52, 55, 52, 53, 57, 60, 54, 55, 59, 62, 49, 48, 52, 55, 47],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
       {
@@ -1426,6 +1446,7 @@ export const MODULES = [
         title: 'Boogie bass pattern',
         description: 'The classic boogie shape per chord: root, 3rd, 5th, 6th, ♭7, 6th, 5th, 3rd.',
         notes: [48, 52, 55, 57, 58, 57, 55, 52, 53, 57, 60, 62, 63, 62, 60, 57],
+        chordSymbols: ['C7', 'C7', 'F7', 'F7'],
         style: 'melody',
       },
       {
@@ -1438,6 +1459,7 @@ export const MODULES = [
           55, 59, 62, { m: 49, t: 'et' }, { m: 48, t: 'et' }, { m: 47, t: 'et' },
           48, 52, 55, 52,
         ],
+        chordSymbols: ['C', 'F', 'G', 'C'],
         style: 'melody',
       },
       {
@@ -1450,6 +1472,7 @@ export const MODULES = [
           { m: 53, t: 'qt' }, { m: 57, t: 'et' }, { m: 60, t: 'qt' }, { m: 62, t: 'et' },
           { m: 63, t: 'qt' }, { m: 62, t: 'et' }, { m: 60, t: 'qt' }, { m: 57, t: 'et' },
         ],
+        chordSymbols: ['C7', 'F7'],
         style: 'melody',
       },
     ],
@@ -1477,6 +1500,7 @@ export const MODULES = [
         title: 'Bars 1-4 (I chord)',
         description: 'Walking over the tonic for four bars.',
         notes: [48, 52, 55, 57, 48, 52, 55, 53, 48, 52, 55, 57, 48, 50, 52, 53],
+        chordSymbols: ['C7', 'C7', 'C7', 'C7'],
         style: 'melody',
       },
       {
@@ -1484,6 +1508,7 @@ export const MODULES = [
         title: 'Bars 5-8 (IV → I)',
         description: 'Walk over IV for two bars then back to I.',
         notes: [53, 57, 60, 62, 53, 57, 60, 58, 48, 52, 55, 57, 48, 52, 55, 53],
+        chordSymbols: ['F7', 'F7', 'C7', 'C7'],
         style: 'melody',
       },
       {
@@ -1491,6 +1516,7 @@ export const MODULES = [
         title: 'Bars 9-12 (V IV I V — turnaround)',
         description: 'V → IV → I → V turnaround.',
         notes: [55, 59, 62, 64, 53, 57, 60, 58, 48, 52, 55, 57, 55, 50, 52, 48],
+        chordSymbols: ['G7', 'F7', 'C7', 'G7'],
         style: 'melody',
       },
     ],
@@ -1518,6 +1544,7 @@ export const MODULES = [
         title: 'Basic ii–V–I walk',
         description: 'Roots, scale tones, chromatic approach into each chord.',
         notes: [50, 53, 57, 56, 55, 59, 62, 59, 60, 64, 67, 64],
+        chordSymbols: ['Dm7', 'G7', 'Cmaj7'],
         style: 'melody',
       },
       {
@@ -1529,6 +1556,7 @@ export const MODULES = [
           { m: 55, t: 'e' }, { m: 59, t: 'e' }, { m: 62, t: 'e' }, { m: 64, t: 'e' }, { m: 65, t: 'e' }, { m: 64, t: 'e' }, { m: 62, t: 'e' }, { m: 59, t: 'e' },
           { m: 60, t: 'e' }, { m: 64, t: 'e' }, { m: 67, t: 'e' }, { m: 71, t: 'e' }, { m: 72, t: 'e' }, { m: 71, t: 'e' }, { m: 67, t: 'e' }, { m: 64, t: 'e' },
         ],
+        chordSymbols: ['Dm7', 'G7', 'Cmaj7'],
         style: 'melody',
       },
       {
@@ -1536,6 +1564,7 @@ export const MODULES = [
         title: 'With substitutions',
         description: 'Chromatic substitution: ii → ♭II → I (tritone substitute).',
         notes: [50, 53, 57, 60, 61, 64, 67, 70, 60, 64, 67, 64],
+        chordSymbols: ['Dm7', 'Db7', 'Cmaj7'],
         style: 'melody',
       },
     ],
