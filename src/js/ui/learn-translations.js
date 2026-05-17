@@ -195,32 +195,6 @@ export const TR = {
       ],
     },
   },
-  'challenge-scales': {
-    pt: {
-      title: 'Desafio das escalas',
-      summary: 'Misture maior, menor natural, pentatônica e modos. Identifique a cor de ouvido.',
-      tag: 'Desafio · Escalas',
-      steps: [
-        { title: 'O exercício', text: `Você ouvirá três frases curtas, cada uma usando uma escala diferente entre as que estudou. Tente identificar a escala antes de ler a resposta.` },
-        { title: 'Mistério #1', description: 'Escute. Maior, menor natural, pentatônica menor ou dórico?' },
-        { title: 'Mistério #2', description: 'Mais uma frase para identificar.' },
-        { title: 'Mistério #3', description: 'Última frase do desafio.' },
-        { title: 'Mistério #4', description: 'Algo mais exótico — ouça o salto de 2ª aumentada.' },
-      ],
-    },
-    es: {
-      title: 'Reto de escalas',
-      summary: 'Mezcla mayor, menor natural, pentatónica y modos. Identifica el color de oído.',
-      tag: 'Reto · Escalas',
-      steps: [
-        { title: 'El ejercicio', text: `Vas a oír tres frases cortas, cada una usando una escala distinta de las que has estudiado. Intenta identificar la escala antes de leer la respuesta.` },
-        { title: 'Misterio #1', description: 'Escucha. ¿Mayor, menor natural, pentatónica menor o dórico?' },
-        { title: 'Misterio #2', description: 'Otra frase para identificar.' },
-        { title: 'Misterio #3', description: 'Última frase del reto.' },
-        { title: 'Misterio #4', description: 'Algo más exótico — escucha el salto de 2ª aumentada.' },
-      ],
-    },
-  },
   'major-triad': {
     pt: {
       title: 'Tríade Maior & Inversões',
@@ -330,28 +304,6 @@ export const TR = {
         { title: 'Arpegio de La menor', description: 'A C E A — el equivalente menor.' },
         { title: 'Arpegio Cmaj7', description: 'C E G B C — arpegio de tétrada, escucha el color de la 7ª mayor.' },
         { title: 'Melodía en arpegios', description: 'Pequeña frase construida encadenando arpegios.' },
-      ],
-    },
-  },
-  'challenge-chords': {
-    pt: {
-      title: 'Desafio de acordes',
-      summary: 'Tríades, inversões e arpejos dos módulos anteriores — misturados.',
-      tag: 'Desafio · Acordes',
-      steps: [
-        { title: 'Voicing #1', description: 'Identifique: posição fundamental, 1ª ou 2ª inversão?' },
-        { title: 'Voicing #2', description: 'Outra inversão para identificar.' },
-        { title: 'Cadeia de arpejos', description: 'Sequência de arpejos — qual é a progressão de acordes implícita?' },
-      ],
-    },
-    es: {
-      title: 'Reto de acordes',
-      summary: 'Tríadas, inversiones y arpegios de módulos anteriores — mezclados.',
-      tag: 'Reto · Acordes',
-      steps: [
-        { title: 'Voicing #1', description: '¿Identifica: posición fundamental, 1ª o 2ª inversión?' },
-        { title: 'Voicing #2', description: 'Otra inversión para identificar.' },
-        { title: 'Cadena de arpegios', description: 'Secuencia de arpegios — ¿cuál es la progresión de acordes implícita?' },
       ],
     },
   },
@@ -882,28 +834,6 @@ export const TR = {
         { title: 'Pregunta y respuesta', description: 'Una voz "pregunta", la otra "responde".' },
         { title: 'Voz superior sola', description: 'La línea de arriba aislada.' },
         { title: 'Voz inferior sola', description: 'La línea de abajo aislada.' },
-      ],
-    },
-  },
-  'challenge-mixed': {
-    pt: {
-      title: 'Desafio final',
-      summary: 'Tudo junto: cor de escala, voicing, ritmo e um pouco de baixo.',
-      tag: 'Desafio · Final',
-      steps: [
-        { title: 'Escala + arpejo', description: 'Identifique a escala e o arpejo usados.' },
-        { title: 'Mudança de acorde com notas de passagem', description: 'Identifique a progressão e as notas de passagem.' },
-        { title: 'Acorde sobre baixo caminhando', description: 'Quatro voicings de Dó maior com a nota grave subindo de grau em grau — o acorde fica, o baixo caminha.' },
-      ],
-    },
-    es: {
-      title: 'Reto final',
-      summary: 'Todo junto: color de escala, voicing, ritmo y un poco de bajo.',
-      tag: 'Reto · Final',
-      steps: [
-        { title: 'Escala + arpegio', description: 'Identifica la escala y el arpegio usados.' },
-        { title: 'Cambio de acorde con notas de paso', description: 'Identifica la progresión y las notas de paso.' },
-        { title: 'Acorde sobre bajo que camina', description: 'Cuatro voicings de Do mayor con la nota grave subiendo por grados — el acorde se mantiene, el bajo camina.' },
       ],
     },
   },
