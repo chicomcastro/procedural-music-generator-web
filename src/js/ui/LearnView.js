@@ -9,6 +9,7 @@ const GENERATOR_PREFS_KEY = 'seedsong-learn-generator-prefs';
 const RECORDINGS_KEY = 'seedsong-learn-recordings';
 const STREAK_KEY = 'seedsong-learn-streak';
 const PREFS_KEY = 'seedsong-learn-exercise-prefs';
+const FAVORITES_KEY = 'seedsong-learn-favorites';
 
 const SUPPORTED_CLEFS = ['treble', 'bass', 'alto'];
 // Approximate centre of each clef's tessitura (MIDI). Used to auto-pick an
@@ -166,6 +167,47 @@ function readRecordings() {
   catch { return {}; }
 }
 function writeRecordings(map) { localStorage.setItem(RECORDINGS_KEY, JSON.stringify(map)); }
+
+/* ---- Favorites ---- */
+// Shape: { [moduleId]: number[] } — same shape as progress.
+let favorites = {};
+
+function readFavorites() {
+  try { return JSON.parse(localStorage.getItem(FAVORITES_KEY)) || {}; }
+  catch { return {}; }
+}
+function writeFavorites(f) {
+  try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(f)); } catch { /* ignore */ }
+}
+function moduleStepsFavorited(modId) { return new Set(favorites[modId] || []); }
+function isStepFavorite(modId, stepIdx) {
+  const arr = favorites[modId];
+  return Array.isArray(arr) && arr.includes(stepIdx);
+}
+function toggleStepFavorite(modId, stepIdx) {
+  const arr = favorites[modId] || [];
+  const next = arr.includes(stepIdx)
+    ? arr.filter(i => i !== stepIdx)
+    : [...arr, stepIdx].sort((a, b) => a - b);
+  if (next.length === 0) delete favorites[modId];
+  else favorites[modId] = next;
+  writeFavorites(favorites);
+  return next.includes(stepIdx);
+}
+// Flat ordered list of favorited steps for the home page row.
+function favoriteStepsFlat() {
+  const out = [];
+  for (let i = 0; i < MODULES.length; i++) {
+    const mod = MODULES[i];
+    const set = moduleStepsFavorited(mod.id);
+    if (set.size === 0) continue;
+    const indices = [...set].sort((a, b) => a - b);
+    for (const idx of indices) {
+      if (idx >= 0 && idx < mod.steps.length) out.push({ moduleIdx: i, mod, stepIdx: idx, step: mod.steps[idx] });
+    }
+  }
+  return out;
+}
 
 /* ---- Sheet music (lazy OSMD) ---- */
 let osmdLoading = null;
@@ -999,6 +1041,35 @@ function renderCards() {
   const root = document.getElementById('learn-modules');
   if (!root) return;
   root.innerHTML = '';
+
+  // Favorites row — pinned at the top so the user can jump straight into
+  // exercises they've starred. Skipped when there are none.
+  const favs = favoriteStepsFlat();
+  if (favs.length > 0) {
+    const fav = document.createElement('div');
+    fav.className = 'learn-favorites';
+    const heading = document.createElement('div');
+    heading.className = 'learn-favorites-heading';
+    heading.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> <span>${t('learn.group.favorites')}</span>`;
+    fav.appendChild(heading);
+    const pills = document.createElement('div');
+    pills.className = 'learn-favorites-pills';
+    for (const f of favs) {
+      const pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'learn-favorite-pill';
+      pill.innerHTML = `
+        <span class="learn-favorite-pill-mod">${mf(f.mod, 'title')}</span>
+        <span class="learn-favorite-pill-sep">·</span>
+        <span class="learn-favorite-pill-step">${sf(f.mod, f.stepIdx, 'title')}</span>
+      `;
+      pill.addEventListener('click', () => openExercise(f.moduleIdx, f.stepIdx));
+      pills.appendChild(pill);
+    }
+    fav.appendChild(pills);
+    root.appendChild(fav);
+  }
+
   // Group modules visually
   const seenGroups = new Set();
   for (let i = 0; i < MODULES.length; i++) {
@@ -1043,6 +1114,9 @@ function renderCards() {
 
 function openExercise(moduleIdx, stepIdx = 0) {
   if (moduleIdx < 0 || moduleIdx >= MODULES.length) return;
+  // Reset cross-module tracker so the intro flash doesn't fire on the very
+  // first render of an opened module.
+  lastRenderedModuleIdx = -1;
   activeModuleIdx = moduleIdx;
   activeStepIdx = Math.max(0, Math.min(stepIdx, MODULES[moduleIdx].steps.length - 1));
   // Restore persisted clef + tempo + repeat + record-mode. Transpose is always
@@ -1209,6 +1283,31 @@ function renderActiveStep() {
   const tagEl = document.getElementById('exercise-tag');
   if (tagEl) tagEl.textContent = mf(mod, 'tag');
 
+  // Module hero: only on the first step, so a new module's identity reads at
+  // a glance without having to scan the header chip.
+  const hero = document.getElementById('exercise-module-hero');
+  if (hero) {
+    if (activeStepIdx === 0) {
+      const eyebrow = document.getElementById('exercise-module-hero-eyebrow');
+      const title = document.getElementById('exercise-module-hero-title');
+      const summary = document.getElementById('exercise-module-hero-summary');
+      if (eyebrow) eyebrow.textContent = t(`learn.group.${mod.group.toLowerCase().replace(/\s+/g, '_')}`);
+      if (title) title.textContent = mf(mod, 'title');
+      if (summary) summary.textContent = mf(mod, 'summary') || '';
+      hero.hidden = false;
+    } else {
+      hero.hidden = true;
+    }
+  }
+
+  // Favorite toggle — reflects the current step's state.
+  syncFavoriteButton(mod.id, activeStepIdx);
+
+  // If we crossed a module boundary, flash a subtle banner so the user feels
+  // the change without a heavy celebration. Skipped on the very first render
+  // (i.e. when openExercise just set up the overlay).
+  maybeTriggerModuleIntro(mod);
+
   // Title / description
   document.getElementById('exercise-title').textContent = sf(mod, activeStepIdx, 'title');
   const descEl = document.getElementById('exercise-desc');
@@ -1313,6 +1412,7 @@ function renderStepRail(mod) {
   rail.innerHTML = '';
   rail.setAttribute('role', 'tablist');
   const done = moduleStepsDone(mod.id);
+  const fav = moduleStepsFavorited(mod.id);
   for (let i = 0; i < mod.steps.length; i++) {
     const st = mod.steps[i];
     const btn = document.createElement('button');
@@ -1320,10 +1420,11 @@ function renderStepRail(mod) {
     btn.className = 'exercise-step-rail-item';
     if (done.has(i)) btn.classList.add('done');
     if (i === activeStepIdx) btn.classList.add('current');
+    if (fav.has(i)) btn.classList.add('favorited');
     if (i === justCompletedStepIdx) btn.classList.add('just-completed');
     btn.setAttribute('role', 'tab');
     btn.setAttribute('aria-selected', i === activeStepIdx ? 'true' : 'false');
-    btn.setAttribute('aria-label', `${i + 1}. ${sf(mod, i, 'title')} (${st.type === 'theory' ? 'theory' : 'exercise'}${done.has(i) ? ', done' : ''})`);
+    btn.setAttribute('aria-label', `${i + 1}. ${sf(mod, i, 'title')} (${st.type === 'theory' ? 'theory' : 'exercise'}${done.has(i) ? ', done' : ''}${fav.has(i) ? ', favorite' : ''})`);
     // Roving tabindex: only the active tab is in the tab order.
     btn.tabIndex = i === activeStepIdx ? 0 : -1;
 
@@ -1357,6 +1458,50 @@ function renderStepRail(mod) {
   }
   // Clear the pop after one render so it doesn't replay.
   justCompletedStepIdx = -1;
+}
+
+// Update the star button to reflect whether the current step is favorited.
+function syncFavoriteButton(modId, stepIdx) {
+  const btn = document.getElementById('exercise-favorite');
+  if (!btn) return;
+  const on = isStepFavorite(modId, stepIdx);
+  btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  btn.setAttribute('aria-label', on ? t('exercise.unfavorite') : t('exercise.favorite'));
+}
+
+// Tracks the module shown by the previous render so we can fire the intro
+// flash only when crossing a module boundary, not on initial open or on
+// in-module step navigation.
+let lastRenderedModuleIdx = -1;
+let suppressNextModuleIntro = false;
+
+function maybeTriggerModuleIntro(mod) {
+  const justChanged = lastRenderedModuleIdx !== -1 && lastRenderedModuleIdx !== activeModuleIdx;
+  lastRenderedModuleIdx = activeModuleIdx;
+  if (!justChanged) return;
+  if (suppressNextModuleIntro) {
+    suppressNextModuleIntro = false;
+    return;
+  }
+  triggerModuleIntro(mod);
+}
+
+function triggerModuleIntro(mod) {
+  const flash = document.getElementById('module-intro-flash');
+  if (!flash) return;
+  const eyebrow = document.getElementById('module-intro-eyebrow');
+  const title = document.getElementById('module-intro-title');
+  if (eyebrow) eyebrow.textContent = t('exercise.module_intro');
+  if (title) title.textContent = mf(mod, 'title');
+  // Re-run the CSS animation each time by toggling the hidden class.
+  flash.classList.add('hidden');
+  void flash.offsetWidth;
+  flash.classList.remove('hidden');
+  flash.setAttribute('aria-hidden', 'false');
+  setTimeout(() => {
+    flash.classList.add('hidden');
+    flash.setAttribute('aria-hidden', 'true');
+  }, 1400);
 }
 
 // Keyboard navigation inside the step rail (ArrowLeft/Right + Home/End).
@@ -1489,6 +1634,9 @@ function pulseCtaSuccess() {
 
 /* ---- Module-complete celebration ---- */
 function triggerModuleComplete(mod, onContinue) {
+  // The full celebration is loud enough on its own — skip the subtle module
+  // intro flash on the next module's first render so they don't stack.
+  suppressNextModuleIntro = true;
   const flash = document.getElementById('module-complete-flash');
   const sub = document.getElementById('module-complete-sub');
   if (!flash || !sub) { onContinue?.(); return; }
@@ -1556,6 +1704,8 @@ function closeExercise() {
     URL.revokeObjectURL(recordingObjectUrl);
     recordingObjectUrl = null;
   }
+  // Reset so re-opening doesn't accidentally flash a module-intro banner.
+  lastRenderedModuleIdx = -1;
   renderCards();
   renderContinueCard();
 }
@@ -1608,6 +1758,7 @@ function closeMap() {
 export function initLearnView({ audioApi }) {
   audioApiRef = audioApi;
   progress = readProgress();
+  favorites = readFavorites();
 
   renderCards();
   renderContinueCard();
@@ -1635,6 +1786,23 @@ export function initLearnView({ audioApi }) {
   document.getElementById('exercise-close')?.addEventListener('click', closeExercise);
   document.getElementById('exercise-back-arrow')?.addEventListener('click', () => gotoStep(-1));
   document.getElementById('exercise-next')?.addEventListener('click', () => gotoStep(1));
+
+  document.getElementById('exercise-favorite')?.addEventListener('click', () => {
+    if (activeModuleIdx < 0) return;
+    const mod = MODULES[activeModuleIdx];
+    const nowOn = toggleStepFavorite(mod.id, activeStepIdx);
+    syncFavoriteButton(mod.id, activeStepIdx);
+    // Bump animation + refresh the rail outline + home pills.
+    const btn = document.getElementById('exercise-favorite');
+    if (btn && nowOn) {
+      btn.classList.remove('is-just-favorited');
+      void btn.offsetWidth;
+      btn.classList.add('is-just-favorited');
+      setTimeout(() => btn.classList.remove('is-just-favorited'), 360);
+    }
+    renderStepRail(mod);
+    renderCards();
+  });
   document.getElementById('exercise-play')?.addEventListener('click', () => {
     if (activeModuleIdx < 0) return;
     const step = MODULES[activeModuleIdx].steps[activeStepIdx];
