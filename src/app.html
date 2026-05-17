@@ -863,6 +863,9 @@
                                 <span class="exercise-module-name" id="exercise-module-name">—</span>
                                 <span class="exercise-tag-chip" id="exercise-tag"></span>
                             </div>
+                            <button id="exercise-favorite" type="button" class="exercise-nav-btn exercise-favorite-btn" aria-label="Toggle favorite" aria-pressed="false">
+                                <svg class="exercise-favorite-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </button>
                             <button id="exercise-close" type="button" class="exercise-nav-btn" aria-label="Close exercise">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                             </button>
@@ -871,6 +874,12 @@
                         <div id="exercise-step-rail" class="exercise-step-rail" aria-label="Step navigation"></div>
 
                         <div class="exercise-content" id="exercise-content">
+                            <div class="exercise-module-hero" id="exercise-module-hero" hidden>
+                                <span class="exercise-module-hero-eyebrow" id="exercise-module-hero-eyebrow"></span>
+                                <h1 class="exercise-module-hero-title" id="exercise-module-hero-title"></h1>
+                                <p class="exercise-module-hero-summary" id="exercise-module-hero-summary"></p>
+                                <div class="exercise-module-hero-divider" aria-hidden="true"></div>
+                            </div>
                             <h2 id="exercise-title" class="exercise-title">—</h2>
                             <div id="exercise-desc" class="exercise-desc">—</div>
 
@@ -1004,6 +1013,13 @@
                         <footer class="exercise-foot">
                             <button id="exercise-next" type="button" class="exercise-next-btn" data-i18n="exercise.done">Mark done →</button>
                         </footer>
+                    </div>
+
+                    <div id="module-intro-flash" class="module-intro-flash hidden" aria-hidden="true">
+                        <div class="module-intro-card" role="status">
+                            <span class="module-intro-eyebrow" id="module-intro-eyebrow"></span>
+                            <h3 class="module-intro-title" id="module-intro-title">—</h3>
+                        </div>
                     </div>
 
                     <div id="module-complete-flash" class="module-complete-flash hidden" aria-hidden="true">

@@ -2474,6 +2474,211 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
   100% { transform: scale(1); }
 }
 
+/* ---- Module hero (shown on the first step of every module) ---- */
+.exercise-module-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  margin: 4px 0 6px;
+  animation: module-hero-in 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.exercise-module-hero[hidden] { display: none; }
+
+@keyframes module-hero-in {
+  0%   { opacity: 0; transform: translateY(-6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.exercise-module-hero-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.exercise-module-hero-title {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.exercise-module-hero-summary {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 460px;
+}
+
+.exercise-module-hero-divider {
+  width: 48px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0.55;
+  margin-top: 4px;
+}
+
+/* ---- Favorite (star) button in exercise head ---- */
+.exercise-favorite-btn .exercise-favorite-icon { transition: fill 160ms, stroke 160ms, color 160ms; }
+.exercise-favorite-btn[aria-pressed="true"] {
+  color: #f4b942;
+}
+.exercise-favorite-btn[aria-pressed="true"] .exercise-favorite-icon {
+  fill: #f4b942;
+  stroke: #f4b942;
+}
+.exercise-favorite-btn[aria-pressed="true"]:hover {
+  color: #e8a735;
+  background: rgba(244, 185, 66, 0.12);
+}
+
+@keyframes favorite-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.exercise-favorite-btn.is-just-favorited .exercise-favorite-icon {
+  animation: favorite-pop 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---- Step rail favorite outline ---- */
+.exercise-step-rail-item.favorited .exercise-step-rail-icon {
+  box-shadow: 0 0 0 2px #f4b942, 0 0 0 4px rgba(244, 185, 66, 0.18);
+}
+.exercise-step-rail-item.favorited.current .exercise-step-rail-icon {
+  box-shadow: 0 0 0 4px var(--accent-glow), 0 0 0 6px #f4b942;
+}
+
+/* ---- Subtle module-intro flash (less than the completion celebration) ---- */
+.module-intro-flash {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  pointer-events: none;
+  animation: module-intro-track 1400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.module-intro-flash.hidden { display: none; }
+
+@keyframes module-intro-track {
+  0%   { opacity: 0; transform: translate(-50%, -8px); }
+  15%  { opacity: 1; transform: translate(-50%, 0); }
+  75%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -6px); }
+}
+
+.module-intro-card {
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+}
+
+.module-intro-eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.module-intro-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ---- Favorites row on the Learn home ---- */
+.learn-favorites {
+  grid-column: 1 / -1;
+  background: rgba(244, 185, 66, 0.06);
+  border: 1px solid rgba(244, 185, 66, 0.35);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.learn-favorites-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #f4b942;
+}
+
+.learn-favorites-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.learn-favorite-pill {
+  background: var(--bg-card);
+  border: 1px solid rgba(244, 185, 66, 0.55);
+  color: var(--text-primary);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 150ms, border-color 150ms, transform 120ms;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.learn-favorite-pill:hover {
+  background: rgba(244, 185, 66, 0.12);
+  border-color: #f4b942;
+  transform: translateY(-1px);
+}
+
+.learn-favorite-pill-mod {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.learn-favorite-pill-sep {
+  color: var(--text-secondary);
+}
+
+.learn-favorite-pill-step {
+  color: var(--text-secondary);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .exercise-module-hero-title { font-size: 26px; }
+  .exercise-module-hero-summary { font-size: 13px; }
+  .module-intro-card { padding: 6px 14px; }
+  .module-intro-title { font-size: 12px; }
+  .learn-favorite-pill-step { max-width: 140px; }
+}
+
 /* ---- Module-complete celebration ---- */
 .module-complete-flash {
   position: absolute;
