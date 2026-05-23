@@ -3,6 +3,7 @@ dist/
 cypress/screenshots/
 cypress/videos/
 cypress/downloads/
+coverage/
 .cache/
 *.log
 .DS_Store

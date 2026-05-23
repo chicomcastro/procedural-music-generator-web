@@ -8,8 +8,11 @@ export default defineConfig({
     fixturesFolder: 'cypress/fixtures',
     screenshotsFolder: 'cypress/screenshots',
     videosFolder: 'cypress/videos',
+    // Always keep videos + screenshots so the CI sticky comment has artwork
+    // to surface on every PR, not just failures.
     video: true,
     videoCompression: 32,
+    screenshotOnRunFailure: true,
     viewportWidth: 1280,
     viewportHeight: 800,
     defaultCommandTimeout: 8000,
