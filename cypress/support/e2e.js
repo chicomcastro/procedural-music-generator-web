@@ -25,3 +25,14 @@ Cypress.on('uncaught:exception', (err) => {
   }
   return true;
 });
+
+// Capture a screenshot at the end of every test (pass or fail). The CI sticky
+// comment lists these so reviewers can see the visual state of each spec
+// without downloading the full artifact zip. Failed tests already capture
+// their own; this is the success-path counterpart.
+afterEach(function () {
+  if (this.currentTest?.state === 'passed') {
+    const name = `${this.currentTest.title.replace(/[^\w\-]+/g, '_')}__pass`;
+    cy.screenshot(name, { capture: 'viewport', overwrite: true, log: false });
+  }
+});

@@ -1865,7 +1865,7 @@ export function initLearnView({ audioApi }) {
   document.getElementById('exercise-play')?.addEventListener('click', () => {
     if (activeModuleIdx < 0) return;
     const step = MODULES[activeModuleIdx].steps[activeStepIdx];
-    if (!step || step.type !== 'exercise') return;
+    if (!step) return;
     // Tapping Play while playback is already running stops everything.
     if (playbackTimer || mediaRecorder?.state === 'recording') {
       stopAllNotes();
@@ -1874,7 +1874,15 @@ export function initLearnView({ audioApi }) {
       }
       return;
     }
-    playStep(step, exerciseOpts);
+    if (step.type === 'exercise') {
+      playStep(step, exerciseOpts);
+    } else if (step.type === 'generator') {
+      // Build the runtime step (notes + chord symbols) from the current
+      // generator state and play it. regenerateAndRender keeps exerciseOpts
+      // in sync with the generator panel.
+      const runtime = buildGeneratorStep();
+      playStep(runtime, exerciseOpts);
+    }
   });
 
   document.getElementById('exercise-repeat')?.addEventListener('change', (e) => {

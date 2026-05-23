@@ -1,0 +1,76 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cypress:
+    name: E2E (Cypress)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Cypress run
+        id: cypress
+        uses: cypress-io/github-action@v6
+        with:
+          start: npm run serve
+          wait-on: 'http://localhost:8080/app.html'
+          wait-on-timeout: 180
+          browser: chrome
+          record: false
+        continue-on-error: true
+
+      - name: Upload Cypress screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload Cypress videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: cypress/videos
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Build Cypress evidence summary
+        if: github.event_name == 'pull_request' && always()
+        id: evidence
+        run: node scripts/e2e-comment.mjs
+        env:
+          RUN_ID: ${{ github.run_id }}
+          REPO: ${{ github.repository }}
+          CYPRESS_OUTCOME: ${{ steps.cypress.outcome }}
+
+      - name: Post / update E2E sticky comment
+        if: github.event_name == 'pull_request' && always() && steps.evidence.outputs.body != ''
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: e2e
+          message: ${{ steps.evidence.outputs.body }}
+
+      - name: Fail the job if Cypress failed
+        if: steps.cypress.outcome == 'failure'
+        run: exit 1

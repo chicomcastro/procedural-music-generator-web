@@ -50,6 +50,9 @@ jobs:
   unit:
     name: Unit + Integration tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -62,45 +65,26 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Run Vitest
-        run: npm run test:unit
+      - name: Run Vitest with coverage
+        run: npm run test:coverage
 
-  e2e:
-    name: E2E (Cypress)
-    needs: static
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Cypress run
-        uses: cypress-io/github-action@v6
-        with:
-          start: npm run serve
-          wait-on: 'http://localhost:8080/app.html'
-          wait-on-timeout: 180
-          browser: chrome
-          record: false
-
-      - name: Upload Cypress screenshots on failure
-        if: failure()
+      - name: Upload coverage HTML report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-screenshots
-          path: cypress/screenshots
+          name: coverage-html
+          path: coverage
+          retention-days: 14
           if-no-files-found: ignore
-          retention-days: 7
 
-      - name: Upload Cypress videos on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
+      - name: Build coverage summary for PR comment
+        if: github.event_name == 'pull_request'
+        id: cov
+        run: node scripts/coverage-comment.mjs
+
+      - name: Post / update coverage sticky comment
+        if: github.event_name == 'pull_request' && steps.cov.outputs.body != ''
+        uses: marocchino/sticky-pull-request-comment@v2
         with:
-          name: cypress-videos
-          path: cypress/videos
-          if-no-files-found: ignore
-          retention-days: 7
+          header: coverage
+          message: ${{ steps.cov.outputs.body }}

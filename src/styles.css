@@ -1580,6 +1580,16 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
   gap: 12px;
 }
 
+@media (max-width: 600px) {
+  .learn-shell { padding: 14px 12px 20px; gap: 14px; }
+  .learn-head { padding-bottom: 12px; }
+  .learn-continue { padding: 14px 16px; gap: 10px; }
+  .learn-continue-title { font-size: 16px; }
+  .learn-continue-desc { font-size: 12.5px; }
+  .learn-modules { gap: 10px; grid-template-columns: 1fr; }
+  .learn-card { padding: 14px 16px; }
+}
+
 /* ---- Exercise stage (v2 — full surface, sheet-first) ---- */
 
 .exercise-stage {
@@ -1950,8 +1960,23 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
 .generator-panel[hidden] { display: none; }
 .generator-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px 16px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px 14px;
+}
+@media (max-width: 600px) {
+  .generator-panel { padding: 10px; }
+  .generator-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 10px;
+  }
+  .generator-field { font-size: 11px; }
+  .generator-field select,
+  .generator-field input[type="number"] {
+    padding: 5px 6px;
+    font-size: 12px;
+  }
+  .generator-field-seed { grid-column: 1 / -1; }
+  .generator-seed-group button { font-size: 11px; padding: 5px 9px; }
 }
 .generator-field {
   display: flex;
@@ -2672,8 +2697,14 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
 }
 
 @media (max-width: 600px) {
-  .exercise-module-hero-title { font-size: 26px; }
-  .exercise-module-hero-summary { font-size: 13px; }
+  .exercise-module-hero {
+    margin: 0 0 2px;
+    gap: 4px;
+  }
+  .exercise-module-hero-title { font-size: 22px; line-height: 1.1; }
+  .exercise-module-hero-summary { font-size: 12.5px; line-height: 1.4; }
+  .exercise-module-hero-eyebrow { font-size: 9px; }
+  .exercise-module-hero-divider { width: 36px; height: 2px; margin-top: 2px; }
   .module-intro-card { padding: 6px 14px; }
   .module-intro-title { font-size: 12px; }
   .learn-favorite-pill-step { max-width: 140px; }
