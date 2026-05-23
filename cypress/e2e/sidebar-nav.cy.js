@@ -14,6 +14,7 @@ describe('Sidebar navigation', () => {
     cy.get('.sidebar-link[data-view="explore"]').should('exist');
     cy.get('.sidebar-link[data-view="compose"]').should('exist');
     cy.get('.sidebar-link[data-view="learn"]').should('exist');
+    cy.get('.sidebar-link[data-view="practice"]').should('exist');
   });
 
   it('navigates between views via hash routing', () => {

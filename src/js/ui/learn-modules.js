@@ -1497,30 +1497,9 @@ export const MODULES = [
       },
     ],
   },
-  // ================= WALKING BASS — BONUS GENERATOR =================
-  {
-    id: 'walking-bass-generator',
-    group: 'Walking Bass',
-    tag: 'Bass · Bonus',
-    title: 'Bonus — Walking-Bass Generator',
-    summary: 'Pick a key, a progression and a seed — get an infinite supply of walking-bass studies, with chord symbols on the staff.',
-    steps: [
-      {
-        type: 'theory',
-        title: 'A practice machine',
-        text: `Use this to drill walking-bass over real changes. Pick a <strong>key</strong>, a <strong>tempo</strong> and a <strong>chord progression</strong>; the generator builds a line that lands on the chord root every bar and fills beats 2-4 with chord tones, scale tones and chromatic approach. The <strong>seed</strong> makes results reproducible: same seed + same inputs = same line, every time. Press <em>Roll a new seed</em> for fresh material.`,
-        references: [
-          "Hal Galper's bass-line studies",
-          'Mike Richmond, Modern Walking Bass',
-        ],
-      },
-      {
-        type: 'generator',
-        title: 'Generate a walking line',
-        description: 'Tweak the controls; the staff redraws. Chord symbols sit above each bar.',
-      },
-    ],
-  },
+  // The walking-bass generator that used to live here moved to the Practice
+  // view (src/js/ui/practice-studies.js → "walking-bass-workout"). Learn keeps
+  // the conceptual modules; Practice keeps the open-ended generators.
   // ================= READING =================
   {
     id: 'reading-rhythms',

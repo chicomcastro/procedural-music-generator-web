@@ -24,6 +24,7 @@ import { initExploreView, stopExplorePlayback, refreshExplore } from './ui/Explo
 import { initRadioView, stopRadioPlayback, refreshRadio } from './ui/RadioView.js';
 import { initComposeView, stopComposePlayback } from './ui/ComposeView.js';
 import { initLearnView } from './ui/LearnView.js';
+import { initPracticeView } from './ui/PracticeView.js';
 import { initSettingsView } from './ui/SettingsView.js';
 import { initI18n } from './i18n/i18n.js';
 import { getMasterGain } from './audio/AudioEngine.js';
@@ -1271,6 +1272,7 @@ initExploreView({ audioApi, onLoadSeed: loadSeedIntoGenerator });
 initRadioView({ audioApi, onLoadSeed: loadSeedIntoGenerator });
 initComposeView({ onLoadSeed: loadSeedIntoGenerator, audioApi });
 initLearnView({ audioApi });
+initPracticeView({ audioApi });
 initSettingsView();
 
 onViewChange((view) => {

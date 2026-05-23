@@ -16,6 +16,7 @@ function buildSidebarDom() {
     <section id="view-explore" class="hidden"></section>
     <section id="view-radio" class="hidden"></section>
     <section id="view-compose" class="hidden"></section>
+    <section id="view-practice" class="hidden"></section>
     <section id="view-settings" class="hidden"></section>
     <div id="transport-bar"></div>
     <div id="piano-drawer"></div>

@@ -1,0 +1,544 @@
+// Practice view — long-form procedural study pieces. Each "study" is an
+// ordered list of acts; each act gets fed through the generator (melody +
+// counterpoint, or walking-bass) and the resulting events are concatenated
+// into one song that renders to OSMD as a single continuous score.
+//
+// The master-difficulty slider scales each act's baseline params (density,
+// chromatic %, tempo, etc.). Seed is reproducible — same seed + same params
+// always produces the same study.
+//
+// PR 1 scope: catalog, study player, two-voice invention + walking-bass
+// workout, master slider, key picker, seed reroll, audio playback, print
+// stylesheet (no per-act overrides yet — those land in PR 2).
+
+import { STUDIES, scaleParams, tonicName } from './practice-studies.js';
+import { getStudyField } from './practice-translations.js';
+import { mulberry32, randomSeed } from '../generate/rng.js';
+import { generateMelody } from '../generate/melody.js';
+import { generateCounterpoint } from '../generate/counterpoint.js';
+import { generateRhythm } from '../generate/rhythm.js';
+import { generateWalkingBass, progressionToChords } from '../generate/walking-bass.js';
+import { chordFromDegree, PROGRESSIONS } from '../theory/chords.js';
+import { songToMusicXML } from '../export/musicxml.js';
+import { t, onLangChange } from '../i18n/i18n.js';
+
+const STORAGE_KEY = 'seedsong-practice-prefs-v1';
+
+let audioApiRef = null;
+let activeStudy = null;
+let prefs = { studyId: null, byStudy: {} };
+// One OSMD instance per container — Practice owns its own.
+let osmdLoading = null;
+let practiceOSMD = null;
+let lastSong = null;            // most recent generated song (for playback)
+let lastBpm = 100;
+let playbackTimer = null;
+let scheduledNodes = [];
+
+// =============================================================================
+// Persistence
+
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') prefs = { studyId: parsed.studyId || null, byStudy: parsed.byStudy || {} };
+  } catch { /* ignore */ }
+}
+
+function savePrefs() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs)); } catch { /* ignore */ }
+}
+
+function getStudyPrefs(studyId) {
+  if (!prefs.byStudy[studyId]) {
+    const study = STUDIES.find(s => s.id === studyId);
+    prefs.byStudy[studyId] = {
+      keyPc: study?.keyOptions?.[0] ?? 0,
+      difficulty: 50,
+      seed: randomSeed(),
+    };
+  }
+  return prefs.byStudy[studyId];
+}
+
+// =============================================================================
+// OSMD wiring
+
+function loadOSMD() {
+  if (window.opensheetmusicdisplay) return Promise.resolve();
+  if (osmdLoading) return osmdLoading;
+  osmdLoading = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/opensheetmusicdisplay@1.8.6/build/opensheetmusicdisplay.min.js';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load OSMD'));
+    document.head.appendChild(script);
+  });
+  return osmdLoading;
+}
+
+async function renderSheet(xml) {
+  const container = document.getElementById('practice-sheet');
+  if (!container) return;
+  container.setAttribute('aria-busy', 'true');
+  try {
+    await loadOSMD();
+    if (!window.opensheetmusicdisplay) throw new Error('OSMD not available');
+    if (!practiceOSMD || practiceOSMD.container !== container) {
+      practiceOSMD = new window.opensheetmusicdisplay.OpenSheetMusicDisplay(container, {
+        autoResize: true,
+        drawTitle: false,
+        drawComposer: false,
+        drawSubtitle: false,
+        drawCredits: false,
+        drawPartNames: false,
+        drawingParameters: 'compact',
+        backend: 'svg',
+        renderSingleHorizontalStaffline: false,
+      });
+      practiceOSMD.container = container;
+    }
+    await practiceOSMD.load(xml);
+    requestAnimationFrame(() => {
+      try {
+        const w = container.clientWidth;
+        practiceOSMD.zoom = w < 500 ? 0.7 : w < 720 ? 0.85 : 1.0;
+        practiceOSMD.render();
+      } catch (err) {
+        container.innerHTML = `<p class="practice-sheet-fallback">Sheet music unavailable: ${err.message || err}</p>`;
+      }
+    });
+  } catch {
+    container.innerHTML = `<p class="practice-sheet-fallback">Sheet music unavailable.</p>`;
+  } finally {
+    container.setAttribute('aria-busy', 'false');
+  }
+}
+
+// =============================================================================
+// Generation — two-voice counterpoint
+
+function buildTwoVoiceSong(study, opts) {
+  const { keyPc, seed, difficulty } = opts;
+  const beatsPerBar = 4;
+  const events = [];
+  let accumulatedBeats = 0;
+  let actBpm = null;
+
+  for (let i = 0; i < study.acts.length; i++) {
+    const act = study.acts[i];
+    const p = scaleParams(act.params, difficulty / 100);
+    const actSeed = seed + i * 1000003;
+    const rng = mulberry32(actSeed);
+
+    const actTonicPc = (keyPc + (act.keyShift || 0)) % 12;
+    const tonicMidi = 60 + actTonicPc;  // anchor at C4-ish
+    const scale = act.params.scale || 'major';
+
+    // Build the progression: PROGRESSIONS[name] is a degree array.
+    const degrees = PROGRESSIONS[act.progression] || PROGRESSIONS.pop;
+    const beatsPerChord = (act.bars * beatsPerBar) / degrees.length;
+    const progression = degrees.map((deg, idx) => {
+      const notes = chordFromDegree(tonicMidi, scale, deg);
+      return {
+        startBeat: idx * beatsPerChord,
+        durationBeats: beatsPerChord,
+        notes,
+      };
+    });
+
+    // Rhythm + voice 1 (top) + voice 2 (counter).
+    const rhythm = generateRhythm(rng, {
+      bars: act.bars,
+      beatsPerBar,
+      density: p.density,
+      swing: 0,
+    });
+    const v1 = generateMelody(rng, {
+      progression,
+      rhythm,
+      scale,
+      tonic: tonicMidi,
+      contour: p.contour || 'auto',
+    });
+    const v2 = generateCounterpoint(rng, {
+      melody: v1,
+      scale,
+      tonic: tonicMidi,
+      mode: 'free',
+      independence: p.independence ?? 0.5,
+      bars: act.bars,
+      beatsPerBar,
+      density: p.density,
+    });
+
+    for (const ev of v1) {
+      events.push({
+        type: 'melody',
+        midi: ev.midi,
+        atBeat: accumulatedBeats + ev.atBeat,
+        durationBeats: ev.durationBeats,
+        velocity: ev.velocity ?? 0.7,
+      });
+    }
+    for (const ev of v2) {
+      events.push({
+        type: 'melody2',
+        midi: ev.midi,
+        atBeat: accumulatedBeats + ev.atBeat,
+        durationBeats: ev.durationBeats,
+        velocity: ev.velocity ?? 0.6,
+      });
+    }
+
+    accumulatedBeats += act.bars * beatsPerBar;
+    // Use the first act's tempo for transport. (Per-act tempo can land in PR 2
+    // alongside per-act overrides — OSMD supports tempo changes mid-score.)
+    if (actBpm == null) actBpm = p.tempo || 90;
+  }
+
+  return {
+    bars: accumulatedBeats / beatsPerBar,
+    beatsPerBar,
+    lengthBeats: accumulatedBeats,
+    events,
+    bpm: actBpm,
+  };
+}
+
+// Generation — walking-bass workout
+
+function buildWalkingBassSong(study, opts) {
+  const { keyPc, seed, difficulty } = opts;
+  const beatsPerBar = 4;
+  const events = [];
+  let accumulatedBeats = 0;
+  let actBpm = null;
+
+  for (let i = 0; i < study.acts.length; i++) {
+    const act = study.acts[i];
+    const p = scaleParams(act.params, difficulty / 100);
+    const actTonicPc = (keyPc + (act.keyShift || 0)) % 12;
+    const chords = progressionToChords(act.progression, actTonicPc);
+
+    // Repeat the chord cycle to fill the act's bar count.
+    const repeats = Math.max(1, Math.ceil(act.bars / chords.length));
+    const expanded = [];
+    for (let r = 0; r < repeats; r++) expanded.push(...chords);
+    const slice = expanded.slice(0, act.bars);
+
+    const { notes } = generateWalkingBass({
+      seed: seed + i * 7919,
+      tonicPc: actTonicPc,
+      scale: act.params.scale || 'natural_minor',
+      chords: slice,
+      bassMidi: 40,
+    });
+
+    // 4 quarter notes per bar.
+    for (let j = 0; j < notes.length; j++) {
+      events.push({
+        type: 'bass',
+        midi: notes[j],
+        atBeat: accumulatedBeats + j,
+        durationBeats: 1,
+        velocity: 0.75,
+      });
+    }
+
+    accumulatedBeats += act.bars * beatsPerBar;
+    if (actBpm == null) actBpm = p.tempo || 100;
+  }
+
+  return {
+    bars: accumulatedBeats / beatsPerBar,
+    beatsPerBar,
+    lengthBeats: accumulatedBeats,
+    events,
+    bpm: actBpm,
+  };
+}
+
+function buildSong(study, opts) {
+  if (study.kind === 'two-voice-counterpoint') return buildTwoVoiceSong(study, opts);
+  if (study.kind === 'walking-bass-workout') return buildWalkingBassSong(study, opts);
+  throw new Error(`Unknown study kind: ${study.kind}`);
+}
+
+// =============================================================================
+// Catalog rendering
+
+function renderCatalog() {
+  const root = document.getElementById('practice-catalog');
+  if (!root) return;
+  root.innerHTML = '';
+  for (const study of STUDIES) {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'practice-card';
+    card.dataset.id = study.id;
+
+    const eyebrow = document.createElement('span');
+    eyebrow.className = 'practice-card-eyebrow';
+    eyebrow.textContent = getStudyField(study, 'eyebrow');
+
+    const title = document.createElement('h3');
+    title.className = 'practice-card-title';
+    title.textContent = getStudyField(study, 'title');
+
+    const summary = document.createElement('p');
+    summary.className = 'practice-card-summary';
+    summary.textContent = getStudyField(study, 'summary');
+
+    const cta = document.createElement('span');
+    cta.className = 'practice-card-cta';
+    cta.textContent = t('practice.open', 'Open');
+
+    card.appendChild(eyebrow);
+    card.appendChild(title);
+    card.appendChild(summary);
+    card.appendChild(cta);
+    card.addEventListener('click', () => openStudy(study.id));
+    root.appendChild(card);
+  }
+}
+
+// =============================================================================
+// Study player
+
+function openStudy(studyId) {
+  const study = STUDIES.find(s => s.id === studyId);
+  if (!study) return;
+  activeStudy = study;
+  prefs.studyId = studyId;
+  savePrefs();
+  populateControls();
+  document.getElementById('practice-study-eyebrow').textContent = getStudyField(study, 'eyebrow');
+  document.getElementById('practice-study-title').textContent = getStudyField(study, 'title');
+  document.getElementById('practice-study-desc').textContent = getStudyField(study, 'summary');
+  renderActRail();
+  document.getElementById('practice-study-overlay').classList.remove('hidden');
+  document.body.classList.add('practice-overlay-open');
+  regenerate();
+}
+
+function closeStudy() {
+  stopPlayback();
+  document.getElementById('practice-study-overlay').classList.add('hidden');
+  document.body.classList.remove('practice-overlay-open');
+  activeStudy = null;
+}
+
+function populateControls() {
+  if (!activeStudy) return;
+  const studyPrefs = getStudyPrefs(activeStudy.id);
+
+  const keySel = document.getElementById('practice-key');
+  keySel.innerHTML = '';
+  for (const pc of activeStudy.keyOptions) {
+    const opt = document.createElement('option');
+    opt.value = String(pc);
+    opt.textContent = tonicName(pc);
+    if (pc === studyPrefs.keyPc) opt.selected = true;
+    keySel.appendChild(opt);
+  }
+
+  const diff = document.getElementById('practice-difficulty');
+  diff.value = String(studyPrefs.difficulty);
+  document.getElementById('practice-difficulty-display').textContent = `${studyPrefs.difficulty}%`;
+
+  document.getElementById('practice-seed').value = String(studyPrefs.seed);
+  updateControlsInfo();
+}
+
+function updateControlsInfo() {
+  if (!activeStudy) return;
+  const sp = getStudyPrefs(activeStudy.id);
+  const info = document.getElementById('practice-controls-info');
+  if (info) info.textContent = `${tonicName(sp.keyPc)} · ${sp.difficulty}% · seed ${sp.seed}`;
+}
+
+function renderActRail() {
+  if (!activeStudy) return;
+  const rail = document.getElementById('practice-act-rail');
+  rail.innerHTML = '';
+  activeStudy.acts.forEach((act, idx) => {
+    const item = document.createElement('div');
+    item.className = 'practice-act-rail-item';
+    const dot = document.createElement('span');
+    dot.className = 'practice-act-rail-dot';
+    dot.textContent = String(idx + 1);
+    const label = document.createElement('span');
+    label.className = 'practice-act-rail-label';
+    label.textContent = act.title;
+    item.appendChild(dot);
+    item.appendChild(label);
+    rail.appendChild(item);
+  });
+}
+
+async function regenerate() {
+  if (!activeStudy) return;
+  const sp = getStudyPrefs(activeStudy.id);
+  updateControlsInfo();
+  const song = buildSong(activeStudy, sp);
+  lastSong = song;
+  lastBpm = song.bpm;
+  // Pick which track types to include based on the study clefs config.
+  const tracks = activeStudy.kind === 'two-voice-counterpoint'
+    ? ['melody', 'melody2']
+    : ['bass'];
+  const clefOverrides = {
+    melody: activeStudy.clefs[0],
+    melody2: activeStudy.clefs[1] || activeStudy.clefs[0],
+    bass: activeStudy.clefs[0],
+  };
+  const xml = songToMusicXML(song, { bpm: song.bpm, tracks, clefOverrides });
+  await renderSheet(xml);
+}
+
+// =============================================================================
+// Audio playback
+
+function midiToFreq(midi) {
+  return 440 * 2 ** ((midi - 69) / 12);
+}
+
+async function playSong() {
+  if (!lastSong || !audioApiRef) return;
+  await audioApiRef.ensureInit();
+  const ctx = audioApiRef.getContext();
+  if (!ctx) return;
+  const dest = audioApiRef.getMasterGain();
+  if (!dest) return;
+  stopPlayback();
+
+  const beatDuration = 60 / lastBpm;
+  const startAt = ctx.currentTime + 0.05;
+  for (const ev of lastSong.events) {
+    const when = startAt + ev.atBeat * beatDuration;
+    const dur = ev.durationBeats * beatDuration;
+    const osc = ctx.createOscillator();
+    osc.type = ev.type === 'bass' ? 'triangle' : 'sine';
+    osc.frequency.setValueAtTime(midiToFreq(ev.midi), when);
+    const gain = ctx.createGain();
+    const v = (ev.velocity || 0.7) * 0.4;
+    gain.gain.setValueAtTime(0, when);
+    gain.gain.linearRampToValueAtTime(v, when + 0.01);
+    gain.gain.linearRampToValueAtTime(0, when + dur);
+    osc.connect(gain);
+    gain.connect(dest);
+    osc.start(when);
+    osc.stop(when + dur + 0.05);
+    scheduledNodes.push(osc, gain);
+  }
+
+  const totalSec = lastSong.lengthBeats * beatDuration + 0.5;
+  const playBtn = document.getElementById('practice-play');
+  if (playBtn) playBtn.classList.add('is-playing');
+  playbackTimer = setTimeout(() => stopPlayback(), totalSec * 1000);
+  // tick the timer display
+  const startTs = performance.now();
+  const tick = () => {
+    if (!playbackTimer) return;
+    const elapsed = (performance.now() - startTs) / 1000;
+    const m = Math.floor(elapsed / 60);
+    const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
+    const t = document.getElementById('practice-playback-time');
+    if (t) t.textContent = `${m}:${s}`;
+    if (playbackTimer) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function stopPlayback() {
+  if (playbackTimer) { clearTimeout(playbackTimer); playbackTimer = null; }
+  for (const n of scheduledNodes) {
+    try { n.stop?.(); } catch { /* ignore */ }
+    try { n.disconnect(); } catch { /* ignore */ }
+  }
+  scheduledNodes = [];
+  const playBtn = document.getElementById('practice-play');
+  if (playBtn) playBtn.classList.remove('is-playing');
+  const t = document.getElementById('practice-playback-time');
+  if (t) t.textContent = '0:00';
+}
+
+// =============================================================================
+// Print / PDF
+
+function openPrintView() {
+  if (!activeStudy) return;
+  document.body.classList.add('practice-printing');
+  // Browsers handle the dialog; we remove the class on afterprint.
+  const cleanup = () => {
+    document.body.classList.remove('practice-printing');
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  window.print();
+}
+
+// =============================================================================
+// Init
+
+export function initPracticeView({ audioApi } = {}) {
+  audioApiRef = audioApi;
+  loadPrefs();
+  renderCatalog();
+
+  onLangChange(() => {
+    renderCatalog();
+    if (activeStudy) {
+      document.getElementById('practice-study-eyebrow').textContent = getStudyField(activeStudy, 'eyebrow');
+      document.getElementById('practice-study-title').textContent = getStudyField(activeStudy, 'title');
+      document.getElementById('practice-study-desc').textContent = getStudyField(activeStudy, 'summary');
+    }
+  });
+
+  document.getElementById('practice-study-close')?.addEventListener('click', closeStudy);
+  document.getElementById('practice-study-print')?.addEventListener('click', openPrintView);
+
+  document.getElementById('practice-key')?.addEventListener('change', (e) => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.keyPc = Number(e.target.value);
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-difficulty')?.addEventListener('input', (e) => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.difficulty = Number(e.target.value);
+    document.getElementById('practice-difficulty-display').textContent = `${sp.difficulty}%`;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-seed')?.addEventListener('change', (e) => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    const v = Number(e.target.value);
+    if (Number.isFinite(v)) {
+      sp.seed = v;
+      savePrefs();
+      regenerate();
+    }
+  });
+  document.getElementById('practice-reroll')?.addEventListener('click', () => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.seed = randomSeed();
+    document.getElementById('practice-seed').value = String(sp.seed);
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-play')?.addEventListener('click', () => {
+    if (playbackTimer) stopPlayback();
+    else playSong();
+  });
+}
+
+// For tests: expose pure helpers (the side-effectful init isn't tested directly).
+export const __test = { buildSong, scaleParams };
