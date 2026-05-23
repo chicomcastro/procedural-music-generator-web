@@ -73,8 +73,14 @@ describe('Practice view', () => {
   it('Walking-bass hides the rhythm picker and shows a clef option', () => {
     cy.get('.practice-card[data-id="walking-bass-workout"]').click();
     cy.get('#practice-controls').then(($d) => $d[0].open = true);
-    cy.get('#practice-clef').should('be.visible');
-    cy.get('#practice-rhythm-field').should('not.be.visible');
+    // Clef picker exists and has the bass-default option populated. Use
+    // value+option count instead of `be.visible` to avoid racing the
+    // details-open repaint.
+    cy.get('#practice-clef').should('have.value', 'bass');
+    cy.get('#practice-clef option').its('length').should('be.gte', 1);
+    // Rhythm field is hidden via inline style (populateControls sets
+    // display:'none' for studies without rhythmDefault).
+    cy.get('#practice-rhythm-field').should('have.css', 'display', 'none');
   });
 
   it('Play button remains visible after scrolling (sticky transport)', () => {
