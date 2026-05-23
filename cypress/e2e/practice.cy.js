@@ -1,0 +1,62 @@
+// Practice view smoke. Open the catalog, open a study, exercise the master
+// difficulty slider + reroll button. The two-voice invention is the flagship
+// study (the original use case: duet sight-reading with a practice partner).
+
+describe('Practice view', () => {
+  beforeEach(() => {
+    cy.clearLocalStorage();
+    cy.visit('/app.html', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem('seedsong-onboarding-done', '1');
+      },
+    });
+    cy.get('.sidebar-link[data-view="practice"]', { timeout: 8000 }).click({ force: true });
+    cy.get('#view-practice').should('not.have.class', 'hidden');
+  });
+
+  it('lists the studies in the catalog', () => {
+    cy.get('.practice-card').its('length').should('be.gte', 2);
+    cy.get('.practice-card[data-id="two-voice-invention"]').should('exist');
+    cy.get('.practice-card[data-id="walking-bass-workout"]').should('exist');
+  });
+
+  it('opens the two-voice invention with all 3 acts', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-study-overlay').should('not.have.class', 'hidden');
+    cy.get('#practice-study-title').should('contain', 'Two-voice Invention');
+    cy.get('.practice-act-rail-item').should('have.length', 3);
+  });
+
+  it('master difficulty slider updates the controls-info chip', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
+    cy.get('#practice-difficulty').invoke('val', 80).trigger('input');
+    cy.get('#practice-difficulty-display').should('have.text', '80%');
+    cy.get('#practice-controls-info').should('contain', '80%');
+  });
+
+  it('Roll-a-new-seed changes the seed input', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
+    cy.get('#practice-seed').invoke('val').then((before) => {
+      cy.get('#practice-reroll').click();
+      cy.get('#practice-seed').invoke('val').should('not.equal', before);
+    });
+  });
+
+  it('Close button returns to the catalog', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-study-close').click();
+    cy.get('#practice-study-overlay').should('have.class', 'hidden');
+  });
+
+  it('persists last study + prefs across reloads', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
+    cy.get('#practice-difficulty').invoke('val', 70).trigger('input');
+    cy.reload();
+    cy.get('.sidebar-link[data-view="practice"]').click({ force: true });
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-difficulty').should('have.value', '70');
+  });
+});

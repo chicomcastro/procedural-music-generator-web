@@ -40,14 +40,13 @@ describe('Mobile layout', () => {
     });
   });
 
-  it('Walking-bass generator panel uses a 2-column grid on mobile', () => {
+  it('Practice study controls use a 2-column grid on mobile', () => {
     cy.get('#sidebar-toggle').click();
-    cy.get('.sidebar-link[data-view="learn"]').click({ force: true });
-    cy.get('.learn-card[data-id="walking-bass-generator"]').click();
-    cy.get('.exercise-step-rail-item').eq(1).click();
-    cy.get('#generator-panel').should('not.have.attr', 'hidden');
-    // First two fields should sit on the same horizontal line (key + scale).
-    cy.get('.generator-field').then(($fields) => {
+    cy.get('.sidebar-link[data-view="practice"]').click({ force: true });
+    cy.get('.practice-card[data-id="walking-bass-workout"]').click();
+    cy.get('#practice-controls').then(($details) => $details[0].open = true);
+    // First two fields (key + difficulty) should sit on the same row on mobile.
+    cy.get('.practice-control').then(($fields) => {
       const a = $fields[0].getBoundingClientRect();
       const b = $fields[1].getBoundingClientRect();
       expect(Math.abs(a.top - b.top)).to.be.lte(2);

@@ -86,6 +86,8 @@ function buildMeasureAttributes(beatsPerBar, isDrum, clefSign) {
     xml += '          <clef>\n            <sign>percussion</sign>\n          </clef>\n';
   } else if (clefSign === 'F') {
     xml += '          <clef>\n            <sign>F</sign>\n            <line>4</line>\n          </clef>\n';
+  } else if (clefSign === 'C') {
+    xml += '          <clef>\n            <sign>C</sign>\n            <line>3</line>\n          </clef>\n';
   } else {
     xml += '          <clef>\n            <sign>G</sign>\n            <line>2</line>\n          </clef>\n';
   }
@@ -238,7 +240,18 @@ function fillRestGap(gapBeats) {
  * @param {{ bpm?: number, tracks?: string[] }} [opts]
  * @returns {string} MusicXML document string
  */
-export function songToMusicXML(song, { bpm = 120, tracks: trackFilter } = {}) {
+// Optional `clefOverrides` is a `{ [partType]: 'G'|'F'|'C'|'treble'|'bass'|'alto' }`
+// map. Anything missing falls back to detectClef. Friendly aliases ('treble',
+// 'bass', 'alto') are normalised to the MusicXML letter codes.
+function normaliseClef(sign) {
+  if (!sign) return null;
+  if (sign === 'treble') return 'G';
+  if (sign === 'bass') return 'F';
+  if (sign === 'alto' || sign === 'tenor') return 'C';
+  return sign;
+}
+
+export function songToMusicXML(song, { bpm = 120, tracks: trackFilter, clefOverrides } = {}) {
   const allPartDefs = [
     { id: 'P1', name: 'Melody',   type: 'melody',  drum: false },
     { id: 'P5', name: 'Melody 2', type: 'melody2', drum: false },
@@ -282,7 +295,8 @@ export function songToMusicXML(song, { bpm = 120, tracks: trackFilter } = {}) {
   for (let i = 0; i < partDefs.length; i++) {
     const part = partDefs[i];
     const partEvents = eventsByType[part.type] || [];
-    const clefSign = part.drum ? 'percussion' : detectClef(partEvents);
+    const override = normaliseClef(clefOverrides?.[part.type]);
+    const clefSign = part.drum ? 'percussion' : (override || detectClef(partEvents));
     xml += `  <part id="${part.id}">\n`;
     xml += buildPartMeasures(partEvents, beatsPerBar, totalBars, part.drum, bpm, i === 0, clefSign);
     xml += '  </part>\n';

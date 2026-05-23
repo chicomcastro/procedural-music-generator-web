@@ -1,9 +1,8 @@
-// Regression: the walking-bass generator's Play button used to be a no-op
-// because the click handler only ran for step.type === 'exercise'. The fix
-// extended it to handle 'generator' steps too. This spec confirms the play
-// button flips into the playing state when clicked on the generator step.
+// Walking-bass workout — moved from Learn (where it was the
+// "walking-bass-generator" bonus module) to the Practice view as a
+// multi-act study. This spec replaces the old Learn-side regression test.
 
-describe('Walking-bass generator', () => {
+describe('Walking-bass workout (Practice)', () => {
   beforeEach(() => {
     cy.clearLocalStorage();
     cy.visit('/app.html', {
@@ -11,41 +10,38 @@ describe('Walking-bass generator', () => {
         win.localStorage.setItem('seedsong-onboarding-done', '1');
       },
     });
-    cy.get('.sidebar-link[data-view="learn"]', { timeout: 8000 }).click();
-    cy.get('#view-learn').should('not.have.class', 'hidden');
-    cy.get('.learn-card[data-id="walking-bass-generator"]', { timeout: 8000 }).click();
-    cy.get('#learn-exercise-overlay').should('not.have.class', 'hidden');
-    // Step 0 is theory; the generator UI lives on step 1.
-    cy.get('.exercise-step-rail-item').eq(1).click();
-    cy.get('#generator-panel').should('not.have.attr', 'hidden');
+    cy.get('.sidebar-link[data-view="practice"]', { timeout: 8000 }).click({ force: true });
+    cy.get('#view-practice').should('not.have.class', 'hidden');
+    cy.get('.practice-card[data-id="walking-bass-workout"]').click();
+    cy.get('#practice-study-overlay').should('not.have.class', 'hidden');
   });
 
-  it('renders the generator controls', () => {
-    cy.get('#generator-tonic').should('exist');
-    cy.get('#generator-scale').should('exist');
-    cy.get('#generator-progression').should('exist');
-    cy.get('#generator-tempo').should('exist');
-    cy.get('#generator-seed').should('exist');
-    cy.get('#generator-reroll').should('exist');
+  it('renders the study controls', () => {
+    cy.get('#practice-key').should('exist');
+    cy.get('#practice-difficulty').should('exist');
+    cy.get('#practice-seed').should('exist');
+    cy.get('#practice-reroll').should('exist');
+    cy.get('#practice-play').should('exist');
+  });
+
+  it('shows the 3 acts in the rail', () => {
+    cy.get('.practice-act-rail-item').should('have.length', 3);
   });
 
   it('Play button toggles into the playing state on click', () => {
-    cy.get('#exercise-play').click();
-    cy.get('#exercise-play').should('have.class', 'is-playing');
+    cy.get('#practice-play').click();
+    cy.get('#practice-play').should('have.class', 'is-playing');
   });
 
   it('Rolling a new seed updates the seed input', () => {
-    cy.get('#generator-seed').invoke('val').then((before) => {
-      cy.get('#generator-reroll').click();
-      cy.get('#generator-seed').invoke('val').should('not.equal', before);
+    cy.get('#practice-seed').invoke('val').then((before) => {
+      cy.get('#practice-reroll').click();
+      cy.get('#practice-seed').invoke('val').should('not.equal', before);
     });
   });
 
-  it('Changing the progression triggers a re-render', () => {
-    // The sheet container should remain present and the panel should still
-    // be visible after switching the dropdown. (We can't easily assert the
-    // SVG re-rendered since OSMD loads from a CDN that may be slow in CI.)
-    cy.get('#generator-progression').select('12-bar-blues');
-    cy.get('#generator-panel').should('not.have.attr', 'hidden');
+  it('Changing the key updates the controls info', () => {
+    cy.get('#practice-key').select('5');  // F
+    cy.get('#practice-controls-info').should('contain', 'F');
   });
 });
