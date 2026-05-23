@@ -6,12 +6,34 @@
 //   id: stable identifier for storage / hash routing
 //   kind: 'two-voice-counterpoint' | 'walking-bass-workout'
 //   title / summary / category: display strings (EN; PT/ES live in practice-translations.js)
-//   clefs: [string, string?] — clef per voice ('treble' | 'bass' | 'alto')
+//   clefPresets: ordered list of { id, label, voices: [clef, clef?] } —
+//                rendered as a dropdown; first entry is the default.
+//   rhythmPresets (counterpoint only): density/template overrides per style.
 //   acts: ordered list of { id, title, bars, key, progression, params }
 //
 // `params` is what gets fed to the generator after the master-difficulty
 // scaling. Each kind has its own param shape; PracticeView dispatches on
 // study.kind to pick the right generator + renderer.
+
+// Tessitura per clef — anchor MIDI used as the lowest note of the voice's
+// comfortable range. Treble centres around C4-C6, alto around C3-C5, bass
+// around C2-C4. These align with the standard instrument ranges (cello in
+// bass clef, viola in alto, violin in treble).
+export const CLEF_ANCHORS = {
+  treble: 60,  // C4 — top of the staff sits around F5
+  alto: 53,    // F3 — middle line is C4
+  bass: 41,    // F2 — middle line is D3, comfortable for cello / bassoon
+};
+
+// Rhythm presets for the two-voice invention. Map to generateRhythm's
+// density + template knobs. "Square" is the new default — half notes,
+// dotted quarters, occasional eighths; suitable for first-read duet.
+export const RHYTHM_PRESETS = {
+  square:     { label: 'Square',     density: 0.30, template: 'sparse' },
+  walking:    { label: 'Walking',    density: 0.55, template: 'straight' },
+  flowing:    { label: 'Flowing',    density: 0.75, template: 'straight' },
+  syncopated: { label: 'Syncopated', density: 0.85, template: 'syncopated' },
+};
 
 export const STUDIES = [
   {
@@ -21,7 +43,14 @@ export const STUDIES = [
     title: 'Two-voice Invention',
     summary: 'Three movements of melody-plus-counterpoint, in the Bach inventions tradition. Adjust difficulty per act or with the master slider.',
     eyebrow: 'Counterpoint · 3 acts',
-    clefs: ['treble', 'treble'],
+    // Default: cello duo (Bass + Bass). Configurable via the picker.
+    clefPresets: [
+      { id: 'bass-bass',     label: 'Bass + Bass (cello duo)',     voices: ['bass', 'bass'] },
+      { id: 'treble-bass',   label: 'Treble + Bass',               voices: ['treble', 'bass'] },
+      { id: 'treble-treble', label: 'Treble + Treble',             voices: ['treble', 'treble'] },
+      { id: 'alto-bass',     label: 'Alto + Bass (viola + cello)', voices: ['alto', 'bass'] },
+    ],
+    rhythmDefault: 'square',
     // Default key picker shows these tonic options (pitch class 0-11).
     keyOptions: [0, 2, 5, 7, 9],  // C, D, F, G, A — friendly for strings + piano
     acts: [
@@ -76,7 +105,10 @@ export const STUDIES = [
     title: 'Walking-Bass Workout',
     summary: 'Three acts of walking-bass over real changes — escalating tempo and harmonic density. Same study, infinite variations.',
     eyebrow: 'Bass · 3 acts',
-    clefs: ['bass'],
+    clefPresets: [
+      { id: 'bass',   label: 'Bass clef (default)', voices: ['bass'] },
+      { id: 'treble', label: 'Treble clef (octave-up)', voices: ['treble'] },
+    ],
     keyOptions: [0, 2, 3, 5, 7, 9, 10],
     acts: [
       {

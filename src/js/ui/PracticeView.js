@@ -11,13 +11,13 @@
 // workout, master slider, key picker, seed reroll, audio playback, print
 // stylesheet (no per-act overrides yet — those land in PR 2).
 
-import { STUDIES, scaleParams, tonicName } from './practice-studies.js';
+import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, RHYTHM_PRESETS } from './practice-studies.js';
 import { getStudyField } from './practice-translations.js';
 import { mulberry32, randomSeed } from '../generate/rng.js';
 import { generateMelody } from '../generate/melody.js';
 import { generateCounterpoint } from '../generate/counterpoint.js';
 import { generateRhythm } from '../generate/rhythm.js';
-import { generateWalkingBass, progressionToChords } from '../generate/walking-bass.js';
+import { generateWalkingBass, progressionToChords, chordSymbolFor } from '../generate/walking-bass.js';
 import { chordFromDegree, PROGRESSIONS } from '../theory/chords.js';
 import { songToMusicXML } from '../export/musicxml.js';
 import { t, onLangChange } from '../i18n/i18n.js';
@@ -52,15 +52,32 @@ function savePrefs() {
 }
 
 function getStudyPrefs(studyId) {
+  const study = STUDIES.find(s => s.id === studyId);
   if (!prefs.byStudy[studyId]) {
-    const study = STUDIES.find(s => s.id === studyId);
     prefs.byStudy[studyId] = {
       keyPc: study?.keyOptions?.[0] ?? 0,
       difficulty: 50,
       seed: randomSeed(),
+      clefPresetId: study?.clefPresets?.[0]?.id ?? null,
+      rhythmPresetId: study?.rhythmDefault ?? null,
     };
   }
-  return prefs.byStudy[studyId];
+  // Backfill new fields for users who already have a saved prefs blob from a
+  // previous build, so the picker doesn't show a blank option.
+  const p = prefs.byStudy[studyId];
+  if (study?.clefPresets && !study.clefPresets.find(c => c.id === p.clefPresetId)) {
+    p.clefPresetId = study.clefPresets[0]?.id ?? null;
+  }
+  if (study?.rhythmDefault && p.rhythmPresetId == null) {
+    p.rhythmPresetId = study.rhythmDefault;
+  }
+  return p;
+}
+
+function activeClefVoices(study, studyPrefs) {
+  const preset = study.clefPresets?.find(c => c.id === studyPrefs.clefPresetId)
+    || study.clefPresets?.[0];
+  return preset?.voices || ['treble'];
 }
 
 // =============================================================================
@@ -121,11 +138,21 @@ async function renderSheet(xml) {
 // Generation — two-voice counterpoint
 
 function buildTwoVoiceSong(study, opts) {
-  const { keyPc, seed, difficulty } = opts;
+  const { keyPc, seed, difficulty, clefVoices, rhythmPresetId } = opts;
   const beatsPerBar = 4;
   const events = [];
   let accumulatedBeats = 0;
   let actBpm = null;
+
+  // Per-voice tessitura anchor — keeps the line inside the chosen clef's
+  // staff so the sheet music doesn't drift onto ledger lines.
+  const [clef1, clef2 = clef1] = clefVoices || ['treble', 'treble'];
+  const anchor1 = CLEF_ANCHORS[clef1] ?? 60;
+  const anchor2 = CLEF_ANCHORS[clef2] ?? anchor1;
+
+  // Rhythm preset → density/template overrides. When set, this wins over
+  // the act's baseline density (which the master slider also influences).
+  const rhythmPreset = rhythmPresetId && RHYTHM_PRESETS[rhythmPresetId];
 
   for (let i = 0; i < study.acts.length; i++) {
     const act = study.acts[i];
@@ -134,14 +161,17 @@ function buildTwoVoiceSong(study, opts) {
     const rng = mulberry32(actSeed);
 
     const actTonicPc = (keyPc + (act.keyShift || 0)) % 12;
-    const tonicMidi = 60 + actTonicPc;  // anchor at C4-ish
+    const tonicMidi1 = anchor1 + actTonicPc;
+    const tonicMidi2 = anchor2 + actTonicPc;
     const scale = act.params.scale || 'major';
 
-    // Build the progression: PROGRESSIONS[name] is a degree array.
+    // Build the progression: PROGRESSIONS[name] is a degree array. Anchor
+    // chord roots to voice 1's tessitura so the harmonic context tracks
+    // the upper voice; the counterpoint is then placed relative to it.
     const degrees = PROGRESSIONS[act.progression] || PROGRESSIONS.pop;
     const beatsPerChord = (act.bars * beatsPerBar) / degrees.length;
     const progression = degrees.map((deg, idx) => {
-      const notes = chordFromDegree(tonicMidi, scale, deg);
+      const notes = chordFromDegree(tonicMidi1, scale, deg);
       return {
         startBeat: idx * beatsPerChord,
         durationBeats: beatsPerChord,
@@ -149,29 +179,34 @@ function buildTwoVoiceSong(study, opts) {
       };
     });
 
-    // Rhythm + voice 1 (top) + voice 2 (counter).
+    // Rhythm preset wins over the slider-scaled density. The master slider
+    // still nudges things via chromaticPct + tempo + independence.
+    const rhythmDensity = rhythmPreset ? rhythmPreset.density : p.density;
+    const rhythmTemplate = rhythmPreset ? rhythmPreset.template : 'auto';
+
     const rhythm = generateRhythm(rng, {
       bars: act.bars,
       beatsPerBar,
-      density: p.density,
+      density: rhythmDensity,
       swing: 0,
+      template: rhythmTemplate,
     });
     const v1 = generateMelody(rng, {
       progression,
       rhythm,
       scale,
-      tonic: tonicMidi,
+      tonic: tonicMidi1,
       contour: p.contour || 'auto',
     });
     const v2 = generateCounterpoint(rng, {
       melody: v1,
       scale,
-      tonic: tonicMidi,
+      tonic: tonicMidi2,
       mode: 'free',
       independence: p.independence ?? 0.5,
       bars: act.bars,
       beatsPerBar,
-      density: p.density,
+      density: rhythmDensity,
     });
 
     for (const ev of v1) {
@@ -211,11 +246,18 @@ function buildTwoVoiceSong(study, opts) {
 // Generation — walking-bass workout
 
 function buildWalkingBassSong(study, opts) {
-  const { keyPc, seed, difficulty } = opts;
+  const { keyPc, seed, difficulty, clefVoices } = opts;
   const beatsPerBar = 4;
   const events = [];
+  const chordSymbols = [];   // indexed by bar — one symbol per bar
   let accumulatedBeats = 0;
   let actBpm = null;
+
+  // When the user picks treble clef we move the generated bassline up an
+  // octave so the notes sit in the treble staff (cellists reading up,
+  // viola etc.). Otherwise stick with the original cello-friendly range.
+  const clef = clefVoices?.[0] || 'bass';
+  const bassMidi = clef === 'treble' ? 52 : 40;
 
   for (let i = 0; i < study.acts.length; i++) {
     const act = study.acts[i];
@@ -234,7 +276,7 @@ function buildWalkingBassSong(study, opts) {
       tonicPc: actTonicPc,
       scale: act.params.scale || 'natural_minor',
       chords: slice,
-      bassMidi: 40,
+      bassMidi,
     });
 
     // 4 quarter notes per bar.
@@ -248,6 +290,12 @@ function buildWalkingBassSong(study, opts) {
       });
     }
 
+    // One chord symbol per bar; songToMusicXML renders these as <harmony>
+    // tags above the staff.
+    for (let b = 0; b < slice.length; b++) {
+      chordSymbols.push(chordSymbolFor(slice[b]));
+    }
+
     accumulatedBeats += act.bars * beatsPerBar;
     if (actBpm == null) actBpm = p.tempo || 100;
   }
@@ -257,6 +305,7 @@ function buildWalkingBassSong(study, opts) {
     beatsPerBar,
     lengthBeats: accumulatedBeats,
     events,
+    chordSymbols,
     bpm: actBpm,
   };
 }
@@ -345,6 +394,41 @@ function populateControls() {
     keySel.appendChild(opt);
   }
 
+  // Clef preset picker — populated from the study's clefPresets list.
+  const clefSel = document.getElementById('practice-clef');
+  const clefField = document.getElementById('practice-clef-field');
+  if (clefSel && activeStudy.clefPresets?.length) {
+    clefSel.innerHTML = '';
+    for (const preset of activeStudy.clefPresets) {
+      const opt = document.createElement('option');
+      opt.value = preset.id;
+      opt.textContent = preset.label;
+      if (preset.id === studyPrefs.clefPresetId) opt.selected = true;
+      clefSel.appendChild(opt);
+    }
+    if (clefField) clefField.style.display = '';
+  } else if (clefField) {
+    clefField.style.display = 'none';
+  }
+
+  // Rhythm preset picker — only shown for studies that declared rhythm presets
+  // (currently the two-voice invention; walking-bass has its own rhythm logic).
+  const rhythmSel = document.getElementById('practice-rhythm');
+  const rhythmField = document.getElementById('practice-rhythm-field');
+  if (rhythmSel && activeStudy.rhythmDefault) {
+    rhythmSel.innerHTML = '';
+    for (const [id, preset] of Object.entries(RHYTHM_PRESETS)) {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = preset.label;
+      if (id === studyPrefs.rhythmPresetId) opt.selected = true;
+      rhythmSel.appendChild(opt);
+    }
+    if (rhythmField) rhythmField.style.display = '';
+  } else if (rhythmField) {
+    rhythmField.style.display = 'none';
+  }
+
   const diff = document.getElementById('practice-difficulty');
   diff.value = String(studyPrefs.difficulty);
   document.getElementById('practice-difficulty-display').textContent = `${studyPrefs.difficulty}%`;
@@ -357,7 +441,15 @@ function updateControlsInfo() {
   if (!activeStudy) return;
   const sp = getStudyPrefs(activeStudy.id);
   const info = document.getElementById('practice-controls-info');
-  if (info) info.textContent = `${tonicName(sp.keyPc)} · ${sp.difficulty}% · seed ${sp.seed}`;
+  if (!info) return;
+  const pieces = [tonicName(sp.keyPc), `${sp.difficulty}%`];
+  const preset = activeStudy.clefPresets?.find(c => c.id === sp.clefPresetId);
+  if (preset) pieces.push(preset.voices.join('+'));
+  if (sp.rhythmPresetId && activeStudy.rhythmDefault) {
+    pieces.push(RHYTHM_PRESETS[sp.rhythmPresetId]?.label || sp.rhythmPresetId);
+  }
+  pieces.push(`seed ${sp.seed}`);
+  info.textContent = pieces.join(' · ');
 }
 
 function renderActRail() {
@@ -383,19 +475,25 @@ async function regenerate() {
   if (!activeStudy) return;
   const sp = getStudyPrefs(activeStudy.id);
   updateControlsInfo();
-  const song = buildSong(activeStudy, sp);
+  const clefVoices = activeClefVoices(activeStudy, sp);
+  const song = buildSong(activeStudy, { ...sp, clefVoices });
   lastSong = song;
   lastBpm = song.bpm;
-  // Pick which track types to include based on the study clefs config.
+  // Pick which track types to include based on the study kind.
   const tracks = activeStudy.kind === 'two-voice-counterpoint'
     ? ['melody', 'melody2']
     : ['bass'];
   const clefOverrides = {
-    melody: activeStudy.clefs[0],
-    melody2: activeStudy.clefs[1] || activeStudy.clefs[0],
-    bass: activeStudy.clefs[0],
+    melody: clefVoices[0],
+    melody2: clefVoices[1] || clefVoices[0],
+    bass: clefVoices[0],
   };
-  const xml = songToMusicXML(song, { bpm: song.bpm, tracks, clefOverrides });
+  const xml = songToMusicXML(song, {
+    bpm: song.bpm,
+    tracks,
+    clefOverrides,
+    chordSymbols: song.chordSymbols,
+  });
   await renderSheet(xml);
 }
 
@@ -505,6 +603,20 @@ export function initPracticeView({ audioApi } = {}) {
     if (!activeStudy) return;
     const sp = getStudyPrefs(activeStudy.id);
     sp.keyPc = Number(e.target.value);
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-clef')?.addEventListener('change', (e) => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.clefPresetId = e.target.value;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-rhythm')?.addEventListener('change', (e) => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.rhythmPresetId = e.target.value;
     savePrefs();
     regenerate();
   });

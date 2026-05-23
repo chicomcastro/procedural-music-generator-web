@@ -3,6 +3,7 @@ import { t, onLangChange } from '../i18n/i18n.js';
 import { getModuleField as mf, getStepField as sf, getStepArray as sfa } from './learn-translations.js';
 import { generateWalkingBass, progressionToChords } from '../generate/walking-bass.js';
 import { randomSeed } from '../generate/rng.js';
+import { harmonyTagFor, transposeChordSymbol, escapeText } from '../export/harmony.js';
 
 const PROGRESS_KEY = 'seedsong-learn-progress-v2';
 const GENERATOR_PREFS_KEY = 'seedsong-learn-generator-prefs';
@@ -430,76 +431,6 @@ function buildMusicXMLFor(step, opts) {
   </part-list>
   <part id="P1">${measuresXml}</part>
 </score-partwise>`;
-}
-
-// Build a MusicXML <harmony> element from a chord symbol like "Cm7" / "G7" /
-// "F#maj7" / "Bdim" / "C/E". OSMD renders these as chord names floating above
-// the staff. Returns '' for unparseable input so the staff still renders.
-// `offsetDivisions` shifts the chord forward from the start of the measure —
-// used when a bar contains more than one chord.
-function harmonyTagFor(symbol, offsetDivisions = 0) {
-  if (!symbol || typeof symbol !== 'string') return '';
-  // Split off an optional slash-bass (e.g. "C/E" → root "C", bass "E").
-  const slash = symbol.split('/');
-  const head = slash[0];
-  const bassPart = slash[1];
-  const m = head.match(/^([A-G])([#b]?)(.*)$/);
-  if (!m) return '';
-  const stepLetter = m[1];
-  const alter = m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0;
-  const tail = (m[3] || '').toLowerCase();
-  let kind = 'major';
-  if (tail === '' || tail === 'maj') kind = 'major';
-  else if (tail === 'm' || tail === 'min') kind = 'minor';
-  else if (tail === '7') kind = 'dominant';
-  else if (tail === 'maj7' || tail === 'M7') kind = 'major-seventh';
-  else if (tail === 'm7' || tail === 'min7') kind = 'minor-seventh';
-  else if (tail === 'dim' || tail === '°') kind = 'diminished';
-  else if (tail === 'sus' || tail === 'sus4') kind = 'suspended-fourth';
-  else kind = 'major';
-  const alterTag = alter !== 0 ? `<root-alter>${alter}</root-alter>` : '';
-  let bassXml = '';
-  if (bassPart) {
-    const bm = bassPart.match(/^([A-G])([#b]?)/);
-    if (bm) {
-      const bAlter = bm[2] === '#' ? 1 : bm[2] === 'b' ? -1 : 0;
-      const bAlterTag = bAlter !== 0 ? `<bass-alter>${bAlter}</bass-alter>` : '';
-      bassXml = `<bass><bass-step>${bm[1]}</bass-step>${bAlterTag}</bass>`;
-    }
-  }
-  const offsetXml = offsetDivisions > 0 ? `<offset>${offsetDivisions}</offset>` : '';
-  return `<harmony><root><root-step>${stepLetter}</root-step>${alterTag}</root><kind text="${escapeText(symbol)}">${kind}</kind>${bassXml}${offsetXml}</harmony>`;
-}
-
-function escapeText(s) {
-  return String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
-}
-
-// Shift a chord symbol's root by `semitones`. Keeps the suffix ("m7", "7", …)
-// intact and chooses an enharmonic spelling biased toward the original
-// accidental (flat originals stay flat-ish after positive shifts).
-const PITCH_PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-const PC_TO_NAME_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-const PC_TO_NAME_FLAT  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-function transposeChordSymbol(symbol, semitones) {
-  if (!symbol || typeof symbol !== 'string') return symbol;
-  // Split slash chords so both root and bass get shifted.
-  const [headRaw, bassRaw] = symbol.split('/');
-  const shiftOne = (s) => {
-    const m = s.match(/^([A-G])([#b]?)(.*)$/);
-    if (!m) return s;
-    const root = PITCH_PC[m[1]];
-    if (root == null) return s;
-    const alter = m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0;
-    const tail = m[3] || '';
-    const pc = ((root + alter + semitones) % 12 + 12) % 12;
-    const useFlats = m[2] === 'b' || (m[2] === '' && semitones < 0);
-    const name = (useFlats ? PC_TO_NAME_FLAT : PC_TO_NAME_SHARP)[pc];
-    return `${name}${tail}`;
-  };
-  const head = shiftOne(headRaw);
-  const bass = bassRaw ? shiftOne(bassRaw) : null;
-  return bass ? `${head}/${bass}` : head;
 }
 
 /* ---- Theory diagrams ---- */

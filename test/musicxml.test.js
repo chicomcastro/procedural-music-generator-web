@@ -75,4 +75,42 @@ describe('songToMusicXML', () => {
     const xml = songToMusicXML(makeSong());
     expect(xml).toMatch(/percussion/);
   });
+
+  it('overrides clefs per part type when clefOverrides is provided', () => {
+    const xml = songToMusicXML(makeSong(), {
+      tracks: ['melody'],
+      clefOverrides: { melody: 'bass' },
+    });
+    expect(xml).toMatch(/<sign>F<\/sign>/);
+    expect(xml).not.toMatch(/<sign>G<\/sign>/);
+  });
+
+  it('accepts alto clef via friendly aliases', () => {
+    const xml = songToMusicXML(makeSong(), {
+      tracks: ['melody'],
+      clefOverrides: { melody: 'alto' },
+    });
+    expect(xml).toMatch(/<sign>C<\/sign>/);
+  });
+
+  it('emits <harmony> tags from chordSymbols, one per bar in the first part', () => {
+    const xml = songToMusicXML(makeSong({ bars: 2, lengthBeats: 8 }), {
+      tracks: ['melody'],
+      chordSymbols: ['C', 'G7'],
+    });
+    const harmony = xml.match(/<harmony>/g) || [];
+    expect(harmony.length).toBe(2);
+    expect(xml).toMatch(/text="C"/);
+    expect(xml).toMatch(/text="G7"/);
+    expect(xml).toMatch(/dominant/);
+  });
+
+  it('omits <harmony> in non-first parts so OSMD only draws labels once', () => {
+    const xml = songToMusicXML(makeSong(), {
+      tracks: ['melody', 'bass'],
+      chordSymbols: ['C', 'G'],
+    });
+    const bassPart = xml.match(/<part id="P3">[\s\S]*?<\/part>/);
+    if (bassPart) expect(bassPart[0]).not.toMatch(/<harmony>/);
+  });
 });

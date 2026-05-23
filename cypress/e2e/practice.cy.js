@@ -59,4 +59,33 @@ describe('Practice view', () => {
     cy.get('.practice-card[data-id="two-voice-invention"]').click();
     cy.get('#practice-difficulty').should('have.value', '70');
   });
+
+  it('Two-voice invention exposes clef + rhythm pickers; defaults to Bass+Bass / Square', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
+    cy.get('#practice-clef').should('have.value', 'bass-bass');
+    cy.get('#practice-rhythm').should('have.value', 'square');
+    // Switch clef → controls-info chip reflects the change
+    cy.get('#practice-clef').select('treble-bass');
+    cy.get('#practice-controls-info').should('contain', 'treble+bass');
+  });
+
+  it('Walking-bass hides the rhythm picker and shows a clef option', () => {
+    cy.get('.practice-card[data-id="walking-bass-workout"]').click();
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
+    // Clef picker exists and has the bass-default option populated. Use
+    // value+option count instead of `be.visible` to avoid racing the
+    // details-open repaint.
+    cy.get('#practice-clef').should('have.value', 'bass');
+    cy.get('#practice-clef option').its('length').should('be.gte', 1);
+    // Rhythm field is hidden via inline style (populateControls sets
+    // display:'none' for studies without rhythmDefault).
+    cy.get('#practice-rhythm-field').should('have.css', 'display', 'none');
+  });
+
+  it('Play button remains visible after scrolling (sticky transport)', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('.practice-stage').scrollTo('bottom', { ensureScrollable: false });
+    cy.get('#practice-play').should('be.visible');
+  });
 });

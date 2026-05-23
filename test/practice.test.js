@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { STUDIES, scaleParams, tonicName } from '../src/js/ui/practice-studies.js';
+import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, RHYTHM_PRESETS } from '../src/js/ui/practice-studies.js';
 import { __test } from '../src/js/ui/PracticeView.js';
 
 const { buildSong } = __test;
@@ -126,5 +126,59 @@ describe('buildSong — walking-bass-workout', () => {
     const songF = buildSong(study, { keyPc: 5, seed: 1, difficulty: 50 });
     expect(((songC.events[0].midi % 12) + 12) % 12).toBe(0);
     expect(((songF.events[0].midi % 12) + 12) % 12).toBe(5);
+  });
+
+  it('emits one chord symbol per bar (for staff harmony rendering)', () => {
+    const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50 });
+    expect(Array.isArray(song.chordSymbols)).toBe(true);
+    const expected = study.acts.reduce((s, a) => s + a.bars, 0);
+    expect(song.chordSymbols).toHaveLength(expected);
+    expect(song.chordSymbols.every(s => typeof s === 'string' && s.length > 0)).toBe(true);
+  });
+
+  it('treble clef preset shifts the bassline up an octave', () => {
+    const bass = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass'] });
+    const treble = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['treble'] });
+    expect(treble.events[0].midi).toBeGreaterThan(bass.events[0].midi);
+  });
+});
+
+describe('clef + rhythm presets — two-voice-invention', () => {
+  const study = STUDIES.find(s => s.id === 'two-voice-invention');
+
+  it('Bass+Bass default keeps both voices in the cello range (≤ C4)', () => {
+    const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'] });
+    const v1 = song.events.filter(e => e.type === 'melody');
+    const v2 = song.events.filter(e => e.type === 'melody2');
+    const avgV1 = v1.reduce((s, e) => s + e.midi, 0) / v1.length;
+    const avgV2 = v2.reduce((s, e) => s + e.midi, 0) / v2.length;
+    // Both averages should sit at or below A4 (69) so most notes land in bass clef.
+    expect(avgV1).toBeLessThan(69);
+    expect(avgV2).toBeLessThan(69);
+  });
+
+  it('Treble+Treble preset places voices roughly an octave higher than Bass+Bass', () => {
+    const bb = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'] });
+    const tt = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['treble', 'treble'] });
+    const avg = (evs) => evs.reduce((s, e) => s + e.midi, 0) / evs.length;
+    expect(avg(tt.events) - avg(bb.events)).toBeGreaterThan(12);
+  });
+
+  it('Square rhythm produces longer average durations than Flowing', () => {
+    const square = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'], rhythmPresetId: 'square' });
+    const flowing = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'], rhythmPresetId: 'flowing' });
+    const avg = (evs) => evs.reduce((s, e) => s + e.durationBeats, 0) / evs.length;
+    expect(avg(square.events)).toBeGreaterThan(avg(flowing.events));
+  });
+
+  it('CLEF_ANCHORS provides anchors for treble / alto / bass', () => {
+    expect(CLEF_ANCHORS.treble).toBeGreaterThan(CLEF_ANCHORS.alto);
+    expect(CLEF_ANCHORS.alto).toBeGreaterThan(CLEF_ANCHORS.bass);
+  });
+
+  it('RHYTHM_PRESETS exposes density progressing low → high', () => {
+    expect(RHYTHM_PRESETS.square.density).toBeLessThan(RHYTHM_PRESETS.walking.density);
+    expect(RHYTHM_PRESETS.walking.density).toBeLessThan(RHYTHM_PRESETS.flowing.density);
+    expect(RHYTHM_PRESETS.flowing.density).toBeLessThan(RHYTHM_PRESETS.syncopated.density);
   });
 });
