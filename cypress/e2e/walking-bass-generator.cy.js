@@ -34,6 +34,8 @@ describe('Walking-bass workout (Practice)', () => {
   });
 
   it('Rolling a new seed updates the seed input', () => {
+    // The seed input lives inside the collapsed <details>; open it before clicking.
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
     cy.get('#practice-seed').invoke('val').then((before) => {
       cy.get('#practice-reroll').click();
       cy.get('#practice-seed').invoke('val').should('not.equal', before);
@@ -41,6 +43,7 @@ describe('Walking-bass workout (Practice)', () => {
   });
 
   it('Changing the key updates the controls info', () => {
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
     cy.get('#practice-key').select('5');  // F
     cy.get('#practice-controls-info').should('contain', 'F');
   });
