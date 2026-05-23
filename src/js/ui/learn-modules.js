@@ -387,49 +387,6 @@ export const MODULES = [
       },
     ],
   },
-  // ============== CHALLENGE 1 ==============
-  {
-    id: 'challenge-scales',
-    group: 'Challenges',
-    tag: 'Challenge · Scales',
-    title: 'Scales challenge',
-    summary: 'Mix major, natural minor, pentatonic and modes. Identify the colour by ear.',
-    steps: [
-      {
-        type: 'theory',
-        title: 'The drill',
-        text: `Three short licks below — each one comes from a different scale family covered earlier. Listen, then sing or play it back. By the third one your ear should already be identifying the mode without thinking.`,
-      },
-      {
-        type: 'exercise',
-        title: 'Mystery #1',
-        description: 'Major or minor? Listen and play back.',
-        notes: [60, 64, 67, 72, 67, 64, 60],
-        style: 'melody',
-      },
-      {
-        type: 'exercise',
-        title: 'Mystery #2',
-        description: 'A flavour of one of the modes.',
-        notes: [62, 65, 67, 69, 65, 62, 64, 62],
-        style: 'melody',
-      },
-      {
-        type: 'exercise',
-        title: 'Mystery #3',
-        description: 'Pentatonic territory.',
-        notes: [69, 76, 79, 76, 72, 74, 72, 69],
-        style: 'melody',
-      },
-      {
-        type: 'exercise',
-        title: 'Mystery #4',
-        description: 'Something more exotic — listen for the augmented-2nd leap.',
-        notes: [69, 72, 76, 77, 80, 81, 80, 77, 76, 72, 71, 69],
-        style: 'melody',
-      },
-    ],
-  },
   // ================= CHORDS =================
   {
     id: 'major-triad',
@@ -635,37 +592,6 @@ export const MODULES = [
       },
     ],
   },
-  // ============== CHALLENGE 2 ==============
-  {
-    id: 'challenge-chords',
-    group: 'Challenges',
-    tag: 'Challenge · Chords',
-    title: 'Chords challenge',
-    summary: 'Triads, inversions and arpeggios from previous modules — mixed.',
-    steps: [
-      {
-        type: 'exercise',
-        title: 'Voicing #1',
-        description: 'Hear the chord — can you tell major or minor, and which inversion?',
-        notes: [64, 67, 72],
-        style: 'chord',
-      },
-      {
-        type: 'exercise',
-        title: 'Voicing #2',
-        description: 'Another voicing. Notice the bass note.',
-        notes: [76, 81, 84],
-        style: 'chord',
-      },
-      {
-        type: 'exercise',
-        title: 'Arpeggio chain',
-        description: 'Two arpeggios in a row — major then minor.',
-        notes: [60, 64, 67, 72, 69, 72, 76, 81],
-        style: 'melody',
-      },
-    ],
-  },
   // ================= HARMONY: PROGRESSIONS =================
   {
     id: 'prog-i-v-vi-iv',
@@ -693,6 +619,7 @@ export const MODULES = [
         title: 'Hear the chords',
         description: 'Play and feel each chord land.',
         notes: [[60, 64, 67], [67, 71, 74], [69, 72, 76], [65, 69, 72]],
+        chordSymbols: ['C', 'G', 'Am', 'F'],
         style: 'progression',
       },
       {
@@ -700,6 +627,7 @@ export const MODULES = [
         title: 'Melody outlining the chords',
         description: 'A simple pop melody that lands on a chord tone over each new chord.',
         notes: [60, 64, 67, 71, 67, 71, 74, 71, 69, 72, 76, 72, 65, 69, 72, 69],
+        chordSymbols: ['C', 'G', 'Am', 'F'],
         style: 'melody',
       },
       {
@@ -707,6 +635,7 @@ export const MODULES = [
         title: 'Riff that adapts per chord',
         description: 'Four bars of a recurring rhythmic shape, each one re-aimed at the chord tones of the current chord.',
         notes: [64, 67, 64, 67, 71, 74, 71, 67, 69, 72, 69, 65, 65, 69, 72, 65],
+        chordSymbols: ['C', 'G', 'Am', 'F'],
         style: 'melody',
       },
     ],
@@ -736,6 +665,7 @@ export const MODULES = [
         title: 'Hear the chords',
         description: 'C – Am – F – G in slow motion.',
         notes: [[60, 64, 67], [69, 72, 76], [65, 69, 72], [67, 71, 74]],
+        chordSymbols: ['C', 'Am', 'F', 'G'],
         style: 'progression',
       },
       {
@@ -743,6 +673,7 @@ export const MODULES = [
         title: 'Melody over the loop',
         description: 'A typical 50s vocal melody.',
         notes: [60, 64, 67, 64, 69, 72, 69, 64, 65, 69, 72, 69, 67, 71, 74, 71],
+        chordSymbols: ['C', 'Am', 'F', 'G'],
         style: 'melody',
       },
       {
@@ -750,6 +681,7 @@ export const MODULES = [
         title: 'Bass walk between chords',
         description: 'Bass line outlining each chord — root and 3rd or 5th — with a stepwise connector landing on the next root.',
         notes: [48, 52, 55, 57, 60, 57, 53, 55],
+        chordSymbols: [['C', 'Am'], ['F', 'G']],
         style: 'melody',
       },
     ],
@@ -783,6 +715,7 @@ export const MODULES = [
           [60, 64, 67, 70], [65, 69, 72, 75], [60, 64, 67, 70],
           [67, 71, 74, 77], [65, 69, 72, 75], [60, 64, 67, 70],
         ],
+        chordSymbols: ['C7', 'F7', 'C7', 'G7', 'F7', 'C7'],
         style: 'progression',
       },
       {
@@ -797,6 +730,7 @@ export const MODULES = [
         title: 'Walking blues bassline',
         description: 'A walking bass over the condensed 6-bar shape (same as the chord exercise above): I, IV, I, V, IV, I.',
         notes: [48, 52, 55, 57, 53, 57, 60, 62, 48, 52, 55, 57, 55, 59, 62, 64, 53, 57, 60, 62, 48, 52, 55, 57],
+        chordSymbols: ['C7', 'F7', 'C7', 'G7', 'F7', 'C7'],
         style: 'melody',
       },
     ],
@@ -826,6 +760,7 @@ export const MODULES = [
         title: 'Hear ii–V–I in 7ths',
         description: 'Dm7 → G7 → Cmaj7. Feel the falling 5ths in the bass.',
         notes: [[62, 65, 69, 72], [55, 59, 62, 65], [60, 64, 67, 71]],
+        chordSymbols: ['Dm7', 'G7', 'Cmaj7'],
         style: 'progression',
       },
       {
@@ -837,6 +772,7 @@ export const MODULES = [
           { m: 67, t: 'e' }, { m: 71, t: 'e' }, { m: 65, t: 'e' }, { m: 62, t: 'e' }, { m: 60, t: 'e' }, { m: 59, t: 'e' }, { m: 64, t: 'e' }, { m: 60, t: 'e' },
           { m: 60, t: 'e' }, { m: 64, t: 'e' }, { m: 67, t: 'e' }, { m: 71, t: 'e' }, { m: 72, t: 'h' },
         ],
+        chordSymbols: ['Dm7', 'G7', 'Cmaj7'],
         style: 'melody',
       },
       {
@@ -848,6 +784,7 @@ export const MODULES = [
           { m: 65, t: 'h' }, { m: 71, t: 'h' },
           { m: 64, t: 'h' }, { m: 71, t: 'h' },
         ],
+        chordSymbols: ['Dm7', 'G7', 'Cmaj7'],
         style: 'melody',
       },
     ],
@@ -877,6 +814,7 @@ export const MODULES = [
         title: 'Hear the cadence',
         description: 'Am – G – F – E.',
         notes: [[57, 60, 64], [55, 59, 62], [53, 57, 60], [52, 56, 59]],
+        chordSymbols: ['Am', 'G', 'F', 'E'],
         style: 'progression',
       },
       {
@@ -884,6 +822,7 @@ export const MODULES = [
         title: 'Spanish-flavoured melody',
         description: 'Phrygian-flavoured melodic line over the descent.',
         notes: [69, 72, 76, 72, 67, 71, 65, 69, 64, 67, 65, 64],
+        chordSymbols: ['Am', ['G', 'F'], 'E'],
         style: 'melody',
       },
       {
@@ -891,6 +830,7 @@ export const MODULES = [
         title: 'Descending bass line',
         description: 'Half notes — each chord root holds for two beats so the descent feels inevitable.',
         notes: [{ m: 57, t: 'h' }, { m: 55, t: 'h' }, { m: 53, t: 'h' }, { m: 52, t: 'h' }],
+        chordSymbols: [['Am', 'G'], ['F', 'E']],
         style: 'melody',
       },
     ],
@@ -920,6 +860,7 @@ export const MODULES = [
         title: 'Hear the canon progression',
         description: 'All 8 chords in C.',
         notes: [[60, 64, 67], [67, 71, 74], [69, 72, 76], [64, 67, 71], [65, 69, 72], [60, 64, 67], [65, 69, 72], [67, 71, 74]],
+        chordSymbols: ['C', 'G', 'Am', 'Em', 'F', 'C', 'F', 'G'],
         style: 'progression',
       },
       {
@@ -927,6 +868,7 @@ export const MODULES = [
         title: 'Canon-style melody',
         description: "A simple counter-melody woven over the harmony.",
         notes: [72, 71, 69, 67, 65, 64, 65, 67, 65, 67, 65, 64, 65, 67, 71, 72],
+        chordSymbols: [['C', 'G'], ['Am', 'Em'], ['F', 'C'], ['F', 'G']],
         style: 'melody',
       },
       {
@@ -934,6 +876,7 @@ export const MODULES = [
         title: 'Pachelbel bass',
         description: 'The signature bass line — eight chord roots that sweep across the form: C G A E F C F G.',
         notes: [48, 55, 57, 52, 53, 48, 53, 55],
+        chordSymbols: [['C', 'G', 'Am', 'Em'], ['F', 'C', 'F', 'G']],
         style: 'melody',
       },
     ],
@@ -962,6 +905,7 @@ export const MODULES = [
         type: 'exercise',
         title: 'Hear the chords',
         notes: [[69, 72, 76], [65, 69, 72], [60, 64, 67], [67, 71, 74]],
+        chordSymbols: ['Am', 'F', 'C', 'G'],
         style: 'progression',
         description: 'Am – F – C – G.',
       },
@@ -970,6 +914,7 @@ export const MODULES = [
         title: 'Singable topline',
         description: 'A melody that opens with a yearning minor and resolves up.',
         notes: [69, 72, 76, 72, 65, 69, 72, 69, 60, 64, 67, 64, 67, 71, 74, 71],
+        chordSymbols: ['Am', 'F', 'C', 'G'],
         style: 'melody',
       },
       {
@@ -977,6 +922,7 @@ export const MODULES = [
         title: 'Counter-melody',
         description: 'A melodic counter-line that lifts from the minor into the IV resolution.',
         notes: [69, 72, 74, 76, 65, 67, 69, 72, 60, 62, 64, 67, 67, 71, 74, 76],
+        chordSymbols: ['Am', 'F', 'C', 'G'],
         style: 'melody',
       },
     ],
@@ -1006,6 +952,7 @@ export const MODULES = [
         title: 'Hear the loop',
         description: 'Am – G – F – G.',
         notes: [[57, 60, 64], [55, 59, 62], [53, 57, 60], [55, 59, 62]],
+        chordSymbols: ['Am', 'G', 'F', 'G'],
         style: 'progression',
       },
       {
@@ -1013,6 +960,7 @@ export const MODULES = [
         title: 'Riff over the loop',
         description: 'A pentatonic-minor riff that grooves over all four chords.',
         notes: [69, 72, 74, 76, 79, 76, 74, 72],
+        chordSymbols: [['Am', 'G'], ['F', 'G']],
         style: 'melody',
       },
       {
@@ -1020,6 +968,7 @@ export const MODULES = [
         title: 'Melodic counter-line',
         description: 'A vocal-style line that rises and falls over the harmony.',
         notes: [69, 72, 76, 72, 71, 67, 65, 67, 65, 64, 67, 65],
+        chordSymbols: ['Am', ['G', 'F'], 'G'],
         style: 'melody',
       },
     ],
@@ -1049,6 +998,7 @@ export const MODULES = [
         title: 'Hear the loop',
         description: 'F – G – Em – Am.',
         notes: [[65, 69, 72], [67, 71, 74], [64, 67, 71], [69, 72, 76]],
+        chordSymbols: ['F', 'G', 'Em', 'Am'],
         style: 'progression',
       },
       {
@@ -1056,6 +1006,7 @@ export const MODULES = [
         title: 'J-pop topline',
         description: 'A bright, climbing vocal line.',
         notes: [65, 69, 72, 74, 67, 71, 74, 76, 67, 71, 74, 71, 69, 72, 76, 72],
+        chordSymbols: ['F', 'G', 'Em', 'Am'],
         style: 'melody',
       },
       {
@@ -1063,6 +1014,7 @@ export const MODULES = [
         title: 'Anime-style counter-line',
         description: 'A descending counter-line that fits the climb of the topline.',
         notes: [76, 74, 72, 71, 76, 74, 72, 71, 71, 67, 69, 71, 76, 74, 72, 69],
+        chordSymbols: ['F', 'G', 'Em', 'Am'],
         style: 'melody',
       },
     ],
@@ -1092,6 +1044,7 @@ export const MODULES = [
         title: 'Hear five falling 5ths',
         description: 'Each root drops by a perfect 5th.',
         notes: [[60, 64, 67, 70], [65, 69, 72, 75], [58, 62, 65, 68], [63, 67, 70, 73], [56, 60, 63, 66]],
+        chordSymbols: ['C7', 'F7', 'Bb7', 'Eb7', 'Ab7'],
         style: 'progression',
       },
       {
@@ -1099,6 +1052,7 @@ export const MODULES = [
         title: 'Melody over the cycle',
         description: 'A line that lands on the chord 3rd at every change, across all five chords.',
         notes: [64, 67, 70, 64, 69, 72, 75, 69, 62, 65, 68, 62, 67, 70, 73, 67, 60, 63, 66, 60],
+        chordSymbols: ['C7', 'F7', 'Bb7', 'Eb7', 'Ab7'],
         style: 'melody',
       },
       {
@@ -1106,6 +1060,7 @@ export const MODULES = [
         title: 'Walking-bass cycle',
         description: 'A bass line walking through all five falling 5ths, four quarters per chord.',
         notes: [60, 64, 67, 70, 65, 69, 72, 70, 58, 62, 65, 63, 63, 67, 70, 68, 56, 60, 63, 66],
+        chordSymbols: ['C7', 'F7', 'Bb7', 'Eb7', 'Ab7'],
         style: 'melody',
       },
     ],
@@ -1134,6 +1089,7 @@ export const MODULES = [
         type: 'exercise',
         title: 'Hear the turnaround',
         notes: [[48, 60, 64, 67], [53, 65, 69, 72], [48, 60, 64, 67], [55, 67, 71, 74]],
+        chordSymbols: ['C', 'F', 'C', 'G'],
         style: 'progression',
         description: 'C – F – C – G.',
       },
@@ -1149,6 +1105,7 @@ export const MODULES = [
         title: 'Lick that resolves home',
         description: "A blues guitar lick over the turnaround.",
         notes: [76, 79, 81, 79, 76, 75, 74, 72, 69, 67, 69, 72],
+        chordSymbols: ['C', ['F', 'C'], 'G'],
         style: 'melody',
       },
     ],
@@ -1660,42 +1617,6 @@ export const MODULES = [
       },
     ],
   },
-  // ============== FINAL CHALLENGE ==============
-  {
-    id: 'challenge-mixed',
-    group: 'Challenges',
-    tag: 'Challenge · Final',
-    title: 'Final challenge',
-    summary: 'Everything together: scale colour, voicing, rhythm and a hint of bass.',
-    steps: [
-      {
-        type: 'exercise',
-        title: 'Scale + arpeggio',
-        description: 'A scale fragment that resolves into an arpeggio.',
-        notes: [60, 62, 64, 65, 67, 64, 67, 72],
-        style: 'melody',
-      },
-      {
-        type: 'exercise',
-        title: 'Chord change with passing notes',
-        description: 'C → Am → F → G outlined with a melodic line.',
-        notes: [60, 64, 65, 64, 69, 72, 69, 65, 60, 65, 65, 67, 67, 71, 72, 67],
-        style: 'melody',
-      },
-      {
-        type: 'exercise',
-        title: 'Chord over a walking bass',
-        description: 'Four C-major voicings with the bass note climbing stepwise — the chord stays, the bass walks.',
-        notes: [
-          [48, 60, 64, 67],
-          [50, 60, 64, 67],
-          [52, 60, 64, 67],
-          [55, 60, 64, 67],
-        ],
-        style: 'progression',
-      },
-    ],
-  },
 ];
 
-export const GROUPS = ['Scales', 'Challenges', 'Chords', 'Progressions', 'Walking Bass', 'Reading', 'Duets'];
+export const GROUPS = ['Scales', 'Chords', 'Progressions', 'Walking Bass', 'Reading', 'Duets'];

@@ -45,9 +45,8 @@ describe('Learn curriculum data', () => {
     }
   });
 
-  it('non-challenge modules have at least 2 melodic exercises (or are generator modules)', () => {
+  it('every module has at least 2 melodic exercises (or is a generator module)', () => {
     for (const mod of MODULES) {
-      if (mod.group === 'Challenges') continue;
       // Generator modules build their melody at runtime — skip the static count.
       if (mod.steps.some(s => s.type === 'generator')) continue;
       const melodyCount = mod.steps.filter(s => s.type === 'exercise' && s.style === 'melody').length;
@@ -90,8 +89,8 @@ describe('Learn curriculum data', () => {
     }
   });
 
-  it('all 7 expected groups exist', () => {
-    const expected = ['Scales', 'Challenges', 'Chords', 'Progressions', 'Walking Bass', 'Reading', 'Duets'];
+  it('all 6 expected groups exist', () => {
+    const expected = ['Scales', 'Chords', 'Progressions', 'Walking Bass', 'Reading', 'Duets'];
     expect(GROUPS).toEqual(expected);
   });
 
