@@ -40,7 +40,7 @@ const body = [
   `**Artifacts** (download from this run): \`cypress-screenshots\` · \`cypress-videos\``,
   screenshotsUrl ? `→ ${screenshotsUrl}` : '',
   '',
-  '<sub>Cypress only writes a video per spec and a screenshot per failure. A green run with no screenshots is normal.</sub>',
+  '<sub>One video per spec, plus an end-of-test screenshot for every passing test (captured via cypress/support/e2e.js). Failure screenshots are listed separately when present.</sub>',
 ].filter(Boolean).join('\n');
 
 setOutput('body', body);
@@ -49,15 +49,28 @@ function buildSpecBreakdown(shots, vids) {
   if (shots.length === 0 && vids.length === 0) {
     return '_No screenshots or videos were produced — Cypress probably skipped the run._';
   }
+  // Auto-capture (cypress/support/e2e.js) suffixes pass-state shots with
+  // "__pass". Anything else is a Cypress-emitted failure snap.
+  const passShots = shots.filter(s => s.endsWith('__pass.png'));
+  const failShots = shots.filter(s => !s.endsWith('__pass.png'));
+
   const lines = [];
   if (vids.length) {
     lines.push('**Videos (one per spec):**');
     for (const v of vids) lines.push(`- \`${relative(ROOT, v)}\``);
   }
-  if (shots.length) {
+  if (failShots.length) {
     if (lines.length) lines.push('');
     lines.push('**Failure screenshots:**');
-    for (const s of shots) lines.push(`- \`${relative(ROOT, s)}\``);
+    for (const s of failShots) lines.push(`- \`${relative(ROOT, s)}\``);
+  }
+  if (passShots.length) {
+    lines.push('');
+    lines.push(`<details><summary>End-of-test screenshots (${passShots.length})</summary>`);
+    lines.push('');
+    for (const s of passShots) lines.push(`- \`${relative(ROOT, s)}\``);
+    lines.push('');
+    lines.push('</details>');
   }
   return lines.join('\n');
 }
