@@ -1,3 +1,5 @@
+import { harmonyTagFor } from './harmony.js';
+
 const DIVISIONS = 4; // divisions per quarter note
 
 const STEP_MAP = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
@@ -117,13 +119,17 @@ function snapToGrid(beat, grid) {
   return Math.round(beat / grid) * grid;
 }
 
-function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstPart, clefSign) {
+function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstPart, clefSign, chordSymbols) {
   const GRID = 0.25;
   let xml = '';
 
   for (let bar = 0; bar < totalBars; bar++) {
     const barStart = bar * beatsPerBar;
     const barEnd = barStart + beatsPerBar;
+
+    const harmonyXml = (chordSymbols && chordSymbols[bar])
+      ? harmonyTagFor(chordSymbols[bar])
+      : '';
 
     const barEvents = events
       .filter(ev => ev.atBeat >= barStart && ev.atBeat < barEnd)
@@ -142,6 +148,8 @@ function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstP
         xml += buildTempoDirection(bpm);
       }
     }
+
+    if (harmonyXml) xml += `        ${harmonyXml}\n`;
 
     if (barEvents.length === 0) {
       xml += '        <note>\n          <rest measure="yes"/>\n';
@@ -251,7 +259,10 @@ function normaliseClef(sign) {
   return sign;
 }
 
-export function songToMusicXML(song, { bpm = 120, tracks: trackFilter, clefOverrides } = {}) {
+// `chordSymbols` is an optional array of strings indexed by bar number;
+// when present, each non-empty entry adds a `<harmony>` tag to the first
+// part's measure so OSMD renders the chord name above the staff.
+export function songToMusicXML(song, { bpm = 120, tracks: trackFilter, clefOverrides, chordSymbols } = {}) {
   const allPartDefs = [
     { id: 'P1', name: 'Melody',   type: 'melody',  drum: false },
     { id: 'P5', name: 'Melody 2', type: 'melody2', drum: false },
@@ -298,7 +309,9 @@ export function songToMusicXML(song, { bpm = 120, tracks: trackFilter, clefOverr
     const override = normaliseClef(clefOverrides?.[part.type]);
     const clefSign = part.drum ? 'percussion' : (override || detectClef(partEvents));
     xml += `  <part id="${part.id}">\n`;
-    xml += buildPartMeasures(partEvents, beatsPerBar, totalBars, part.drum, bpm, i === 0, clefSign);
+    // Chord symbols only attach to the first part — OSMD draws them once above the system.
+    const partChords = i === 0 ? chordSymbols : null;
+    xml += buildPartMeasures(partEvents, beatsPerBar, totalBars, part.drum, bpm, i === 0, clefSign, partChords);
     xml += '  </part>\n';
   }
 

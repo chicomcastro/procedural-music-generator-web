@@ -59,4 +59,27 @@ describe('Practice view', () => {
     cy.get('.practice-card[data-id="two-voice-invention"]').click();
     cy.get('#practice-difficulty').should('have.value', '70');
   });
+
+  it('Two-voice invention exposes clef + rhythm pickers; defaults to Bass+Bass / Square', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
+    cy.get('#practice-clef').should('have.value', 'bass-bass');
+    cy.get('#practice-rhythm').should('have.value', 'square');
+    // Switch clef → controls-info chip reflects the change
+    cy.get('#practice-clef').select('treble-bass');
+    cy.get('#practice-controls-info').should('contain', 'treble+bass');
+  });
+
+  it('Walking-bass hides the rhythm picker and shows a clef option', () => {
+    cy.get('.practice-card[data-id="walking-bass-workout"]').click();
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
+    cy.get('#practice-clef').should('be.visible');
+    cy.get('#practice-rhythm-field').should('not.be.visible');
+  });
+
+  it('Play button remains visible after scrolling (sticky transport)', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('.practice-stage').scrollTo('bottom', { ensureScrollable: false });
+    cy.get('#practice-play').should('be.visible');
+  });
 });

@@ -24,6 +24,8 @@ function scaffoldPracticeDom() {
       <details id="practice-controls">
         <summary><span id="practice-controls-info"></span></summary>
         <select id="practice-key"></select>
+        <div id="practice-clef-field"><select id="practice-clef"></select></div>
+        <div id="practice-rhythm-field"><select id="practice-rhythm"></select></div>
         <input id="practice-difficulty" type="range" value="50" />
         <span id="practice-difficulty-display"></span>
         <input id="practice-seed" type="number" />
@@ -88,5 +90,32 @@ describe('PracticeView smoke', () => {
     document.querySelector('.practice-card[data-id="two-voice-invention"]').click();
     document.getElementById('practice-study-close').click();
     expect(document.getElementById('practice-study-overlay').classList.contains('hidden')).toBe(true);
+  });
+
+  it('populates clef + rhythm pickers for the invention; hides rhythm for walking-bass', async () => {
+    const { initPracticeView } = await import('../src/js/ui/PracticeView.js');
+    initPracticeView({ audioApi: audioMock() });
+
+    document.querySelector('.practice-card[data-id="two-voice-invention"]').click();
+    expect(document.querySelectorAll('#practice-clef option').length).toBeGreaterThan(1);
+    expect(document.querySelectorAll('#practice-rhythm option').length).toBeGreaterThan(1);
+    // Default = bass-bass + square.
+    expect(document.getElementById('practice-clef').value).toBe('bass-bass');
+    expect(document.getElementById('practice-rhythm').value).toBe('square');
+
+    document.getElementById('practice-study-close').click();
+    document.querySelector('.practice-card[data-id="walking-bass-workout"]').click();
+    expect(document.querySelectorAll('#practice-clef option').length).toBeGreaterThan(0);
+    expect(document.getElementById('practice-rhythm-field').style.display).toBe('none');
+  });
+
+  it('changing the rhythm picker updates the controls-info chip', async () => {
+    const { initPracticeView } = await import('../src/js/ui/PracticeView.js');
+    initPracticeView({ audioApi: audioMock() });
+    document.querySelector('.practice-card[data-id="two-voice-invention"]').click();
+    const rhythm = document.getElementById('practice-rhythm');
+    rhythm.value = 'flowing';
+    rhythm.dispatchEvent(new Event('change'));
+    expect(document.getElementById('practice-controls-info').textContent).toContain('Flowing');
   });
 });

@@ -6495,11 +6495,23 @@ body.sidebar-open .practice-stage { padding-left: 240px; }
 .practice-ghost-btn:hover { background: var(--bg-input); }
 
 .practice-playback {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 14px;
   justify-content: center;
-  padding: 6px 0;
+  padding: 14px 12px;
+  margin: 0 -24px -36px;          /* bleed to the shell-inner padding edges */
+  background: linear-gradient(180deg, rgba(20, 22, 30, 0) 0%, var(--bg-elevated) 28%);
+  pointer-events: none;
+}
+.practice-playback > * { pointer-events: auto; }
+@media (max-width: 600px) {
+  .practice-playback { margin: 0 -12px -32px; padding: 12px; }
 }
 .practice-play-btn {
   width: 64px;
