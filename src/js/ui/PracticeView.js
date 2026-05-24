@@ -11,7 +11,7 @@
 // workout, master slider, key picker, seed reroll, audio playback, print
 // stylesheet (no per-act overrides yet — those land in PR 2).
 
-import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, clampMidiToRange } from './practice-studies.js';
+import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, clampMidiToRange } from './practice-studies.js';
 import { getStudyField } from './practice-translations.js';
 import { mulberry32, randomSeed } from '../generate/rng.js';
 import { generateMelody } from '../generate/melody.js';
@@ -67,6 +67,10 @@ function getStudyPrefs(studyId) {
       clefPresetId: study?.clefPresets?.[0]?.id ?? null,
       rhythmPresetId: study?.rhythmDefault ?? null,
       duetStyleId: study?.duetDefault ?? null,
+      scaleId: 'auto',
+      contourId: 'auto',
+      swing: 0,
+      intensity: 100,        // velocity multiplier %, 100 = baseline
     };
   }
   // Backfill new fields for users who already have a saved prefs blob from a
@@ -81,6 +85,10 @@ function getStudyPrefs(studyId) {
   if (study?.duetDefault && p.duetStyleId == null) {
     p.duetStyleId = study.duetDefault;
   }
+  if (p.scaleId == null) p.scaleId = 'auto';
+  if (p.contourId == null) p.contourId = 'auto';
+  if (p.swing == null) p.swing = 0;
+  if (p.intensity == null) p.intensity = 100;
   return p;
 }
 
@@ -148,7 +156,12 @@ async function renderSheet(xml) {
 // Generation — two-voice counterpoint
 
 function buildTwoVoiceSong(study, opts) {
-  const { keyPc, seed, difficulty, clefVoices, rhythmPresetId, duetStyleId } = opts;
+  const {
+    keyPc, seed, difficulty, clefVoices, rhythmPresetId, duetStyleId,
+    scaleId, contourId, swing: swingPct, intensity: intensityPct,
+  } = opts;
+  const swing = (swingPct ?? 0) / 100;
+  const velocityScale = (intensityPct ?? 100) / 100;
   const beatsPerBar = 4;
   const events = [];
   let accumulatedBeats = 0;
@@ -182,7 +195,8 @@ function buildTwoVoiceSong(study, opts) {
     const actTonicPc = (keyPc + (act.keyShift || 0)) % 12;
     const tonicMidi1 = anchor1 + actTonicPc;
     const tonicMidi2 = anchor2 + actTonicPc;
-    const scale = act.params.scale || 'major';
+    // Scale picker beats the act's default; 'auto' falls back to per-act.
+    const scale = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
 
     // Build the progression: PROGRESSIONS[name] is a degree array. Anchor
     // chord roots to voice 1's tessitura so the harmonic context tracks
@@ -207,15 +221,17 @@ function buildTwoVoiceSong(study, opts) {
       bars: act.bars,
       beatsPerBar,
       density: rhythmDensity,
-      swing: 0,
+      swing,
       template: rhythmTemplate,
     });
+    // Contour picker beats the act default ('auto' = fall back per-act).
+    const contour = (contourId && contourId !== 'auto') ? contourId : (p.contour || 'auto');
     const v1 = generateMelody(rng, {
       progression,
       rhythm,
       scale,
       tonic: tonicMidi1,
-      contour: p.contour || 'auto',
+      contour,
     });
     // Duet style picker overrides counterpoint mode. independence comes
     // from the style preset blended with the act's act-specific value so
@@ -240,7 +256,7 @@ function buildTwoVoiceSong(study, opts) {
         midi: clampMidiToRange(ev.midi, range1),
         atBeat: accumulatedBeats + ev.atBeat,
         durationBeats: ev.durationBeats,
-        velocity: ev.velocity ?? 0.7,
+        velocity: Math.min(1, (ev.velocity ?? 0.7) * velocityScale),
       });
     }
     for (const ev of v2) {
@@ -249,7 +265,7 @@ function buildTwoVoiceSong(study, opts) {
         midi: clampMidiToRange(ev.midi, range2),
         atBeat: accumulatedBeats + ev.atBeat,
         durationBeats: ev.durationBeats,
-        velocity: ev.velocity ?? 0.6,
+        velocity: Math.min(1, (ev.velocity ?? 0.6) * velocityScale),
       });
     }
 
@@ -271,7 +287,8 @@ function buildTwoVoiceSong(study, opts) {
 // Generation — walking-bass workout
 
 function buildWalkingBassSong(study, opts) {
-  const { keyPc, seed, difficulty, clefVoices } = opts;
+  const { keyPc, seed, difficulty, clefVoices, scaleId, intensity: intensityPct } = opts;
+  const velocityScale = (intensityPct ?? 100) / 100;
   const beatsPerBar = 4;
   const events = [];
   const chordSymbols = [];   // indexed by bar — one symbol per bar
@@ -297,10 +314,11 @@ function buildWalkingBassSong(study, opts) {
     for (let r = 0; r < repeats; r++) expanded.push(...chords);
     const slice = expanded.slice(0, act.bars);
 
+    const wbScale = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'natural_minor');
     const { notes } = generateWalkingBass({
       seed: seed + i * 7919,
       tonicPc: actTonicPc,
-      scale: act.params.scale || 'natural_minor',
+      scale: wbScale,
       chords: slice,
       bassMidi,
     });
@@ -312,7 +330,7 @@ function buildWalkingBassSong(study, opts) {
         midi: clampMidiToRange(notes[j], range),
         atBeat: accumulatedBeats + j,
         durationBeats: 1,
-        velocity: 0.75,
+        velocity: Math.min(1, 0.75 * velocityScale),
       });
     }
 
@@ -473,6 +491,54 @@ function populateControls() {
     duetField.style.display = 'none';
   }
 
+  // Scale picker — shared by all study kinds.
+  const scaleSel = document.getElementById('practice-scale');
+  if (scaleSel) {
+    scaleSel.innerHTML = '';
+    for (const opt of SCALE_OPTIONS) {
+      const o = document.createElement('option');
+      o.value = opt.id;
+      o.textContent = opt.label;
+      if (opt.id === studyPrefs.scaleId) o.selected = true;
+      scaleSel.appendChild(o);
+    }
+  }
+
+  // Contour picker — only meaningful for melodic studies (the invention).
+  const contourSel = document.getElementById('practice-contour');
+  const contourField = document.getElementById('practice-contour-field');
+  if (contourSel && activeStudy.kind === 'two-voice-counterpoint') {
+    contourSel.innerHTML = '';
+    for (const opt of CONTOUR_OPTIONS) {
+      const o = document.createElement('option');
+      o.value = opt.id;
+      o.textContent = opt.label;
+      if (opt.id === studyPrefs.contourId) o.selected = true;
+      contourSel.appendChild(o);
+    }
+    if (contourField) contourField.style.display = '';
+  } else if (contourField) {
+    contourField.style.display = 'none';
+  }
+
+  // Swing slider — only meaningful for melodic studies.
+  const swingInput = document.getElementById('practice-swing');
+  const swingField = document.getElementById('practice-swing-field');
+  if (swingInput && activeStudy.kind === 'two-voice-counterpoint') {
+    swingInput.value = String(studyPrefs.swing ?? 0);
+    document.getElementById('practice-swing-display').textContent = `${swingInput.value}%`;
+    if (swingField) swingField.style.display = '';
+  } else if (swingField) {
+    swingField.style.display = 'none';
+  }
+
+  // Intensity slider — applies to every kind.
+  const intInput = document.getElementById('practice-intensity');
+  if (intInput) {
+    intInput.value = String(studyPrefs.intensity ?? 100);
+    document.getElementById('practice-intensity-display').textContent = `${intInput.value}%`;
+  }
+
   const diff = document.getElementById('practice-difficulty');
   diff.value = String(studyPrefs.difficulty);
   document.getElementById('practice-difficulty-display').textContent = `${studyPrefs.difficulty}%`;
@@ -494,6 +560,12 @@ function updateControlsInfo() {
   }
   if (sp.duetStyleId && activeStudy.duetDefault) {
     pieces.push(DUET_STYLES[sp.duetStyleId]?.label || sp.duetStyleId);
+  }
+  if (sp.scaleId && sp.scaleId !== 'auto') {
+    pieces.push(SCALE_OPTIONS.find(s => s.id === sp.scaleId)?.label || sp.scaleId);
+  }
+  if (sp.contourId && sp.contourId !== 'auto' && activeStudy.kind === 'two-voice-counterpoint') {
+    pieces.push(CONTOUR_OPTIONS.find(c => c.id === sp.contourId)?.label || sp.contourId);
   }
   pieces.push(`seed ${sp.seed}`);
   info.textContent = pieces.join(' · ');
@@ -632,7 +704,7 @@ function openPrintView() {
 // current study + every prefs field so the recipient lands on the exact
 // same generated piece (seed + key + clef + rhythm + duet + difficulty).
 
-function buildShareUrl(studyId, sp) {
+export function buildShareUrl(studyId, sp) {
   const params = new URLSearchParams();
   params.set('study', studyId);
   if (sp.seed != null) params.set('seed', String(sp.seed));
@@ -640,6 +712,10 @@ function buildShareUrl(studyId, sp) {
   if (sp.clefPresetId) params.set('clef', sp.clefPresetId);
   if (sp.rhythmPresetId) params.set('rhythm', sp.rhythmPresetId);
   if (sp.duetStyleId) params.set('duet', sp.duetStyleId);
+  if (sp.scaleId && sp.scaleId !== 'auto') params.set('scale', sp.scaleId);
+  if (sp.contourId && sp.contourId !== 'auto') params.set('contour', sp.contourId);
+  if (sp.swing) params.set('swing', String(sp.swing));
+  if (sp.intensity != null && sp.intensity !== 100) params.set('intensity', String(sp.intensity));
   if (sp.difficulty != null) params.set('diff', String(sp.difficulty));
   const base = `${window.location.origin}${window.location.pathname}`;
   return `${base}#/practice?${params.toString()}`;
@@ -681,7 +757,7 @@ async function shareCurrentStudy() {
 
 // Apply incoming share URL params to the prefs blob before openStudy.
 // Returns the resolved study id (or null if the param is missing / invalid).
-function applyShareParams() {
+export function applyShareParams() {
   if (!window.location.hash.startsWith('#/practice')) return null;
   const qIdx = window.location.hash.indexOf('?');
   if (qIdx < 0) return null;
@@ -693,9 +769,13 @@ function applyShareParams() {
   if (n('seed') != null && Number.isFinite(n('seed'))) sp.seed = n('seed');
   if (n('key')  != null && Number.isFinite(n('key')))  sp.keyPc = n('key');
   if (n('diff') != null && Number.isFinite(n('diff'))) sp.difficulty = n('diff');
-  if (params.get('clef'))   sp.clefPresetId = params.get('clef');
-  if (params.get('rhythm')) sp.rhythmPresetId = params.get('rhythm');
-  if (params.get('duet'))   sp.duetStyleId = params.get('duet');
+  if (n('swing') != null && Number.isFinite(n('swing'))) sp.swing = n('swing');
+  if (n('intensity') != null && Number.isFinite(n('intensity'))) sp.intensity = n('intensity');
+  if (params.get('clef'))    sp.clefPresetId = params.get('clef');
+  if (params.get('rhythm'))  sp.rhythmPresetId = params.get('rhythm');
+  if (params.get('duet'))    sp.duetStyleId = params.get('duet');
+  if (params.get('scale'))   sp.scaleId = params.get('scale');
+  if (params.get('contour')) sp.contourId = params.get('contour');
   savePrefs();
   return studyId;
 }
@@ -876,6 +956,36 @@ export function initPracticeView({ audioApi } = {}) {
     if (!activeStudy) return;
     const sp = getStudyPrefs(activeStudy.id);
     sp.duetStyleId = e.target.value;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-scale')?.addEventListener('change', (e) => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.scaleId = e.target.value;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-contour')?.addEventListener('change', (e) => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.contourId = e.target.value;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-swing')?.addEventListener('input', (e) => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.swing = Number(e.target.value);
+    document.getElementById('practice-swing-display').textContent = `${sp.swing}%`;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-intensity')?.addEventListener('input', (e) => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.intensity = Number(e.target.value);
+    document.getElementById('practice-intensity-display').textContent = `${sp.intensity}%`;
     savePrefs();
     regenerate();
   });

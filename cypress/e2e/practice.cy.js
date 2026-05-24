@@ -120,4 +120,42 @@ describe('Practice view', () => {
     cy.get('#practice-duet').should('have.value', 'parallel_sixths');
     cy.get('#practice-difficulty').should('have.value', '70');
   });
+
+  it('Performance group (Scale + Contour + Swing + Intensity) is wired', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
+
+    // Defaults
+    cy.get('#practice-scale').should('have.value', 'auto');
+    cy.get('#practice-contour').should('have.value', 'auto');
+    cy.get('#practice-swing').should('have.value', '0');
+    cy.get('#practice-intensity').should('have.value', '100');
+
+    // Change scale → info chip picks it up
+    cy.get('#practice-scale').select('dorian');
+    cy.get('#practice-controls-info').should('contain', 'Dorian');
+
+    // Change contour → info chip picks it up
+    cy.get('#practice-contour').select('ascending');
+    cy.get('#practice-controls-info').should('contain', 'Ascending');
+
+    // Swing slider updates its display
+    cy.get('#practice-swing').invoke('val', 40).trigger('input');
+    cy.get('#practice-swing-display').should('have.text', '40%');
+
+    // Intensity slider updates its display
+    cy.get('#practice-intensity').invoke('val', 75).trigger('input');
+    cy.get('#practice-intensity-display').should('have.text', '75%');
+  });
+
+  it('Walking-bass shows the Performance group with Rhythm/Duet/Contour/Swing hidden', () => {
+    cy.get('.practice-card[data-id="walking-bass-workout"]').click();
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
+    cy.get('#practice-scale').should('be.visible');
+    cy.get('#practice-intensity').should('be.visible');
+    cy.get('#practice-contour-field').should('have.css', 'display', 'none');
+    cy.get('#practice-swing-field').should('have.css', 'display', 'none');
+    cy.get('#practice-rhythm-field').should('have.css', 'display', 'none');
+    cy.get('#practice-duet-field').should('have.css', 'display', 'none');
+  });
 });

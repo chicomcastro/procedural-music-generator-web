@@ -1137,11 +1137,37 @@
                                     <select id="practice-duet" class="practice-select"></select>
                                 </div>
                                 <div class="practice-control">
+                                    <label class="practice-control-label" for="practice-scale">
+                                        <span data-i18n="practice.scale">Scale</span>
+                                    </label>
+                                    <select id="practice-scale" class="practice-select"></select>
+                                </div>
+                                <div class="practice-control" id="practice-contour-field">
+                                    <label class="practice-control-label" for="practice-contour">
+                                        <span data-i18n="practice.contour">Contour</span>
+                                    </label>
+                                    <select id="practice-contour" class="practice-select"></select>
+                                </div>
+                                <div class="practice-control">
                                     <label class="practice-control-label" for="practice-difficulty">
                                         <span data-i18n="practice.difficulty">Difficulty</span>
                                         <em id="practice-difficulty-display">50%</em>
                                     </label>
                                     <input id="practice-difficulty" type="range" min="0" max="100" step="5" value="50" />
+                                </div>
+                                <div class="practice-control" id="practice-swing-field">
+                                    <label class="practice-control-label" for="practice-swing">
+                                        <span data-i18n="practice.swing">Swing</span>
+                                        <em id="practice-swing-display">0%</em>
+                                    </label>
+                                    <input id="practice-swing" type="range" min="0" max="100" step="5" value="0" />
+                                </div>
+                                <div class="practice-control">
+                                    <label class="practice-control-label" for="practice-intensity">
+                                        <span data-i18n="practice.intensity">Intensity</span>
+                                        <em id="practice-intensity-display">100%</em>
+                                    </label>
+                                    <input id="practice-intensity" type="range" min="40" max="150" step="5" value="100" />
                                 </div>
                                 <div class="practice-control">
                                     <label class="practice-control-label" for="practice-seed">
