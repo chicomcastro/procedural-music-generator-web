@@ -4,7 +4,9 @@ const DEFAULT_VIEW = 'generator';
 const listeners = [];
 
 export function getActiveView() {
-  const hash = window.location.hash.replace(/^#\/?/, '');
+  // Strip "#/" prefix and any "?query" or "/sub" so deep links like
+  // "#/practice?study=...&seed=..." still activate the practice view.
+  const hash = window.location.hash.replace(/^#\/?/, '').split(/[?/]/)[0];
   return VIEWS.includes(hash) ? hash : DEFAULT_VIEW;
 }
 
