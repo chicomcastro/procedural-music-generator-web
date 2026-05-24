@@ -88,4 +88,36 @@ describe('Practice view', () => {
     cy.get('.practice-stage').scrollTo('bottom', { ensureScrollable: false });
     cy.get('#practice-play').should('be.visible');
   });
+
+  it('Duet style picker exists for the invention and changes affect the info chip', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
+    cy.get('#practice-duet').should('have.value', 'free');
+    cy.get('#practice-duet').select('parallel_thirds');
+    cy.get('#practice-controls-info').should('contain', 'Parallel thirds');
+  });
+
+  it('Favorite button persists the current snapshot and surfaces it on the catalog', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-study-favorite').click();
+    cy.get('#practice-study-favorite').should('have.class', 'is-favorited');
+    cy.get('#practice-study-close').click();
+    cy.get('#practice-favorites-section').should('be.visible');
+    cy.get('.practice-favorite-card').should('have.length', 1);
+  });
+
+  it('Share URL deep link applies the params and opens the study', () => {
+    // Visit the app with a share URL directly.
+    cy.visit('/app.html#/practice?study=two-voice-invention&seed=42&key=5&clef=treble-bass&rhythm=walking&duet=parallel_sixths&diff=70', {
+      onBeforeLoad(win) { win.localStorage.setItem('seedsong-onboarding-done', '1'); },
+    });
+    cy.get('#practice-study-overlay', { timeout: 8000 }).should('not.have.class', 'hidden');
+    cy.get('#practice-controls').then(($d) => $d[0].open = true);
+    cy.get('#practice-key').should('have.value', '5');
+    cy.get('#practice-seed').should('have.value', '42');
+    cy.get('#practice-clef').should('have.value', 'treble-bass');
+    cy.get('#practice-rhythm').should('have.value', 'walking');
+    cy.get('#practice-duet').should('have.value', 'parallel_sixths');
+    cy.get('#practice-difficulty').should('have.value', '70');
+  });
 });

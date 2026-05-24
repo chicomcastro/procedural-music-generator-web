@@ -6582,3 +6582,103 @@ body.practice-overlay-open { overflow: hidden; }
     background: #fff;
   }
 }
+
+/* ---- Practice favorites + share ---- */
+
+.practice-favorite-btn.is-favorited {
+  color: var(--accent);
+}
+.practice-favorite-btn.is-favorited .practice-favorite-icon {
+  fill: var(--accent);
+}
+
+.practice-share-toast {
+  align-self: center;
+  margin-top: -8px;
+  padding: 6px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-primary);
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+.practice-share-toast.is-visible { opacity: 1; }
+
+.practice-favorites-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.practice-favorites-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.practice-favorites {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.practice-favorite-card {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 120ms ease;
+}
+.practice-favorite-card:hover {
+  border-color: var(--accent);
+}
+.practice-favorite-open {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 12px 14px;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.practice-favorite-eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.practice-favorite-meta {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.practice-favorite-remove {
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 0 12px;
+  cursor: pointer;
+}
+.practice-favorite-remove:hover { color: var(--text-primary); background: var(--bg-input); }
+
+@media (max-width: 600px) {
+  .practice-favorites { grid-template-columns: 1fr; }
+  .practice-favorite-open { padding: 10px 12px; }
+}
+
+/* Hide the share toast + favorites section when printing */
+@media print {
+  body.practice-printing .practice-share-toast,
+  body.practice-printing .practice-favorites-section { display: none !important; }
+}

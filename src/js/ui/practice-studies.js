@@ -25,6 +25,33 @@ export const CLEF_ANCHORS = {
   bass: 41,    // F2 — middle line is D3, comfortable for cello / bassoon
 };
 
+// Playable range per clef — used to clamp generator output so every note
+// lands on a real string / pitch the reader can actually play. The free
+// counterpoint mode previously produced notes below cello's open C
+// (MIDI 36) when fed a bass-clef anchor; this is the safety net.
+//
+// Bass: cello's open C (36) to a comfortable D5 (74). The high end stays
+//   below the thumb-position cliff so first-read sessions don't hit
+//   uncomfortable territory.
+// Alto: viola's C string (48) to F5 (77).
+// Treble: violin's G string (55) to C6 (84).
+export const CLEF_RANGES = {
+  treble: [55, 84],
+  alto:   [48, 77],
+  bass:   [36, 74],
+};
+
+// Counterpoint duet styles. Each maps to generateCounterpoint's `mode` +
+// `independence` knobs. Keep the labels short — they ride in a dropdown
+// next to the rhythm picker.
+export const DUET_STYLES = {
+  free:            { label: 'Independent (default)', mode: 'free',            independence: 0.5 },
+  parallel_thirds: { label: 'Parallel thirds',        mode: 'parallel_thirds', independence: 0 },
+  parallel_sixths: { label: 'Parallel sixths',        mode: 'parallel_sixths', independence: 0 },
+  contrary:        { label: 'Contrary motion',        mode: 'contrary',        independence: 0.7 },
+  call_response:   { label: 'Call & response',        mode: 'call_response',   independence: 0.5 },
+};
+
 // Rhythm presets for the two-voice invention. Map to generateRhythm's
 // density + template knobs. "Square" is the new default — half notes,
 // dotted quarters, occasional eighths; suitable for first-read duet.
@@ -34,6 +61,21 @@ export const RHYTHM_PRESETS = {
   flowing:    { label: 'Flowing',    density: 0.75, template: 'straight' },
   syncopated: { label: 'Syncopated', density: 0.85, template: 'syncopated' },
 };
+
+// Octave-shift a midi number so it lands inside [low, high]. If the note
+// is below `low`, repeatedly raise by 12; if above `high`, drop by 12.
+// Falls back to the nearest range bound on degenerate ranges.
+export function clampMidiToRange(midi, range) {
+  if (!range || range.length !== 2) return midi;
+  const [low, high] = range;
+  let m = midi;
+  let safety = 12;   // worst case: full octave bracket
+  while (m < low && safety-- > 0) m += 12;
+  while (m > high && safety-- > 0) m -= 12;
+  if (m < low) return low;
+  if (m > high) return high;
+  return m;
+}
 
 export const STUDIES = [
   {
@@ -51,6 +93,7 @@ export const STUDIES = [
       { id: 'alto-bass',     label: 'Alto + Bass (viola + cello)', voices: ['alto', 'bass'] },
     ],
     rhythmDefault: 'square',
+    duetDefault: 'free',
     // Default key picker shows these tonic options (pitch class 0-11).
     keyOptions: [0, 2, 5, 7, 9],  // C, D, F, G, A — friendly for strings + piano
     acts: [

@@ -11,7 +11,7 @@
 // workout, master slider, key picker, seed reroll, audio playback, print
 // stylesheet (no per-act overrides yet — those land in PR 2).
 
-import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, RHYTHM_PRESETS } from './practice-studies.js';
+import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, clampMidiToRange } from './practice-studies.js';
 import { getStudyField } from './practice-translations.js';
 import { mulberry32, randomSeed } from '../generate/rng.js';
 import { generateMelody } from '../generate/melody.js';
@@ -26,7 +26,7 @@ const STORAGE_KEY = 'seedsong-practice-prefs-v1';
 
 let audioApiRef = null;
 let activeStudy = null;
-let prefs = { studyId: null, byStudy: {} };
+let prefs = { studyId: null, byStudy: {}, favorites: [] };
 // One OSMD instance per container — Practice owns its own.
 let osmdLoading = null;
 let practiceOSMD = null;
@@ -43,7 +43,13 @@ function loadPrefs() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object') prefs = { studyId: parsed.studyId || null, byStudy: parsed.byStudy || {} };
+    if (parsed && typeof parsed === 'object') {
+      prefs = {
+        studyId: parsed.studyId || null,
+        byStudy: parsed.byStudy || {},
+        favorites: Array.isArray(parsed.favorites) ? parsed.favorites : [],
+      };
+    }
   } catch { /* ignore */ }
 }
 
@@ -60,6 +66,7 @@ function getStudyPrefs(studyId) {
       seed: randomSeed(),
       clefPresetId: study?.clefPresets?.[0]?.id ?? null,
       rhythmPresetId: study?.rhythmDefault ?? null,
+      duetStyleId: study?.duetDefault ?? null,
     };
   }
   // Backfill new fields for users who already have a saved prefs blob from a
@@ -70,6 +77,9 @@ function getStudyPrefs(studyId) {
   }
   if (study?.rhythmDefault && p.rhythmPresetId == null) {
     p.rhythmPresetId = study.rhythmDefault;
+  }
+  if (study?.duetDefault && p.duetStyleId == null) {
+    p.duetStyleId = study.duetDefault;
   }
   return p;
 }
@@ -138,21 +148,30 @@ async function renderSheet(xml) {
 // Generation — two-voice counterpoint
 
 function buildTwoVoiceSong(study, opts) {
-  const { keyPc, seed, difficulty, clefVoices, rhythmPresetId } = opts;
+  const { keyPc, seed, difficulty, clefVoices, rhythmPresetId, duetStyleId } = opts;
   const beatsPerBar = 4;
   const events = [];
   let accumulatedBeats = 0;
   let actBpm = null;
 
   // Per-voice tessitura anchor — keeps the line inside the chosen clef's
-  // staff so the sheet music doesn't drift onto ledger lines.
+  // staff so the sheet music doesn't drift onto ledger lines. The
+  // companion CLEF_RANGES is applied as a hard clamp after generation:
+  // generateCounterpoint's "free" mode can drift below the cello's open
+  // C (its candidate range is melMin-19), so we octave-shift any note
+  // that lands outside the playable bounds.
   const [clef1, clef2 = clef1] = clefVoices || ['treble', 'treble'];
   const anchor1 = CLEF_ANCHORS[clef1] ?? 60;
   const anchor2 = CLEF_ANCHORS[clef2] ?? anchor1;
+  const range1 = CLEF_RANGES[clef1] || [36, 84];
+  const range2 = CLEF_RANGES[clef2] || [36, 84];
 
   // Rhythm preset → density/template overrides. When set, this wins over
   // the act's baseline density (which the master slider also influences).
   const rhythmPreset = rhythmPresetId && RHYTHM_PRESETS[rhythmPresetId];
+  // Duet style → counterpoint mode + independence baseline. Acts can
+  // still nudge independence via the difficulty slider.
+  const duetStyle = (duetStyleId && DUET_STYLES[duetStyleId]) || DUET_STYLES.free;
 
   for (let i = 0; i < study.acts.length; i++) {
     const act = study.acts[i];
@@ -198,12 +217,18 @@ function buildTwoVoiceSong(study, opts) {
       tonic: tonicMidi1,
       contour: p.contour || 'auto',
     });
+    // Duet style picker overrides counterpoint mode. independence comes
+    // from the style preset blended with the act's act-specific value so
+    // higher-difficulty acts retain their character.
+    const independence = duetStyle.mode === 'free'
+      ? (p.independence ?? duetStyle.independence)
+      : duetStyle.independence;
     const v2 = generateCounterpoint(rng, {
       melody: v1,
       scale,
       tonic: tonicMidi2,
-      mode: 'free',
-      independence: p.independence ?? 0.5,
+      mode: duetStyle.mode,
+      independence,
       bars: act.bars,
       beatsPerBar,
       density: rhythmDensity,
@@ -212,7 +237,7 @@ function buildTwoVoiceSong(study, opts) {
     for (const ev of v1) {
       events.push({
         type: 'melody',
-        midi: ev.midi,
+        midi: clampMidiToRange(ev.midi, range1),
         atBeat: accumulatedBeats + ev.atBeat,
         durationBeats: ev.durationBeats,
         velocity: ev.velocity ?? 0.7,
@@ -221,7 +246,7 @@ function buildTwoVoiceSong(study, opts) {
     for (const ev of v2) {
       events.push({
         type: 'melody2',
-        midi: ev.midi,
+        midi: clampMidiToRange(ev.midi, range2),
         atBeat: accumulatedBeats + ev.atBeat,
         durationBeats: ev.durationBeats,
         velocity: ev.velocity ?? 0.6,
@@ -258,6 +283,7 @@ function buildWalkingBassSong(study, opts) {
   // viola etc.). Otherwise stick with the original cello-friendly range.
   const clef = clefVoices?.[0] || 'bass';
   const bassMidi = clef === 'treble' ? 52 : 40;
+  const range = CLEF_RANGES[clef] || [36, 84];
 
   for (let i = 0; i < study.acts.length; i++) {
     const act = study.acts[i];
@@ -283,7 +309,7 @@ function buildWalkingBassSong(study, opts) {
     for (let j = 0; j < notes.length; j++) {
       events.push({
         type: 'bass',
-        midi: notes[j],
+        midi: clampMidiToRange(notes[j], range),
         atBeat: accumulatedBeats + j,
         durationBeats: 1,
         velocity: 0.75,
@@ -368,6 +394,7 @@ function openStudy(studyId) {
   document.getElementById('practice-study-title').textContent = getStudyField(study, 'title');
   document.getElementById('practice-study-desc').textContent = getStudyField(study, 'summary');
   renderActRail();
+  updateFavoriteButton();
   document.getElementById('practice-study-overlay').classList.remove('hidden');
   document.body.classList.add('practice-overlay-open');
   regenerate();
@@ -429,6 +456,23 @@ function populateControls() {
     rhythmField.style.display = 'none';
   }
 
+  // Duet style picker — only shown for two-voice studies.
+  const duetSel = document.getElementById('practice-duet');
+  const duetField = document.getElementById('practice-duet-field');
+  if (duetSel && activeStudy.duetDefault) {
+    duetSel.innerHTML = '';
+    for (const [id, style] of Object.entries(DUET_STYLES)) {
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = style.label;
+      if (id === studyPrefs.duetStyleId) opt.selected = true;
+      duetSel.appendChild(opt);
+    }
+    if (duetField) duetField.style.display = '';
+  } else if (duetField) {
+    duetField.style.display = 'none';
+  }
+
   const diff = document.getElementById('practice-difficulty');
   diff.value = String(studyPrefs.difficulty);
   document.getElementById('practice-difficulty-display').textContent = `${studyPrefs.difficulty}%`;
@@ -448,8 +492,12 @@ function updateControlsInfo() {
   if (sp.rhythmPresetId && activeStudy.rhythmDefault) {
     pieces.push(RHYTHM_PRESETS[sp.rhythmPresetId]?.label || sp.rhythmPresetId);
   }
+  if (sp.duetStyleId && activeStudy.duetDefault) {
+    pieces.push(DUET_STYLES[sp.duetStyleId]?.label || sp.duetStyleId);
+  }
   pieces.push(`seed ${sp.seed}`);
   info.textContent = pieces.join(' · ');
+  updateFavoriteButton();
 }
 
 function renderActRail() {
@@ -580,15 +628,217 @@ function openPrintView() {
 }
 
 // =============================================================================
+// Share — Web Share API with clipboard fallback. The URL encodes the
+// current study + every prefs field so the recipient lands on the exact
+// same generated piece (seed + key + clef + rhythm + duet + difficulty).
+
+function buildShareUrl(studyId, sp) {
+  const params = new URLSearchParams();
+  params.set('study', studyId);
+  if (sp.seed != null) params.set('seed', String(sp.seed));
+  if (sp.keyPc != null) params.set('key', String(sp.keyPc));
+  if (sp.clefPresetId) params.set('clef', sp.clefPresetId);
+  if (sp.rhythmPresetId) params.set('rhythm', sp.rhythmPresetId);
+  if (sp.duetStyleId) params.set('duet', sp.duetStyleId);
+  if (sp.difficulty != null) params.set('diff', String(sp.difficulty));
+  const base = `${window.location.origin}${window.location.pathname}`;
+  return `${base}#/practice?${params.toString()}`;
+}
+
+function showShareToast(message) {
+  const toast = document.getElementById('practice-share-toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.hidden = false;
+  toast.classList.add('is-visible');
+  setTimeout(() => {
+    toast.classList.remove('is-visible');
+    setTimeout(() => { toast.hidden = true; }, 200);
+  }, 1800);
+}
+
+async function shareCurrentStudy() {
+  if (!activeStudy) return;
+  const sp = getStudyPrefs(activeStudy.id);
+  const url = buildShareUrl(activeStudy.id, sp);
+  const title = `SeedSong · ${getStudyField(activeStudy, 'title')}`;
+  const text = `${title} — seed ${sp.seed}`;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text, url });
+      return;
+    } catch {
+      // user cancelled or share unsupported for this payload — fall through to clipboard
+    }
+  }
+  try {
+    await navigator.clipboard?.writeText(url);
+    showShareToast(t('practice.share_copied', 'Link copied to clipboard'));
+  } catch {
+    showShareToast(url);
+  }
+}
+
+// Apply incoming share URL params to the prefs blob before openStudy.
+// Returns the resolved study id (or null if the param is missing / invalid).
+function applyShareParams() {
+  if (!window.location.hash.startsWith('#/practice')) return null;
+  const qIdx = window.location.hash.indexOf('?');
+  if (qIdx < 0) return null;
+  const params = new URLSearchParams(window.location.hash.slice(qIdx + 1));
+  const studyId = params.get('study');
+  if (!studyId || !STUDIES.find(s => s.id === studyId)) return null;
+  const sp = getStudyPrefs(studyId);
+  const n = (k) => params.get(k) != null ? Number(params.get(k)) : null;
+  if (n('seed') != null && Number.isFinite(n('seed'))) sp.seed = n('seed');
+  if (n('key')  != null && Number.isFinite(n('key')))  sp.keyPc = n('key');
+  if (n('diff') != null && Number.isFinite(n('diff'))) sp.difficulty = n('diff');
+  if (params.get('clef'))   sp.clefPresetId = params.get('clef');
+  if (params.get('rhythm')) sp.rhythmPresetId = params.get('rhythm');
+  if (params.get('duet'))   sp.duetStyleId = params.get('duet');
+  savePrefs();
+  return studyId;
+}
+
+// =============================================================================
+// Favorites — saved snapshots of {study, prefs} the user can return to.
+
+function favoriteIdFor(studyId, sp) {
+  // Stable id from the parameter set — same study + same prefs produces the
+  // same key, so re-saving doesn't duplicate.
+  return `${studyId}|${sp.seed}|${sp.keyPc}|${sp.clefPresetId || ''}|${sp.rhythmPresetId || ''}|${sp.duetStyleId || ''}|${sp.difficulty}`;
+}
+
+function isFavorited(studyId, sp) {
+  const id = favoriteIdFor(studyId, sp);
+  return prefs.favorites.some(f => f.id === id);
+}
+
+function toggleFavorite() {
+  if (!activeStudy) return;
+  const sp = getStudyPrefs(activeStudy.id);
+  const id = favoriteIdFor(activeStudy.id, sp);
+  const idx = prefs.favorites.findIndex(f => f.id === id);
+  if (idx >= 0) {
+    prefs.favorites.splice(idx, 1);
+  } else {
+    prefs.favorites.unshift({
+      id,
+      studyId: activeStudy.id,
+      keyPc: sp.keyPc,
+      seed: sp.seed,
+      difficulty: sp.difficulty,
+      clefPresetId: sp.clefPresetId,
+      rhythmPresetId: sp.rhythmPresetId,
+      duetStyleId: sp.duetStyleId,
+      savedAt: Date.now(),
+    });
+    // Cap to a sane number so localStorage doesn't grow unbounded.
+    if (prefs.favorites.length > 50) prefs.favorites.length = 50;
+  }
+  savePrefs();
+  updateFavoriteButton();
+  renderFavorites();
+}
+
+function updateFavoriteButton() {
+  const btn = document.getElementById('practice-study-favorite');
+  if (!btn || !activeStudy) return;
+  const sp = getStudyPrefs(activeStudy.id);
+  const fav = isFavorited(activeStudy.id, sp);
+  btn.classList.toggle('is-favorited', fav);
+  btn.setAttribute('aria-pressed', fav ? 'true' : 'false');
+}
+
+function renderFavorites() {
+  const section = document.getElementById('practice-favorites-section');
+  const list = document.getElementById('practice-favorites');
+  if (!section || !list) return;
+  list.innerHTML = '';
+  if (!prefs.favorites.length) {
+    section.hidden = true;
+    return;
+  }
+  section.hidden = false;
+  for (const fav of prefs.favorites) {
+    const study = STUDIES.find(s => s.id === fav.studyId);
+    if (!study) continue;
+    const card = document.createElement('div');
+    card.className = 'practice-favorite-card';
+
+    const open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'practice-favorite-open';
+    open.dataset.favId = fav.id;
+    const eyebrow = document.createElement('span');
+    eyebrow.className = 'practice-favorite-eyebrow';
+    eyebrow.textContent = getStudyField(study, 'title');
+    const meta = document.createElement('span');
+    meta.className = 'practice-favorite-meta';
+    const pieces = [tonicName(fav.keyPc), `${fav.difficulty ?? 50}%`];
+    const clefPreset = study.clefPresets?.find(c => c.id === fav.clefPresetId);
+    if (clefPreset) pieces.push(clefPreset.voices.join('+'));
+    if (fav.rhythmPresetId) pieces.push(RHYTHM_PRESETS[fav.rhythmPresetId]?.label || fav.rhythmPresetId);
+    if (fav.duetStyleId) pieces.push(DUET_STYLES[fav.duetStyleId]?.label || fav.duetStyleId);
+    pieces.push(`seed ${fav.seed}`);
+    meta.textContent = pieces.join(' · ');
+    open.appendChild(eyebrow);
+    open.appendChild(meta);
+    open.addEventListener('click', () => openFavorite(fav));
+    card.appendChild(open);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'practice-favorite-remove';
+    remove.setAttribute('aria-label', 'Remove favorite');
+    remove.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+    remove.addEventListener('click', (e) => {
+      e.stopPropagation();
+      prefs.favorites = prefs.favorites.filter(f => f.id !== fav.id);
+      savePrefs();
+      renderFavorites();
+      updateFavoriteButton();
+    });
+    card.appendChild(remove);
+
+    list.appendChild(card);
+  }
+}
+
+function openFavorite(fav) {
+  // Apply the snapshot to the per-study prefs blob first so openStudy
+  // picks up the saved parameters from getStudyPrefs.
+  const sp = getStudyPrefs(fav.studyId);
+  sp.keyPc = fav.keyPc;
+  sp.seed = fav.seed;
+  sp.difficulty = fav.difficulty;
+  sp.clefPresetId = fav.clefPresetId;
+  sp.rhythmPresetId = fav.rhythmPresetId;
+  sp.duetStyleId = fav.duetStyleId;
+  savePrefs();
+  openStudy(fav.studyId);
+}
+
+// =============================================================================
 // Init
 
 export function initPracticeView({ audioApi } = {}) {
   audioApiRef = audioApi;
   loadPrefs();
   renderCatalog();
+  renderFavorites();
+
+  // If the page was opened with a share URL (#/practice?study=...&seed=...)
+  // apply those params and open the study right away.
+  const sharedStudyId = applyShareParams();
+  if (sharedStudyId) {
+    // Defer to the next tick so the rest of the app finishes booting.
+    setTimeout(() => openStudy(sharedStudyId), 0);
+  }
 
   onLangChange(() => {
     renderCatalog();
+    renderFavorites();
     if (activeStudy) {
       document.getElementById('practice-study-eyebrow').textContent = getStudyField(activeStudy, 'eyebrow');
       document.getElementById('practice-study-title').textContent = getStudyField(activeStudy, 'title');
@@ -598,6 +848,8 @@ export function initPracticeView({ audioApi } = {}) {
 
   document.getElementById('practice-study-close')?.addEventListener('click', closeStudy);
   document.getElementById('practice-study-print')?.addEventListener('click', openPrintView);
+  document.getElementById('practice-study-favorite')?.addEventListener('click', toggleFavorite);
+  document.getElementById('practice-study-share')?.addEventListener('click', shareCurrentStudy);
 
   document.getElementById('practice-key')?.addEventListener('change', (e) => {
     if (!activeStudy) return;
@@ -617,6 +869,13 @@ export function initPracticeView({ audioApi } = {}) {
     if (!activeStudy) return;
     const sp = getStudyPrefs(activeStudy.id);
     sp.rhythmPresetId = e.target.value;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-duet')?.addEventListener('change', (e) => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.duetStyleId = e.target.value;
     savePrefs();
     regenerate();
   });

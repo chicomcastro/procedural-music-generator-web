@@ -43,6 +43,13 @@ describe('Sidebar', () => {
     expect(getActiveView()).toBe('explore');
   });
 
+  it('getActiveView strips query strings and sub-paths from the hash', () => {
+    location.hash = '#/practice?study=foo&seed=42';
+    expect(getActiveView()).toBe('practice');
+    location.hash = '#/learn/some/sub';
+    expect(getActiveView()).toBe('learn');
+  });
+
   it('initSidebar hides non-active views and marks the active sidebar link', () => {
     location.hash = '#/learn';
     initSidebar();

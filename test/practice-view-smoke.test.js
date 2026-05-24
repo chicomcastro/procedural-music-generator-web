@@ -13,9 +13,15 @@ const audioMock = () => ({
 function scaffoldPracticeDom() {
   document.body.innerHTML = `
     <div id="practice-catalog"></div>
+    <section id="practice-favorites-section" hidden>
+      <div id="practice-favorites"></div>
+    </section>
     <div id="practice-study-overlay" class="hidden">
       <button id="practice-study-close"></button>
+      <button id="practice-study-favorite" aria-pressed="false"></button>
+      <button id="practice-study-share"></button>
       <button id="practice-study-print"></button>
+      <span id="practice-share-toast" hidden></span>
       <span id="practice-study-eyebrow"></span>
       <h2 id="practice-study-title"></h2>
       <p id="practice-study-desc"></p>
@@ -26,6 +32,7 @@ function scaffoldPracticeDom() {
         <select id="practice-key"></select>
         <div id="practice-clef-field"><select id="practice-clef"></select></div>
         <div id="practice-rhythm-field"><select id="practice-rhythm"></select></div>
+        <div id="practice-duet-field"><select id="practice-duet"></select></div>
         <input id="practice-difficulty" type="range" value="50" />
         <span id="practice-difficulty-display"></span>
         <input id="practice-seed" type="number" />
@@ -117,5 +124,37 @@ describe('PracticeView smoke', () => {
     rhythm.value = 'flowing';
     rhythm.dispatchEvent(new Event('change'));
     expect(document.getElementById('practice-controls-info').textContent).toContain('Flowing');
+  });
+
+  it('duet style picker exists for the invention and is hidden for walking-bass', async () => {
+    const { initPracticeView } = await import('../src/js/ui/PracticeView.js');
+    initPracticeView({ audioApi: audioMock() });
+
+    document.querySelector('.practice-card[data-id="two-voice-invention"]').click();
+    expect(document.querySelectorAll('#practice-duet option').length).toBeGreaterThan(1);
+    expect(document.getElementById('practice-duet').value).toBe('free');
+
+    document.getElementById('practice-study-close').click();
+    document.querySelector('.practice-card[data-id="walking-bass-workout"]').click();
+    expect(document.getElementById('practice-duet-field').style.display).toBe('none');
+  });
+
+  it('favorite button toggles the saved-studies section', async () => {
+    const { initPracticeView } = await import('../src/js/ui/PracticeView.js');
+    initPracticeView({ audioApi: audioMock() });
+    document.querySelector('.practice-card[data-id="two-voice-invention"]').click();
+    const favBtn = document.getElementById('practice-study-favorite');
+    const section = document.getElementById('practice-favorites-section');
+
+    expect(section.hidden).toBe(true);
+    favBtn.click();
+    expect(section.hidden).toBe(false);
+    expect(favBtn.classList.contains('is-favorited')).toBe(true);
+    expect(document.querySelectorAll('#practice-favorites .practice-favorite-card').length).toBe(1);
+
+    // Clicking again removes
+    favBtn.click();
+    expect(section.hidden).toBe(true);
+    expect(favBtn.classList.contains('is-favorited')).toBe(false);
   });
 });

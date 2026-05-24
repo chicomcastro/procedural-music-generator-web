@@ -596,7 +596,11 @@ function onBeat(beat, when) {
 
 /* ---- URL state ---- */
 function buildShareUrl() {
-  const url = new URL(window.location.pathname, window.location.origin);
+  // Build from the full href + clear the existing search so the hash
+  // (e.g. #/practice?study=...) survives the rebuild. Constructing from
+  // origin+pathname alone wiped any active deep-link.
+  const url = new URL(window.location.href);
+  url.search = '';
   url.searchParams.set('seed', seedInput.value);
   url.searchParams.set('bpm', bpmInput.value);
   url.searchParams.set('time', beatsPerBarSelect.value);

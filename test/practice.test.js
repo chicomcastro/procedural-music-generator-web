@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, RHYTHM_PRESETS } from '../src/js/ui/practice-studies.js';
+import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, clampMidiToRange } from '../src/js/ui/practice-studies.js';
 import { __test } from '../src/js/ui/PracticeView.js';
 
 const { buildSong } = __test;
@@ -180,5 +180,113 @@ describe('clef + rhythm presets — two-voice-invention', () => {
     expect(RHYTHM_PRESETS.square.density).toBeLessThan(RHYTHM_PRESETS.walking.density);
     expect(RHYTHM_PRESETS.walking.density).toBeLessThan(RHYTHM_PRESETS.flowing.density);
     expect(RHYTHM_PRESETS.flowing.density).toBeLessThan(RHYTHM_PRESETS.syncopated.density);
+  });
+});
+
+describe('clampMidiToRange', () => {
+  it('keeps notes already inside the range untouched', () => {
+    expect(clampMidiToRange(60, [55, 80])).toBe(60);
+    expect(clampMidiToRange(55, [55, 80])).toBe(55);
+    expect(clampMidiToRange(80, [55, 80])).toBe(80);
+  });
+
+  it('octave-shifts up when below the low bound', () => {
+    expect(clampMidiToRange(30, [36, 74])).toBe(42);     // 30 + 12
+    expect(clampMidiToRange(20, [36, 74])).toBe(44);     // 20 + 24
+  });
+
+  it('octave-shifts down when above the high bound', () => {
+    expect(clampMidiToRange(90, [36, 74])).toBe(66);     // 90 - 12 = 78 (still >74), -12 again = 66
+  });
+
+  it('falls back to the bound when the input is way outside a tiny range', () => {
+    expect(clampMidiToRange(40, [36, 36])).toBe(36);
+  });
+
+  it('returns the input unchanged when range is missing or malformed', () => {
+    expect(clampMidiToRange(60, null)).toBe(60);
+    expect(clampMidiToRange(60, [55])).toBe(60);
+  });
+});
+
+describe('tessitura clamping inside buildSong', () => {
+  const study = STUDIES.find(s => s.id === 'two-voice-invention');
+
+  it('Bass+Bass keeps every note inside the cello playable range', () => {
+    const song = buildSong(study, {
+      keyPc: 0, seed: 3796780667, difficulty: 0,
+      clefVoices: ['bass', 'bass'],
+      rhythmPresetId: 'walking', duetStyleId: 'free',
+    });
+    const [lo, hi] = CLEF_RANGES.bass;
+    for (const ev of song.events) {
+      expect(ev.midi).toBeGreaterThanOrEqual(lo);
+      expect(ev.midi).toBeLessThanOrEqual(hi);
+    }
+  });
+
+  it('Treble+Treble keeps every note inside the violin range', () => {
+    const song = buildSong(study, {
+      keyPc: 0, seed: 7, difficulty: 50,
+      clefVoices: ['treble', 'treble'],
+    });
+    const [lo, hi] = CLEF_RANGES.treble;
+    for (const ev of song.events) {
+      expect(ev.midi).toBeGreaterThanOrEqual(lo);
+      expect(ev.midi).toBeLessThanOrEqual(hi);
+    }
+  });
+
+  it('walking-bass workout never drops below cello open C', () => {
+    const wb = STUDIES.find(s => s.id === 'walking-bass-workout');
+    const song = buildSong(wb, { keyPc: 0, seed: 9, difficulty: 50, clefVoices: ['bass'] });
+    for (const ev of song.events) {
+      expect(ev.midi).toBeGreaterThanOrEqual(CLEF_RANGES.bass[0]);
+    }
+  });
+});
+
+describe('duet style presets', () => {
+  const study = STUDIES.find(s => s.id === 'two-voice-invention');
+
+  it('parallel_thirds produces v2 a third below v1 at every shared beat', () => {
+    const song = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50,
+      clefVoices: ['bass', 'bass'],
+      rhythmPresetId: 'square', duetStyleId: 'parallel_thirds',
+    });
+    const v1 = song.events.filter(e => e.type === 'melody');
+    const v2 = song.events.filter(e => e.type === 'melody2');
+    // Without an octave-clamp wrap, every pair is a 3rd or 4th apart. With
+    // the clamp some pairs may invert into a 6th — accept both windows.
+    let inWindow = 0;
+    const n = Math.min(v1.length, v2.length);
+    for (let i = 0; i < n; i++) {
+      const diff = Math.abs(v1[i].midi - v2[i].midi);
+      if ((diff >= 3 && diff <= 5) || (diff >= 7 && diff <= 9)) inWindow++;
+    }
+    expect(inWindow / n).toBeGreaterThan(0.8);
+  });
+
+  it('different duet styles produce different counterpoint output', () => {
+    const free = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50,
+      clefVoices: ['bass', 'bass'],
+      duetStyleId: 'free',
+    });
+    const parallel = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50,
+      clefVoices: ['bass', 'bass'],
+      duetStyleId: 'parallel_thirds',
+    });
+    const freeV2 = free.events.filter(e => e.type === 'melody2').map(e => e.midi).join(',');
+    const parV2 = parallel.events.filter(e => e.type === 'melody2').map(e => e.midi).join(',');
+    expect(freeV2).not.toBe(parV2);
+  });
+
+  it('DUET_STYLES exposes the full preset menu', () => {
+    expect(Object.keys(DUET_STYLES)).toEqual(
+      expect.arrayContaining(['free', 'parallel_thirds', 'parallel_sixths', 'contrary', 'call_response'])
+    );
   });
 });

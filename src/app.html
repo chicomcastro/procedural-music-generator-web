@@ -1068,6 +1068,11 @@
                     </div>
                 </header>
 
+                <section id="practice-favorites-section" class="practice-favorites-section" hidden>
+                    <h3 class="practice-favorites-title" data-i18n="practice.favorites">Saved studies</h3>
+                    <div id="practice-favorites" class="practice-favorites"></div>
+                </section>
+
                 <div id="practice-catalog" class="practice-catalog"></div>
 
                 <div id="practice-study-overlay" class="practice-stage overlay hidden" role="dialog" aria-modal="true" aria-labelledby="practice-study-title">
@@ -1080,10 +1085,17 @@
                                 <span class="practice-study-eyebrow" id="practice-study-eyebrow"></span>
                                 <h2 class="practice-study-title" id="practice-study-title">—</h2>
                             </div>
+                            <button id="practice-study-favorite" type="button" class="practice-nav-btn practice-favorite-btn" aria-label="Toggle favorite" aria-pressed="false" title="Save to favorites">
+                                <svg class="practice-favorite-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                            </button>
+                            <button id="practice-study-share" type="button" class="practice-nav-btn" aria-label="Share study" title="Share study">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                            </button>
                             <button id="practice-study-print" type="button" class="practice-nav-btn" aria-label="Print or save PDF" title="Print or save PDF">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
                             </button>
                         </header>
+                        <span id="practice-share-toast" class="practice-share-toast" role="status" aria-live="polite" hidden></span>
 
                         <p class="practice-study-desc" id="practice-study-desc"></p>
 
@@ -1117,6 +1129,12 @@
                                         <span data-i18n="practice.rhythm">Rhythm</span>
                                     </label>
                                     <select id="practice-rhythm" class="practice-select"></select>
+                                </div>
+                                <div class="practice-control" id="practice-duet-field">
+                                    <label class="practice-control-label" for="practice-duet">
+                                        <span data-i18n="practice.duet">Duet style</span>
+                                    </label>
+                                    <select id="practice-duet" class="practice-select"></select>
                                 </div>
                                 <div class="practice-control">
                                     <label class="practice-control-label" for="practice-difficulty">
