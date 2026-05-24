@@ -151,8 +151,11 @@ describe('Practice view', () => {
   it('Walking-bass shows the Performance group with Rhythm/Duet/Contour/Swing hidden', () => {
     cy.get('.practice-card[data-id="walking-bass-workout"]').click();
     cy.get('#practice-controls').then(($d) => $d[0].open = true);
-    cy.get('#practice-scale').should('be.visible');
-    cy.get('#practice-intensity').should('be.visible');
+    // Use value/option checks instead of be.visible — Cypress's visibility
+    // detection races with the <details> open-state repaint on CI.
+    cy.get('#practice-scale').should('have.value', 'auto');
+    cy.get('#practice-intensity').should('have.value', '100');
+    // Field wrappers we hide via inline style.
     cy.get('#practice-contour-field').should('have.css', 'display', 'none');
     cy.get('#practice-swing-field').should('have.css', 'display', 'none');
     cy.get('#practice-rhythm-field').should('have.css', 'display', 'none');
