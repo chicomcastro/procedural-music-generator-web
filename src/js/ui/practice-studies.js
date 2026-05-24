@@ -26,19 +26,19 @@ export const CLEF_ANCHORS = {
 };
 
 // Playable range per clef — used to clamp generator output so every note
-// lands on a real string / pitch the reader can actually play. The free
-// counterpoint mode previously produced notes below cello's open C
-// (MIDI 36) when fed a bass-clef anchor; this is the safety net.
+// lands on a real string / pitch the reader can actually play.
 //
-// Bass: cello's open C (36) to a comfortable D5 (74). The high end stays
-//   below the thumb-position cliff so first-read sessions don't hit
-//   uncomfortable territory.
+// Bass: E2 (40) — bass-guitar / contrabaixo open E, the practical lowest
+//   across the bass-clef-reading instruments we target. (Cello's open C
+//   is lower at MIDI 36, but tutti work rarely sits there and we'd
+//   rather err on the playable side.) High end stays at D5 (74) so
+//   first-read sessions don't hit thumb position.
 // Alto: viola's C string (48) to F5 (77).
 // Treble: violin's G string (55) to C6 (84).
 export const CLEF_RANGES = {
   treble: [55, 84],
   alto:   [48, 77],
-  bass:   [36, 74],
+  bass:   [40, 74],
 };
 
 // Counterpoint duet styles. Each maps to generateCounterpoint's `mode` +
@@ -61,6 +61,33 @@ export const RHYTHM_PRESETS = {
   flowing:    { label: 'Flowing',    density: 0.75, template: 'straight' },
   syncopated: { label: 'Syncopated', density: 0.85, template: 'syncopated' },
 };
+
+// Scales available as a global Practice override. When set, beats every
+// act's `params.scale` default. Keys match scaleNotesInRange's vocabulary
+// in src/js/theory/scales.js so the generator + clef-clamp paths stay
+// in sync.
+export const SCALE_OPTIONS = [
+  { id: 'auto',           label: 'Auto (per act)' },
+  { id: 'major',          label: 'Major' },
+  { id: 'natural_minor',  label: 'Natural minor' },
+  { id: 'harmonic_minor', label: 'Harmonic minor' },
+  { id: 'dorian',         label: 'Dorian' },
+  { id: 'mixolydian',     label: 'Mixolydian' },
+  { id: 'lydian',         label: 'Lydian' },
+  { id: 'pentatonic_major', label: 'Pentatonic major' },
+  { id: 'pentatonic_minor', label: 'Pentatonic minor' },
+];
+
+// Contour preset that overrides the act's contour. 'auto' falls back to
+// the act's own default (which is what shipped originally — Exposition
+// = arc, Development = wave, Recapitulation = descending).
+export const CONTOUR_OPTIONS = [
+  { id: 'auto',       label: 'Auto (per act)' },
+  { id: 'arc',        label: 'Arc' },
+  { id: 'wave',       label: 'Wave' },
+  { id: 'ascending',  label: 'Ascending' },
+  { id: 'descending', label: 'Descending' },
+];
 
 // Octave-shift a midi number so it lands inside [low, high]. If the note
 // is below `low`, repeatedly raise by 12; if above `high`, drop by 12.

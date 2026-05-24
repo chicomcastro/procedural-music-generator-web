@@ -157,4 +157,40 @@ describe('PracticeView smoke', () => {
     expect(section.hidden).toBe(true);
     expect(favBtn.classList.contains('is-favorited')).toBe(false);
   });
+
+  it('Share button falls back to clipboard when navigator.share is unavailable', async () => {
+    // jsdom does not ship navigator.share, so this exercises the fallback path.
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      configurable: true,
+    });
+    const { initPracticeView } = await import('../src/js/ui/PracticeView.js');
+    initPracticeView({ audioApi: audioMock() });
+    document.querySelector('.practice-card[data-id="two-voice-invention"]').click();
+    document.getElementById('practice-study-share').click();
+    // The async chain resolves after a microtask.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(writeText).toHaveBeenCalled();
+    const calledWith = writeText.mock.calls[0][0];
+    expect(calledWith).toContain('#/practice?');
+    expect(calledWith).toContain('study=two-voice-invention');
+  });
+
+  it('Share button prefers navigator.share when available', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const { initPracticeView } = await import('../src/js/ui/PracticeView.js');
+    initPracticeView({ audioApi: audioMock() });
+    document.querySelector('.practice-card[data-id="two-voice-invention"]').click();
+    document.getElementById('practice-study-share').click();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(share).toHaveBeenCalled();
+    expect(writeText).not.toHaveBeenCalled();
+    delete navigator.share;
+  });
 });

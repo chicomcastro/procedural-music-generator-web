@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, clampMidiToRange } from '../src/js/ui/practice-studies.js';
-import { __test } from '../src/js/ui/PracticeView.js';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, clampMidiToRange } from '../src/js/ui/practice-studies.js';
+import { __test, buildShareUrl, applyShareParams } from '../src/js/ui/PracticeView.js';
 
 const { buildSong } = __test;
 
@@ -288,5 +288,192 @@ describe('duet style presets', () => {
     expect(Object.keys(DUET_STYLES)).toEqual(
       expect.arrayContaining(['free', 'parallel_thirds', 'parallel_sixths', 'contrary', 'call_response'])
     );
+  });
+});
+
+describe('CLEF_RANGES.bass — E2 lower bound', () => {
+  it('bass clef low bound is MIDI 40 (E2) — bass-guitar / contrabaixo open E', () => {
+    expect(CLEF_RANGES.bass[0]).toBe(40);
+  });
+
+  it('walking-bass workout never emits a note below E2 across several seeds', () => {
+    const study = STUDIES.find(s => s.id === 'walking-bass-workout');
+    for (const seed of [1, 42, 3796780667, 999, 12345]) {
+      const song = buildSong(study, { keyPc: 0, seed, difficulty: 50, clefVoices: ['bass'] });
+      for (const ev of song.events) expect(ev.midi).toBeGreaterThanOrEqual(40);
+    }
+  });
+
+  it('two-voice invention with Bass+Bass also respects the E2 floor', () => {
+    const study = STUDIES.find(s => s.id === 'two-voice-invention');
+    for (const seed of [1, 42, 999]) {
+      const song = buildSong(study, {
+        keyPc: 0, seed, difficulty: 50,
+        clefVoices: ['bass', 'bass'],
+        rhythmPresetId: 'square', duetStyleId: 'free',
+      });
+      for (const ev of song.events) expect(ev.midi).toBeGreaterThanOrEqual(40);
+    }
+  });
+});
+
+describe('Scale + Contour + Swing + Intensity pickers', () => {
+  const study = STUDIES.find(s => s.id === 'two-voice-invention');
+
+  it('SCALE_OPTIONS includes auto + common scales', () => {
+    const ids = SCALE_OPTIONS.map(o => o.id);
+    expect(ids).toEqual(expect.arrayContaining(['auto', 'major', 'natural_minor', 'harmonic_minor', 'dorian']));
+  });
+
+  it('CONTOUR_OPTIONS includes auto + arc + wave + ascending + descending', () => {
+    const ids = CONTOUR_OPTIONS.map(o => o.id);
+    expect(ids).toEqual(expect.arrayContaining(['auto', 'arc', 'wave', 'ascending', 'descending']));
+  });
+
+  it('scaleId override changes the output relative to "auto"', () => {
+    const auto = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'],
+      rhythmPresetId: 'square', duetStyleId: 'free', scaleId: 'auto',
+    });
+    const dorian = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'],
+      rhythmPresetId: 'square', duetStyleId: 'free', scaleId: 'dorian',
+    });
+    expect(auto.events.map(e => e.midi).join(',')).not.toBe(dorian.events.map(e => e.midi).join(','));
+  });
+
+  it('contourId override changes the output relative to "auto"', () => {
+    const auto = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'],
+      rhythmPresetId: 'square', duetStyleId: 'free', contourId: 'auto',
+    });
+    const ascending = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'],
+      rhythmPresetId: 'square', duetStyleId: 'free', contourId: 'ascending',
+    });
+    expect(auto.events.map(e => e.midi).join(',')).not.toBe(ascending.events.map(e => e.midi).join(','));
+  });
+
+  it('swing > 0 shifts off-beat events later in time', () => {
+    const straight = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'],
+      rhythmPresetId: 'flowing', duetStyleId: 'free', swing: 0,
+    });
+    const swung = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'],
+      rhythmPresetId: 'flowing', duetStyleId: 'free', swing: 60,
+    });
+    // The swung version has events whose atBeat falls on non-integer
+    // boundaries (off-beats are pushed later by swing * 0.5). Some
+    // straight events also land off-beat, but the sum of fractional
+    // parts should differ between the two outputs.
+    const fracSum = (s) => s.events.reduce((acc, e) => acc + ((e.atBeat % 1) || 0), 0);
+    expect(fracSum(swung)).not.toBe(fracSum(straight));
+  });
+
+  it('intensity multiplier scales output velocities', () => {
+    const baseline = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'],
+      rhythmPresetId: 'square', duetStyleId: 'free', intensity: 100,
+    });
+    const loud = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'],
+      rhythmPresetId: 'square', duetStyleId: 'free', intensity: 140,
+    });
+    const quiet = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'],
+      rhythmPresetId: 'square', duetStyleId: 'free', intensity: 50,
+    });
+    const avgVel = (s) => s.events.reduce((a, e) => a + e.velocity, 0) / s.events.length;
+    expect(avgVel(loud)).toBeGreaterThan(avgVel(baseline));
+    expect(avgVel(quiet)).toBeLessThan(avgVel(baseline));
+  });
+});
+
+describe('buildShareUrl', () => {
+  beforeEach(() => {
+    // jsdom default origin
+    if (typeof window !== 'undefined') {
+      Object.defineProperty(window, 'location', {
+        value: new URL('http://localhost/app.html#/practice'),
+        configurable: true,
+        writable: true,
+      });
+    }
+  });
+
+  it('serialises every prefs field that has a non-default value', () => {
+    const url = buildShareUrl('two-voice-invention', {
+      seed: 42, keyPc: 5, difficulty: 70,
+      clefPresetId: 'treble-bass', rhythmPresetId: 'walking',
+      duetStyleId: 'parallel_sixths',
+      scaleId: 'dorian', contourId: 'arc',
+      swing: 30, intensity: 80,
+    });
+    expect(url).toContain('study=two-voice-invention');
+    expect(url).toContain('seed=42');
+    expect(url).toContain('key=5');
+    expect(url).toContain('clef=treble-bass');
+    expect(url).toContain('rhythm=walking');
+    expect(url).toContain('duet=parallel_sixths');
+    expect(url).toContain('scale=dorian');
+    expect(url).toContain('contour=arc');
+    expect(url).toContain('swing=30');
+    expect(url).toContain('intensity=80');
+    expect(url).toContain('diff=70');
+  });
+
+  it('omits defaults — scale=auto, contour=auto, swing=0, intensity=100 do not pollute the URL', () => {
+    const url = buildShareUrl('two-voice-invention', {
+      seed: 1, keyPc: 0, difficulty: 50,
+      scaleId: 'auto', contourId: 'auto', swing: 0, intensity: 100,
+    });
+    expect(url).not.toContain('scale=');
+    expect(url).not.toContain('contour=');
+    expect(url).not.toContain('swing=');
+    expect(url).not.toContain('intensity=');
+  });
+});
+
+describe('applyShareParams', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  function setHash(h) {
+    Object.defineProperty(window, 'location', {
+      value: new URL(`http://localhost/app.html${h}`),
+      configurable: true,
+      writable: true,
+    });
+  }
+
+  it('returns null when no hash query is present', () => {
+    setHash('#/practice');
+    expect(applyShareParams()).toBeNull();
+  });
+
+  it('returns null when the study id is unknown', () => {
+    setHash('#/practice?study=does-not-exist&seed=1');
+    expect(applyShareParams()).toBeNull();
+  });
+
+  it('returns the study id and applies all params to prefs', () => {
+    setHash('#/practice?study=two-voice-invention&seed=99&key=7&clef=treble-bass&rhythm=flowing&duet=contrary&scale=dorian&contour=arc&swing=40&intensity=80&diff=70');
+    const id = applyShareParams();
+    expect(id).toBe('two-voice-invention');
+
+    const persisted = JSON.parse(localStorage.getItem('seedsong-practice-prefs-v1'));
+    const sp = persisted.byStudy['two-voice-invention'];
+    expect(sp.seed).toBe(99);
+    expect(sp.keyPc).toBe(7);
+    expect(sp.clefPresetId).toBe('treble-bass');
+    expect(sp.rhythmPresetId).toBe('flowing');
+    expect(sp.duetStyleId).toBe('contrary');
+    expect(sp.scaleId).toBe('dorian');
+    expect(sp.contourId).toBe('arc');
+    expect(sp.swing).toBe(40);
+    expect(sp.intensity).toBe(80);
+    expect(sp.difficulty).toBe(70);
   });
 });
