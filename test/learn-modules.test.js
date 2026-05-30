@@ -104,6 +104,18 @@ describe('Learn curriculum data', () => {
     expect(p.length).toBeGreaterThanOrEqual(10);
   });
 
+  it('Reading group covers rhythm primitives + ties + sixteenths + key sigs + compound time', () => {
+    const r = MODULES.filter(m => m.group === 'Reading');
+    expect(r.length).toBe(5);
+    expect(r.map(m => m.id)).toEqual([
+      'reading-rhythms',
+      'reading-ties-dotted',
+      'reading-sixteenths',
+      'reading-key-signatures',
+      'reading-compound-time',
+    ]);
+  });
+
   it('Counterpoint group ships the 5-species curriculum', () => {
     const cp = MODULES.filter(m => m.group === 'Counterpoint');
     expect(cp.length).toBe(5);

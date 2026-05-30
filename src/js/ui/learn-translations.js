@@ -861,6 +861,104 @@ export const TR = {
       ],
     },
   },
+  'reading-ties-dotted': {
+    pt: {
+      title: 'Ritmos pontuados e ligaduras',
+      summary: 'Um ponto adiciona metade. Uma ligadura carrega a nota por cima da barra. Os dois jeitos de esticar uma nota além da figura escrita.',
+      tag: 'Leitura',
+      steps: [
+        { title: 'Pontue ou ligue', text: `Um <strong>ponto</strong> depois da nota soma metade do seu valor: semínima pontuada = semínima + colcheia = 1,5 tempos. Uma <strong>ligadura</strong> conecta duas notas adjacentes da mesma altura num único som sustentado — a segunda não é reatacada. Ligaduras são a única forma de segurar uma altura através da barra de compasso, e o jeito mais fácil de escrever uma duração que nenhuma figura cobre sozinha (tipo 5 semicolcheias).` },
+        { title: 'Semínima pontuada + colcheia', description: 'O padrão "longa-curta" de "Brilha Brilha Estrelinha" e mil cantigas folclóricas — pontuada no tempo, colcheia no "e".' },
+        { title: 'Mínima pontuada no tempo 1', description: 'Uma mínima pontuada = 3 tempos. Tempos 1-3 são uma nota sustentada; tempo 4 é o impulso pro próximo compasso.' },
+        { title: 'Ligada através da barra', description: 'Uma mínima ligada a uma semínima — a mesma altura sustentada por 3 tempos sobre a barra de compasso. O olho vê duas notas; o ouvido ouve uma.' },
+      ],
+    },
+    es: {
+      title: 'Ritmos puntillados y ligaduras',
+      summary: 'Un puntillo añade la mitad. Una ligadura lleva la nota a través de la barra. Las dos formas de estirar una nota más allá de la figura escrita.',
+      tag: 'Lectura',
+      steps: [
+        { title: 'Puntilla o liga', text: `Un <strong>puntillo</strong> tras la nota suma la mitad de su valor: negra con puntillo = negra + corchea = 1,5 pulsos. Una <strong>ligadura</strong> conecta dos notas adyacentes de la misma altura en un sonido sostenido — la segunda no se vuelve a atacar. Las ligaduras son la única forma de mantener una altura cruzando la barra de compás, y la manera más fácil de escribir una duración que ninguna figura cubre sola (como 5 semicorcheas).` },
+        { title: 'Negra con puntillo + corchea', description: 'El patrón "larga-corta" de "Estrellita" y mil canciones folk — puntillada en el pulso, corchea en el "y".' },
+        { title: 'Blanca con puntillo en el pulso 1', description: 'Una blanca con puntillo = 3 pulsos. Pulsos 1-3 son una nota sostenida; pulso 4 es el impulso al próximo compás.' },
+        { title: 'Ligada a través de la barra', description: 'Una blanca ligada a una negra — la misma altura sostenida 3 pulsos sobre la barra. El ojo ve dos notas; el oído oye una.' },
+      ],
+    },
+  },
+  'reading-sixteenths': {
+    pt: {
+      title: 'Semicolcheias',
+      summary: 'Quatro notas por tempo — o vocabulário rítmico de funk, samba e quase todo fill de bateria pop.',
+      tag: 'Leitura',
+      steps: [
+        { title: 'Subdividindo o tempo', text: `Uma <strong>semicolcheia</strong> vale um quarto de tempo, então quatro cabem em um tempo. A contagem clássica é <strong>1 e e a</strong> — "1" no tempo, "e" na segunda semicolcheia, "e" na colcheia (terceira semicolcheia), "a" na quarta. Grupos mistos (semicolcheia + colcheia pontuada, colcheia pontuada + semicolcheia) definem funk e o ritmo brasileiro.` },
+        { title: 'Semicolcheias direitas', description: 'Quatro semicolcheias por tempo, dois tempos seguidos. Conte "1 e e a, 2 e e a" pra travar a subdivisão.' },
+        { title: 'Scottish snap (semicolcheia + colcheia pontuada)', description: 'Semicolcheia no tempo, colcheia pontuada preenchendo o resto — o ritmo "snap" típico do folk escocês (e do baião brasileiro).' },
+        { title: 'Colcheia pontuada + semicolcheia (longa-curta)', description: 'O espelho: nota longa no tempo, pickup curto pro próximo. Conduz muita marcha e groove de rock.' },
+      ],
+    },
+    es: {
+      title: 'Semicorcheas',
+      summary: 'Cuatro notas por pulso — el vocabulario rítmico de funk, samba y casi todo fill de batería pop.',
+      tag: 'Lectura',
+      steps: [
+        { title: 'Subdividiendo el pulso', text: `Una <strong>semicorchea</strong> vale un cuarto de pulso, así que cuatro caben en un pulso. La cuenta estándar es <strong>1 e y a</strong> — "1" en el pulso, "e" en la segunda semicorchea, "y" en la corchea (tercera semicorchea), "a" en la cuarta. Grupos mixtos (semicorchea + corchea con puntillo, corchea con puntillo + semicorchea) definen el funk y el ritmo brasileño.` },
+        { title: 'Semicorcheas rectas', description: 'Cuatro semicorcheas por pulso, dos pulsos seguidos. Cuenta "1 e y a, 2 e y a" para fijar la subdivisión.' },
+        { title: 'Scottish snap (semicorchea + corchea con puntillo)', description: 'Semicorchea en el pulso, corchea con puntillo llenando el resto — el ritmo "snap" típico del folk escocés (y del baião brasileño).' },
+        { title: 'Corchea con puntillo + semicorchea (larga-corta)', description: 'El espejo: nota larga en el pulso, pickup corto al siguiente. Mueve muchas marchas y grooves de rock.' },
+      ],
+    },
+  },
+  'reading-key-signatures': {
+    pt: {
+      title: 'Sustenidos, bemóis e acidentes',
+      summary: 'Como acidentes se ligam à nota e a ordem de sustenidos e bemóis na armadura de clave.',
+      tag: 'Leitura',
+      steps: [
+        { title: 'Ordem dos sustenidos + ciclo de quintas', text: `Sustenidos e bemóis aparecem numa ordem fixa. Sustenidos: <strong>F C G D A E B</strong>. Bemóis: <strong>B E A D G C F</strong> (o inverso). Cada novo sustenido é uma 5ª acima do anterior; cada novo bemol é uma 5ª abaixo. Então Sol maior tem um sustenido (F#), Ré maior tem dois (F# C#), Lá maior tem três (F# C# G#), e por aí no ciclo de quintas.` },
+        { title: 'Escala de Sol maior (um sustenido: F♯)', description: 'Sol maior tem um sustenido — F♯. A escala sobe G A B C D E F♯ G.' },
+        { title: 'Escala de Fá maior (um bemol: B♭)', description: 'Fá maior tem um bemol — B♭. A escala sobe F G A B♭ C D E F.' },
+        { title: 'Escala de Ré maior (dois sustenidos: F♯ C♯)', description: 'Ré maior adiciona C♯ ao F♯ que já estava em Sol maior. Mesmo padrão, uma quinta acima.' },
+        { title: 'Pequena frase com acidente', description: 'Uma frase em Dó maior com um F♯ subido de passagem — vizinha cromática de Sol, comum tanto na clássica quanto no jazz.' },
+      ],
+    },
+    es: {
+      title: 'Sostenidos, bemoles y accidentales',
+      summary: 'Cómo los accidentales se ligan a la nota y el orden de sostenidos y bemoles en la armadura de clave.',
+      tag: 'Lectura',
+      steps: [
+        { title: 'Orden de los sostenidos + círculo de quintas', text: `Sostenidos y bemoles aparecen en un orden fijo. Sostenidos: <strong>F C G D A E B</strong>. Bemoles: <strong>B E A D G C F</strong> (al revés). Cada nuevo sostenido es una 5ª arriba del anterior; cada nuevo bemol es una 5ª abajo. Así, Sol mayor tiene un sostenido (F#), Re mayor tiene dos (F# C#), La mayor tiene tres (F# C# G#), y así por el círculo de quintas.` },
+        { title: 'Escala de Sol mayor (un sostenido: F♯)', description: 'Sol mayor tiene un sostenido — F♯. La escala asciende G A B C D E F♯ G.' },
+        { title: 'Escala de Fa mayor (un bemol: B♭)', description: 'Fa mayor tiene un bemol — B♭. La escala asciende F G A B♭ C D E F.' },
+        { title: 'Escala de Re mayor (dos sostenidos: F♯ C♯)', description: 'Re mayor añade C♯ al F♯ que ya estaba en Sol mayor. Mismo patrón, una quinta arriba.' },
+        { title: 'Frase corta con un accidental', description: 'Una frase en Do mayor con un F♯ subido de paso — vecino cromático de Sol, común tanto en clásica como en jazz.' },
+      ],
+    },
+  },
+  'reading-compound-time': {
+    pt: {
+      title: 'Compasso composto (6/8)',
+      summary: 'Os tempos se dividem em três, não em dois — o balanço de jigas, do folk irlandês e das canções de ninar.',
+      tag: 'Leitura',
+      steps: [
+        { title: 'Dois tempos, três notas cada', text: `<strong>Compasso composto</strong> divide cada tempo em três colcheias (não em duas). 6/8 é o composto mais comum — dois tempos por compasso, cada tempo = semínima pontuada = três colcheias. Conte "1 2 3, 4 5 6". Compare com 3/4 (três tempos por compasso, cada um = semínima, conte "1 e 2 e 3 e"): as mesmas seis colcheias por compasso, feeling totalmente diferente.` },
+        { title: 'Padrão de jiga (longa-curta-longa-curta)', description: 'Semínima + colcheia, semínima + colcheia — o pulso canônico da jiga. Cada par "longa-curta" preenche um tempo de semínima pontuada.' },
+        { title: 'Colcheias corridas', description: 'Seis colcheias iguais por compasso — o feeling "corrido" dentro do composto.' },
+        { title: 'Frase de canção de ninar (semínimas pontuadas)', description: 'Semínima pontuada por tempo — composto lento e balançado. A canção de ninar do Brahms vive aqui.' },
+      ],
+    },
+    es: {
+      title: 'Compás compuesto (6/8)',
+      summary: 'Los pulsos se dividen en tres, no en dos — el vaivén de las jigas, del folk irlandés y de las canciones de cuna.',
+      tag: 'Lectura',
+      steps: [
+        { title: 'Dos pulsos, tres notas cada uno', text: `El <strong>compás compuesto</strong> divide cada pulso en tres corcheas (no en dos). 6/8 es el compuesto más común — dos pulsos por compás, cada pulso = negra con puntillo = tres corcheas. Cuenta "1 2 3, 4 5 6". Compáralo con 3/4 (tres pulsos por compás, cada uno = negra, cuenta "1 y 2 y 3 y"): las mismas seis corcheas por compás, sensación totalmente distinta.` },
+        { title: 'Patrón de jiga (larga-corta-larga-corta)', description: 'Negra + corchea, negra + corchea — el pulso canónico de la jiga. Cada par "larga-corta" llena un pulso de negra con puntillo.' },
+        { title: 'Corcheas corridas', description: 'Seis corcheas iguales por compás — la sensación "corrida" dentro del compuesto.' },
+        { title: 'Frase de canción de cuna (negras con puntillo)', description: 'Negra con puntillo por pulso — compuesto lento y balanceado. La canción de cuna de Brahms vive aquí.' },
+      ],
+    },
+  },
   'duets': {
     pt: {
       title: 'Duo a duas vozes — básico',

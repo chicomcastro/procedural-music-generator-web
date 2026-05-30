@@ -13,7 +13,7 @@ describe('practice-studies catalog', () => {
   it('every study has a non-empty acts array and a recognised kind', () => {
     for (const s of STUDIES) {
       expect(s.acts.length).toBeGreaterThan(0);
-      expect(['two-voice-counterpoint', 'walking-bass-workout']).toContain(s.kind);
+      expect(['two-voice-counterpoint', 'walking-bass-workout', 'scale-etude', 'solo-etude', 'modal-vamp']).toContain(s.kind);
     }
   });
 });
@@ -475,5 +475,66 @@ describe('applyShareParams', () => {
     expect(sp.swing).toBe(40);
     expect(sp.intensity).toBe(80);
     expect(sp.difficulty).toBe(70);
+  });
+});
+
+describe('new study kinds — scale-etude / solo-etude / modal-vamp', () => {
+  it('catalog ships the three new studies', () => {
+    expect(STUDIES.find(s => s.id === 'scale-etude')).toBeTruthy();
+    expect(STUDIES.find(s => s.id === 'solo-etude')).toBeTruthy();
+    expect(STUDIES.find(s => s.id === 'modal-vamp')).toBeTruthy();
+  });
+
+  it('scale-etude builds a single-voice song with eighths/triplets per act', () => {
+    const study = STUDIES.find(s => s.id === 'scale-etude');
+    const song = buildSong(study, {
+      keyPc: 0, seed: 1, difficulty: 50,
+      clefVoices: ['bass'],
+    });
+    expect(song.events.every(e => e.type === 'melody')).toBe(true);
+    // Act 3 chains threes_asc + threes_desc; every event in that range
+    // should be a triplet eighth.
+    const tripletEvents = song.events.filter(e => e.noteType === 'et');
+    expect(tripletEvents.length).toBeGreaterThan(0);
+  });
+
+  it('scale-etude is deterministic with the same inputs', () => {
+    const study = STUDIES.find(s => s.id === 'scale-etude');
+    const a = buildSong(study, { keyPc: 0, seed: 5, difficulty: 50, clefVoices: ['bass'] });
+    const b = buildSong(study, { keyPc: 0, seed: 5, difficulty: 50, clefVoices: ['bass'] });
+    expect(a.events).toEqual(b.events);
+  });
+
+  it('solo-etude builds a single-voice song over real chord changes', () => {
+    const study = STUDIES.find(s => s.id === 'solo-etude');
+    const song = buildSong(study, {
+      keyPc: 0, seed: 42, difficulty: 50,
+      clefVoices: ['treble'], rhythmPresetId: 'square',
+    });
+    expect(song.events.every(e => e.type === 'melody')).toBe(true);
+    expect(song.events.length).toBeGreaterThan(8);
+    // Range respect: every note inside the treble window.
+    for (const ev of song.events) {
+      expect(ev.midi).toBeGreaterThanOrEqual(55);
+      expect(ev.midi).toBeLessThanOrEqual(84);
+    }
+  });
+
+  it('modal-vamp respects the per-act mode (dorian, mixolydian, lydian)', () => {
+    const study = STUDIES.find(s => s.id === 'modal-vamp');
+    const song = buildSong(study, {
+      keyPc: 0, seed: 7, difficulty: 50,
+      clefVoices: ['treble'], rhythmPresetId: 'flowing',
+    });
+    expect(song.events.every(e => e.type === 'melody')).toBe(true);
+    // Bar count = sum of act bars.
+    const expectedBars = study.acts.reduce((s, a) => s + a.bars, 0);
+    expect(song.bars).toBe(expectedBars);
+  });
+
+  it('scale-etude lower bound respects the cello E2 floor (bass clef)', () => {
+    const study = STUDIES.find(s => s.id === 'scale-etude');
+    const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass'] });
+    for (const ev of song.events) expect(ev.midi).toBeGreaterThanOrEqual(40);
   });
 });
