@@ -80,4 +80,25 @@ describe('Learn view — exercise flow', () => {
     cy.get('#exercise-tempo').invoke('val', 140).trigger('input');
     cy.get('#exercise-tempo-display').should('have.text', '140');
   });
+
+  it('Counterpoint group is listed and opens its first module', () => {
+    cy.get('.learn-card[data-id="counterpoint-species-1"]', { timeout: 8000 })
+      .scrollIntoView()
+      .should('be.visible')
+      .click();
+    cy.get('#learn-exercise-overlay').should('not.have.class', 'hidden');
+    // Title can be EN or a localised variant — match by regex.
+    cy.get('#exercise-title').invoke('text').should('match', /Note against note|Nota contra nota/);
+    // Module has 5 steps (1 theory + 4 exercises).
+    cy.get('.exercise-step-rail-item').should('have.length', 5);
+  });
+
+  it('Major scale ships method-book pattern exercises (pairs + threes)', () => {
+    cy.get('.learn-card[data-id="major-scale"]', { timeout: 8000 })
+      .scrollIntoView()
+      .click();
+    cy.get('#learn-exercise-overlay').should('not.have.class', 'hidden');
+    // 1 theory + 9 exercises = 10 steps total.
+    cy.get('.exercise-step-rail-item').should('have.length', 10);
+  });
 });
