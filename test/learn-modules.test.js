@@ -121,7 +121,7 @@ describe('Learn curriculum data', () => {
     // The user asked for "subindo/descendo de 2 em 2" and "de 3 em 3" on the
     // four most beginner-friendly scales. Each should now have ≥ 4 method
     // patterns added to whatever it already had.
-    const beginnerScaleIds = ['major-scale', 'natural-minor', 'pentatonic-minor', 'pentatonic-major'];
+    const beginnerScaleIds = ['major-scale', 'natural-minor', 'pentatonic-minor', 'pentatonic-major', 'blues-scale', 'harmonic-minor'];
     for (const id of beginnerScaleIds) {
       const mod = MODULES.find(m => m.id === id);
       expect(mod, `module ${id} missing`).toBeTruthy();
