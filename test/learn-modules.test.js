@@ -89,8 +89,8 @@ describe('Learn curriculum data', () => {
     }
   });
 
-  it('all 6 expected groups exist', () => {
-    const expected = ['Scales', 'Chords', 'Progressions', 'Walking Bass', 'Reading', 'Duets'];
+  it('all 7 expected groups exist', () => {
+    const expected = ['Scales', 'Chords', 'Progressions', 'Walking Bass', 'Reading', 'Duets', 'Counterpoint'];
     expect(GROUPS).toEqual(expected);
   });
 
@@ -102,5 +102,38 @@ describe('Learn curriculum data', () => {
   it('Progressions group has at least 10 modules', () => {
     const p = MODULES.filter(m => m.group === 'Progressions');
     expect(p.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it('Counterpoint group ships the 5-species curriculum', () => {
+    const cp = MODULES.filter(m => m.group === 'Counterpoint');
+    expect(cp.length).toBe(5);
+    const ids = cp.map(m => m.id);
+    expect(ids).toEqual([
+      'counterpoint-species-1',
+      'counterpoint-passing-tones',
+      'counterpoint-suspensions',
+      'counterpoint-imitation',
+      'counterpoint-free',
+    ]);
+  });
+
+  it('beginner scale modules carry the method-book pattern exercises', () => {
+    // The user asked for "subindo/descendo de 2 em 2" and "de 3 em 3" on the
+    // four most beginner-friendly scales. Each should now have ≥ 4 method
+    // patterns added to whatever it already had.
+    const beginnerScaleIds = ['major-scale', 'natural-minor', 'pentatonic-minor', 'pentatonic-major'];
+    for (const id of beginnerScaleIds) {
+      const mod = MODULES.find(m => m.id === id);
+      expect(mod, `module ${id} missing`).toBeTruthy();
+      const titles = mod.steps.map(s => s.title || '');
+      expect(titles.some(t => /pairs ascending|pares ascend/i.test(t)),
+        `${id} missing 'Pairs ascending' exercise`).toBe(true);
+      expect(titles.some(t => /pairs descending|pares descend/i.test(t)),
+        `${id} missing 'Pairs descending' exercise`).toBe(true);
+      expect(titles.some(t => /threes ascending|tr[ií]ades ascend/i.test(t)),
+        `${id} missing 'Threes ascending' exercise`).toBe(true);
+      expect(titles.some(t => /threes descending|tr[ií]ades descend/i.test(t)),
+        `${id} missing 'Threes descending' exercise`).toBe(true);
+    }
   });
 });

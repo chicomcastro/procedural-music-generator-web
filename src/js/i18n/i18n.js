@@ -141,6 +141,7 @@ const TRANSLATIONS = {
     'learn.group.walking_bass': 'Walking Bass',
     'learn.group.reading': 'Reading',
     'learn.group.duets': 'Duets',
+    'learn.group.counterpoint': 'Counterpoint',
     'learn.group.modes': 'Modes',
     'learn.group.favorites': 'Favorites',
 
@@ -354,6 +355,7 @@ const TRANSLATIONS = {
     'learn.group.walking_bass': 'Walking Bass',
     'learn.group.reading': 'Leitura',
     'learn.group.duets': 'Duos',
+    'learn.group.counterpoint': 'Contraponto',
     'learn.group.modes': 'Modos',
     'learn.group.favorites': 'Favoritos',
 
@@ -567,6 +569,7 @@ const TRANSLATIONS = {
     'learn.group.walking_bass': 'Walking Bass',
     'learn.group.reading': 'Lectura',
     'learn.group.duets': 'Dúos',
+    'learn.group.counterpoint': 'Contrapunto',
     'learn.group.modes': 'Modos',
     'learn.group.favorites': 'Favoritos',
 

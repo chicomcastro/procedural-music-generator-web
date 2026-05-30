@@ -70,4 +70,35 @@ describe('learn-translations', () => {
     const refs = getStepArray(mod, 0, 'references');
     expect(refs).toBe(mod.steps[0].references);
   });
+
+  it('every TR entry has step-count parity with the underlying module', () => {
+    // When a translation lags behind a module update, the UI silently falls
+    // back to EN for the missing steps — easy to miss in review. This test
+    // catches that.
+    for (const [id, langs] of Object.entries(TR)) {
+      const mod = MODULES.find(m => m.id === id);
+      if (!mod) continue;
+      for (const lang of ['pt', 'es']) {
+        if (!langs[lang] || !langs[lang].steps) continue;
+        expect(langs[lang].steps.length,
+          `${id} ${lang} step count drifted (TR has ${langs[lang].steps.length}, module has ${mod.steps.length})`)
+          .toBe(mod.steps.length);
+      }
+    }
+  });
+
+  it('all five counterpoint modules have PT + ES translations', () => {
+    const cpIds = [
+      'counterpoint-species-1',
+      'counterpoint-passing-tones',
+      'counterpoint-suspensions',
+      'counterpoint-imitation',
+      'counterpoint-free',
+    ];
+    for (const id of cpIds) {
+      expect(TR[id], `${id} TR entry missing`).toBeTruthy();
+      expect(TR[id].pt?.title, `${id} pt title missing`).toBeTruthy();
+      expect(TR[id].es?.title, `${id} es title missing`).toBeTruthy();
+    }
+  });
 });
