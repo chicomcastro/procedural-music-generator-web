@@ -119,13 +119,17 @@ function snapToGrid(beat, grid) {
   return Math.round(beat / grid) * grid;
 }
 
-function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstPart, clefSign, chordSymbols) {
+function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstPart, clefSign, chordSymbols, doubleBarsBefore) {
   const GRID = 0.25;
   let xml = '';
+  // Bar indices at which we draw a "light-light" (double) barline at the
+  // LEFT side — i.e. before the bar. Set form for O(1) lookup.
+  const doubleBars = new Set(doubleBarsBefore || []);
 
   for (let bar = 0; bar < totalBars; bar++) {
     const barStart = bar * beatsPerBar;
     const barEnd = barStart + beatsPerBar;
+    const drawDoubleLeft = doubleBars.has(bar);
 
     const harmonyXml = (chordSymbols && chordSymbols[bar])
       ? harmonyTagFor(chordSymbols[bar])
@@ -147,6 +151,12 @@ function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstP
       if (isFirstPart) {
         xml += buildTempoDirection(bpm);
       }
+    }
+
+    // Double-bar at the left edge of this bar (i.e. the divider between
+    // sections / acts in the Practice studies).
+    if (drawDoubleLeft) {
+      xml += '        <barline location="left">\n          <bar-style>light-light</bar-style>\n        </barline>\n';
     }
 
     if (harmonyXml) xml += `        ${harmonyXml}\n`;
@@ -262,7 +272,7 @@ function normaliseClef(sign) {
 // `chordSymbols` is an optional array of strings indexed by bar number;
 // when present, each non-empty entry adds a `<harmony>` tag to the first
 // part's measure so OSMD renders the chord name above the staff.
-export function songToMusicXML(song, { bpm = 120, tracks: trackFilter, clefOverrides, chordSymbols } = {}) {
+export function songToMusicXML(song, { bpm = 120, tracks: trackFilter, clefOverrides, chordSymbols, doubleBarsBefore } = {}) {
   const allPartDefs = [
     { id: 'P1', name: 'Melody',   type: 'melody',  drum: false },
     { id: 'P5', name: 'Melody 2', type: 'melody2', drum: false },
@@ -311,7 +321,7 @@ export function songToMusicXML(song, { bpm = 120, tracks: trackFilter, clefOverr
     xml += `  <part id="${part.id}">\n`;
     // Chord symbols only attach to the first part — OSMD draws them once above the system.
     const partChords = i === 0 ? chordSymbols : null;
-    xml += buildPartMeasures(partEvents, beatsPerBar, totalBars, part.drum, bpm, i === 0, clefSign, partChords);
+    xml += buildPartMeasures(partEvents, beatsPerBar, totalBars, part.drum, bpm, i === 0, clefSign, partChords, doubleBarsBefore);
     xml += '  </part>\n';
   }
 

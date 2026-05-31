@@ -880,7 +880,14 @@ async function playStep(step, opts) {
     const passSpanMs = (passDur + interLoopGap) * 1000;
     const currentLoop = Math.min(loops - 1, Math.floor(elapsed / passSpanMs));
     const inLoopMs = elapsed - currentLoop * passSpanMs;
-    const entry = Math.min(entriesPerPass - 1, Math.max(0, Math.floor(inLoopMs / (passDur / entriesPerPass) / 1000 * 1000)));
+    // Time per staff entry in seconds → ms. The previous expression
+    // (inLoopMs / (passDur/entriesPerPass) / 1000 * 1000) was a unit-
+    // confused no-op that simplified to inLoopMs * entriesPerPass /
+    // passDur, sending the cursor to the last entry within ~1ms of
+    // playback. Hence the "cursor flashes once then floats at the end"
+    // report. Correct: divide elapsed-ms by per-entry-ms.
+    const msPerEntry = (passDur * 1000) / entriesPerPass;
+    const entry = Math.min(entriesPerPass - 1, Math.max(0, Math.floor(inLoopMs / msPerEntry)));
     // If we entered a new loop, reset the cursor to the top of the staff.
     if (currentLoop !== lastLoop && currentLoop >= 0) {
       try { exerciseOSMD?.cursor?.reset(); } catch { /* ignore */ }

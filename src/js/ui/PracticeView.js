@@ -18,6 +18,25 @@ import { generateMelody } from '../generate/melody.js';
 import { generateCounterpoint } from '../generate/counterpoint.js';
 import { generateRhythm } from '../generate/rhythm.js';
 import { generateWalkingBass, progressionToChords, chordSymbolFor } from '../generate/walking-bass.js';
+
+// Infer a chord symbol from a diatonic triad's MIDI notes. The Practice
+// invention / solo / modal builders use chordFromDegree which returns
+// raw MIDI; we map back to the symbol shape (root + maj/min/dim suffix)
+// so the score can label each chord span.
+const PC_NAMES_CHORD = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+function chordSymbolFromTriad(notes) {
+  if (!Array.isArray(notes) || notes.length < 3) return '';
+  const [r, t, f] = notes;
+  const rootPc = ((r % 12) + 12) % 12;
+  const thirdInt = ((t - r) % 12 + 12) % 12;
+  const fifthInt = ((f - r) % 12 + 12) % 12;
+  const name = PC_NAMES_CHORD[rootPc];
+  if (thirdInt === 4 && fifthInt === 7) return name;
+  if (thirdInt === 3 && fifthInt === 7) return name + 'm';
+  if (thirdInt === 3 && fifthInt === 6) return name + '°';
+  if (thirdInt === 4 && fifthInt === 8) return name + 'aug';
+  return name;
+}
 import { loadAll as loadSamples, getPlaybackFor } from '../audio/SampleLibrary.js';
 import { createVoice } from '../audio/Voice.js';
 import { createSynthVoice } from '../audio/SynthVoice.js';
@@ -168,6 +187,8 @@ function buildTwoVoiceSong(study, opts) {
   const velocityScale = (intensityPct ?? 100) / 100;
   const beatsPerBar = 4;
   const events = [];
+  const chordSymbols = [];     // one entry per bar; '' = no change shown
+  const doubleBarsBefore = []; // bar indices where a double bar precedes the bar
   let accumulatedBeats = 0;
   let actBpm = null;
 
@@ -273,7 +294,20 @@ function buildTwoVoiceSong(study, opts) {
       });
     }
 
+    // Lay down chord symbols. Each progression-chord occupies one or more
+    // bars; emit the symbol on the bar where the chord starts, leave the
+    // bars it sustains across blank so OSMD only labels the change.
+    const actStartBar = accumulatedBeats / beatsPerBar;
+    for (let b = 0; b < act.bars; b++) chordSymbols.push('');
+    for (const ch of progression) {
+      const bar = actStartBar + Math.floor(ch.startBeat / beatsPerBar);
+      const idx = Math.round(bar);
+      if (idx < chordSymbols.length) chordSymbols[idx] = chordSymbolFromTriad(ch.notes);
+    }
+
     accumulatedBeats += act.bars * beatsPerBar;
+    // Mark a double bar before the next act (skip after the final act).
+    if (i < study.acts.length - 1) doubleBarsBefore.push(accumulatedBeats / beatsPerBar);
     // Use the first act's tempo for transport. (Per-act tempo can land in PR 2
     // alongside per-act overrides — OSMD supports tempo changes mid-score.)
     if (actBpm == null) actBpm = p.tempo || 90;
@@ -284,6 +318,8 @@ function buildTwoVoiceSong(study, opts) {
     beatsPerBar,
     lengthBeats: accumulatedBeats,
     events,
+    chordSymbols,
+    doubleBarsBefore,
     bpm: actBpm,
   };
 }
@@ -295,7 +331,8 @@ function buildWalkingBassSong(study, opts) {
   const velocityScale = (intensityPct ?? 100) / 100;
   const beatsPerBar = 4;
   const events = [];
-  const chordSymbols = [];   // indexed by bar — one symbol per bar
+  const chordSymbols = [];     // indexed by bar — one symbol per bar
+  const doubleBarsBefore = []; // bar indices preceded by a double bar (act boundaries)
   let accumulatedBeats = 0;
   let actBpm = null;
 
@@ -345,6 +382,7 @@ function buildWalkingBassSong(study, opts) {
     }
 
     accumulatedBeats += act.bars * beatsPerBar;
+    if (i < study.acts.length - 1) doubleBarsBefore.push(accumulatedBeats / beatsPerBar);
     if (actBpm == null) actBpm = p.tempo || 100;
   }
 
@@ -354,6 +392,7 @@ function buildWalkingBassSong(study, opts) {
     lengthBeats: accumulatedBeats,
     events,
     chordSymbols,
+    doubleBarsBefore,
     bpm: actBpm,
   };
 }
@@ -379,6 +418,7 @@ function buildScaleEtudeSong(study, opts) {
   const velocityScale = (intensityPct ?? 100) / 100;
   const beatsPerBar = 4;
   const events = [];
+  const doubleBarsBefore = [];
   let accumulatedBeats = 0;
   let actBpm = null;
 
@@ -420,6 +460,7 @@ function buildScaleEtudeSong(study, opts) {
     }
 
     accumulatedBeats += act.bars * beatsPerBar;
+    if (i < study.acts.length - 1) doubleBarsBefore.push(accumulatedBeats / beatsPerBar);
     if (actBpm == null) actBpm = p.tempo || 90;
   }
 
@@ -428,6 +469,7 @@ function buildScaleEtudeSong(study, opts) {
     beatsPerBar,
     lengthBeats: accumulatedBeats,
     events,
+    doubleBarsBefore,
     bpm: actBpm,
   };
 }
@@ -448,6 +490,8 @@ function buildSoloEtudeSong(study, opts) {
   const velocityScale = (intensityPct ?? 100) / 100;
   const beatsPerBar = 4;
   const events = [];
+  const chordSymbols = [];
+  const doubleBarsBefore = [];
   let accumulatedBeats = 0;
   let actBpm = null;
 
@@ -487,7 +531,17 @@ function buildSoloEtudeSong(study, opts) {
       });
     }
 
+    // Chord symbols above the bar each chord starts on; subsequent bars
+    // covered by the same chord stay blank so OSMD only labels changes.
+    const actStartBar = accumulatedBeats / beatsPerBar;
+    for (let b = 0; b < act.bars; b++) chordSymbols.push('');
+    for (const ch of progression) {
+      const idx = Math.round(actStartBar + Math.floor(ch.startBeat / beatsPerBar));
+      if (idx < chordSymbols.length) chordSymbols[idx] = chordSymbolFromTriad(ch.notes);
+    }
+
     accumulatedBeats += act.bars * beatsPerBar;
+    if (i < study.acts.length - 1) doubleBarsBefore.push(accumulatedBeats / beatsPerBar);
     if (actBpm == null) actBpm = p.tempo || 90;
   }
 
@@ -496,6 +550,8 @@ function buildSoloEtudeSong(study, opts) {
     beatsPerBar,
     lengthBeats: accumulatedBeats,
     events,
+    chordSymbols,
+    doubleBarsBefore,
     bpm: actBpm,
   };
 }
@@ -516,6 +572,8 @@ function buildModalVampSong(study, opts) {
   const velocityScale = (intensityPct ?? 100) / 100;
   const beatsPerBar = 4;
   const events = [];
+  const chordSymbols = [];
+  const doubleBarsBefore = [];
   let accumulatedBeats = 0;
   let actBpm = null;
 
@@ -560,7 +618,16 @@ function buildModalVampSong(study, opts) {
       });
     }
 
+    // Chord symbols — one per bar where each vamp chord starts.
+    const actStartBar = accumulatedBeats / beatsPerBar;
+    for (let b = 0; b < act.bars; b++) chordSymbols.push('');
+    for (const ch of progression) {
+      const idx = Math.round(actStartBar + Math.floor(ch.startBeat / beatsPerBar));
+      if (idx < chordSymbols.length) chordSymbols[idx] = chordSymbolFromTriad(ch.notes);
+    }
+
     accumulatedBeats += act.bars * beatsPerBar;
+    if (i < study.acts.length - 1) doubleBarsBefore.push(accumulatedBeats / beatsPerBar);
     if (actBpm == null) actBpm = p.tempo || 90;
   }
 
@@ -569,6 +636,8 @@ function buildModalVampSong(study, opts) {
     beatsPerBar,
     lengthBeats: accumulatedBeats,
     events,
+    chordSymbols,
+    doubleBarsBefore,
     bpm: actBpm,
   };
 }
@@ -847,6 +916,7 @@ async function regenerate() {
     tracks,
     clefOverrides,
     chordSymbols: song.chordSymbols,
+    doubleBarsBefore: song.doubleBarsBefore,
   });
   await renderSheet(xml);
 }
@@ -923,15 +993,37 @@ async function playSong() {
   const playBtn = document.getElementById('practice-play');
   if (playBtn) playBtn.classList.add('is-playing');
   playbackTimer = setTimeout(() => stopPlayback(), totalSec * 1000);
-  // tick the timer display
+
+  // Drive the OSMD cursor in lock-step with the audio. The cursor
+  // advances per "staff entry" (a beat position that carries one or more
+  // notes). Compute the distinct beat positions, sort them ascending,
+  // and step next() each time the elapsed time crosses the next one.
+  const beatPositions = Array.from(
+    new Set(lastSong.events.map(e => Math.round(e.atBeat * 1000) / 1000))
+  ).sort((a, b) => a - b);
+  try {
+    practiceOSMD?.cursor?.show();
+    practiceOSMD?.cursor?.reset();
+  } catch { /* ignore */ }
+  let cursorIdx = 0;   // first entry == 0 means the cursor sits at beat 0 already
+
   const startTs = performance.now();
   const tick = () => {
     if (!playbackTimer) return;
-    const elapsed = (performance.now() - startTs) / 1000;
-    const m = Math.floor(elapsed / 60);
-    const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
+    const elapsedMs = performance.now() - startTs;
+    const elapsedSec = elapsedMs / 1000;
+    const m = Math.floor(elapsedSec / 60);
+    const s = Math.floor(elapsedSec % 60).toString().padStart(2, '0');
     const t = document.getElementById('practice-playback-time');
     if (t) t.textContent = `${m}:${s}`;
+
+    // Advance the cursor as the elapsed beat crosses each next position.
+    const elapsedBeats = elapsedSec / beatDuration;
+    while (cursorIdx + 1 < beatPositions.length && elapsedBeats >= beatPositions[cursorIdx + 1]) {
+      try { practiceOSMD?.cursor?.next(); } catch { break; }
+      cursorIdx += 1;
+    }
+
     if (playbackTimer) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -945,6 +1037,7 @@ function stopPlayback() {
   scheduledVoices = [];
   const playBtn = document.getElementById('practice-play');
   if (playBtn) playBtn.classList.remove('is-playing');
+  try { practiceOSMD?.cursor?.hide(); } catch { /* ignore */ }
   const t = document.getElementById('practice-playback-time');
   if (t) t.textContent = '0:00';
 }
