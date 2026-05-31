@@ -68,16 +68,14 @@ describe('SettingsView', () => {
   it('download-data builds a JSON blob with the namespaced keys', async () => {
     localStorage.setItem('seedsong-history', JSON.stringify([{ seed: 1 }]));
     localStorage.setItem('seedsong-theme', 'dark');
-    // Capture the blob contents at construction time — jsdom's Blob doesn't
-    // implement .text() so we look at what URL.createObjectURL receives.
     let capturedJson = null;
-    URL.createObjectURL = vi.fn((blob) => {
-      // Use FileReader to read the blob synchronously isn't an option;
-      // but blob.size + blob.type tell us the JSON was wrapped correctly.
-      capturedJson = blob;
-      return 'blob:fake';
-    });
+    URL.createObjectURL = vi.fn((blob) => { capturedJson = blob; return 'blob:fake'; });
     URL.revokeObjectURL = vi.fn();
+    // Stub anchor.click — jsdom would attempt to navigate to the data URL
+    // and raise "Not implemented: navigation". The test only needs the
+    // blob assembly to be verifiable; the click side-effect is irrelevant.
+    const origClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = function () { /* no-op */ };
 
     const { initSettingsView } = await import('../src/js/ui/SettingsView.js');
     initSettingsView();
@@ -86,6 +84,8 @@ describe('SettingsView', () => {
     expect(capturedJson).toBeInstanceOf(Blob);
     expect(capturedJson.type).toBe('application/json');
     expect(capturedJson.size).toBeGreaterThan(0);
+
+    HTMLAnchorElement.prototype.click = origClick;
   });
 
   it('reset-data clears every namespaced key when the user confirms', async () => {
@@ -93,21 +93,26 @@ describe('SettingsView', () => {
     localStorage.setItem('seedsong-theme', 'dark');
     localStorage.setItem('seedsong-onboarding-done', '1');
     vi.spyOn(window, 'confirm').mockReturnValue(true);
-    // jsdom's location.reload throws "Not implemented". Swallow the
-    // exception so the click handler can complete its cleanup.
-    const origReload = window.location.reload;
-    try {
-      window.location.reload = () => {};   // jsdom allows direct overwrite
-    } catch { /* ignore — fallthrough still works */ }
+    // Replace jsdom's Location with a stub whose reload() is a no-op.
+    // jsdom's real reload triggers an async navigation that ends up as
+    // an unhandled error in the test runner.
+    const origLocation = window.location;
+    Object.defineProperty(window, 'location', {
+      value: { ...origLocation, reload: () => {} },
+      configurable: true,
+      writable: true,
+    });
 
     const { initSettingsView } = await import('../src/js/ui/SettingsView.js');
     initSettingsView();
-    try { document.getElementById('settings-reset').click(); } catch { /* reload may throw */ }
+    document.getElementById('settings-reset').click();
     expect(localStorage.getItem('seedsong-history')).toBeNull();
     expect(localStorage.getItem('seedsong-theme')).toBeNull();
     expect(localStorage.getItem('seedsong-onboarding-done')).toBeNull();
 
-    try { window.location.reload = origReload; } catch { /* ignore */ }
+    Object.defineProperty(window, 'location', {
+      value: origLocation, configurable: true, writable: true,
+    });
   });
 
   it('reset-data is a no-op when the user cancels the confirm dialog', async () => {
