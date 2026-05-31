@@ -6612,6 +6612,8 @@ body.practice-overlay-open { overflow: hidden; }
   flex-direction: column;
   gap: 10px;
 }
+/* The [hidden] attribute must win over our display:flex above. */
+.practice-favorites-section[hidden] { display: none; }
 .practice-favorites-title {
   margin: 0;
   font-size: 11px;

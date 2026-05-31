@@ -1849,6 +1849,197 @@ export const MODULES = [
       },
     ],
   },
+  {
+    id: 'reading-ties-dotted',
+    group: 'Reading',
+    tag: 'Reading',
+    title: 'Dotted rhythms and ties',
+    summary: 'A dot adds half. A tie carries a note across barlines. Both are how composers stretch a note past its written shape.',
+    steps: [
+      {
+        type: 'theory',
+        title: 'Dot it, or tie it',
+        text: `A <strong>dot</strong> after a note adds half its value: a dotted quarter = quarter + eighth = 1.5 beats. A <strong>tie</strong> connects two adjacent notes of the same pitch into one sustained sound — the second note is not re-attacked. Ties are the only way to hold a pitch across a barline, and the easiest way to write a duration that no single note-value covers (like 5 sixteenths).`,
+      },
+      {
+        type: 'exercise',
+        title: 'Dotted-quarter + eighth',
+        description: 'The "long-short" pattern of "Twinkle Twinkle" and a thousand folk tunes — a dotted quarter on the beat followed by an eighth on the "and".',
+        notes: [
+          { m: 60, t: 'qd' }, { m: 62, t: 'e' }, { m: 64, t: 'qd' }, { m: 65, t: 'e' },
+          { m: 67, t: 'qd' }, { m: 65, t: 'e' }, { m: 64, t: 'h' },
+        ],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'Dotted-half on beat 1',
+        description: 'A dotted half = 3 beats. Beats 1-3 are one held note; beat 4 is a kick to the next bar.',
+        notes: [
+          { m: 60, t: 'h' }, { m: 62, t: 'q' },  // half + quarter so OSMD reads it cleanly
+          { m: 64, t: 'h' }, { m: 65, t: 'q' },
+          { m: 67, t: 'h' }, { m: 67, t: 'q' },
+          { m: 60, t: 'w' },
+        ],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'Tied across the bar',
+        description: 'A half note tied to a quarter — the same pitch sustained for 3 beats across the barline. The eye sees two notes; the ear hears one.',
+        notes: [
+          60, 60, { m: 60, t: 'h' },
+          { m: 60, t: 'q' }, 62, 64, 65,
+        ],
+        style: 'melody',
+      },
+    ],
+  },
+  {
+    id: 'reading-sixteenths',
+    group: 'Reading',
+    tag: 'Reading',
+    title: 'Sixteenth notes',
+    summary: 'Four notes per beat — the rhythmic vocabulary of funk, samba and almost every pop drum fill.',
+    steps: [
+      {
+        type: 'theory',
+        title: 'Subdividing the beat',
+        text: `A <strong>sixteenth note</strong> takes a quarter of a beat, so four sixteenths fit in one beat. The standard counting syllable is <strong>1 e and a</strong> — "1" on the beat, "e" on the second sixteenth, "and" on the eighth-note (third sixteenth), "a" on the fourth. Mixed groups (sixteenth + dotted-eighth, dotted-eighth + sixteenth) define funk and Brazilian rhythm.`,
+      },
+      {
+        type: 'exercise',
+        title: 'Straight sixteenths',
+        description: 'Four sixteenths per beat, two beats in a row. Count "1 e and a, 2 e and a" to lock onto the subdivision.',
+        notes: [
+          { m: 60, t: 's' }, { m: 62, t: 's' }, { m: 64, t: 's' }, { m: 65, t: 's' },
+          { m: 67, t: 's' }, { m: 65, t: 's' }, { m: 64, t: 's' }, { m: 62, t: 's' },
+          { m: 60, t: 'h' },
+        ],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'Scottish snap (sixteenth + dotted-eighth)',
+        description: 'A sixteenth on the beat, dotted-eighth filling the rest — the "snap" rhythm typical of Scottish folk songs (and Brazilian baião).',
+        notes: [
+          { m: 60, t: 's' }, { m: 62, t: 'ed' }, { m: 64, t: 's' }, { m: 65, t: 'ed' },
+          { m: 67, t: 's' }, { m: 69, t: 'ed' }, { m: 67, t: 's' }, { m: 65, t: 'ed' },
+        ],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'Dotted-eighth + sixteenth (long-short)',
+        description: 'The mirror image: long note on the beat, short pickup to the next beat. Drives a lot of marches and rock grooves.',
+        notes: [
+          { m: 60, t: 'ed' }, { m: 62, t: 's' }, { m: 64, t: 'ed' }, { m: 65, t: 's' },
+          { m: 67, t: 'ed' }, { m: 69, t: 's' }, { m: 67, t: 'ed' }, { m: 65, t: 's' },
+        ],
+        style: 'melody',
+      },
+    ],
+  },
+  {
+    id: 'reading-key-signatures',
+    group: 'Reading',
+    tag: 'Reading',
+    title: 'Sharps, flats and accidentals',
+    summary: 'How accidentals attach to a note, and the order of sharps + flats in a key signature.',
+    steps: [
+      {
+        type: 'theory',
+        title: 'Order of sharps + circle of 5ths',
+        text: `Sharps and flats appear in a fixed order. Sharps: <strong>F C G D A E B</strong>. Flats: <strong>B E A D G C F</strong> (the reverse). Each new sharp is a 5th up from the previous; each new flat is a 5th down. So G major has one sharp (F#), D major has two (F# C#), A major has three (F# C# G#), and so on around the circle of 5ths.`,
+        references: [
+          'Mnemonic for sharps: "Father Charles Goes Down And Ends Battle"',
+          'Mnemonic for flats: "Battle Ends And Down Goes Charles Father"',
+        ],
+      },
+      {
+        type: 'exercise',
+        title: 'G major scale (one sharp: F♯)',
+        description: 'G major has one sharp — F♯. The scale ascends G A B C D E F♯ G.',
+        notes: [55, 57, 59, 60, 62, 64, 66, 67],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'F major scale (one flat: B♭)',
+        description: 'F major has one flat — B♭. The scale ascends F G A B♭ C D E F.',
+        notes: [53, 55, 57, 58, 60, 62, 64, 65],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'D major scale (two sharps: F♯ C♯)',
+        description: 'D major adds C♯ to the F♯ already in G major. Same pattern, one fifth up.',
+        notes: [50, 52, 54, 55, 57, 59, 61, 62],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'A short phrase with an accidental',
+        description: 'A C-major phrase with an F♯ raised in passing — a chromatic neighbour to G, common in classical and jazz alike.',
+        notes: [60, 64, 67, 66, 67, 64, 60],
+        style: 'melody',
+      },
+    ],
+  },
+  {
+    id: 'reading-compound-time',
+    group: 'Reading',
+    tag: 'Reading',
+    title: 'Compound time (6/8)',
+    summary: 'Beats divide into threes instead of twos — the lilt of jigs, Irish folk and lullabies.',
+    steps: [
+      {
+        type: 'theory',
+        title: 'Two beats, three notes each',
+        text: `<strong>Compound time</strong> divides each beat into three eighth notes (instead of two). 6/8 is the most common compound metre — two beats per bar, each beat = a dotted quarter = three eighths. Count "1 2 3, 4 5 6". Compare with 3/4 (three beats per bar, each = a quarter, count "1 and 2 and 3 and"): same six eighths per bar, completely different feel.`,
+        references: [
+          'Norwegian Wood (Beatles) — 6/8',
+          'House of the Rising Sun — 6/8',
+          'Irish jigs — almost universally 6/8',
+        ],
+      },
+      {
+        type: 'exercise',
+        title: 'Jig pattern (long-short-long-short)',
+        description: 'Quarter + eighth, quarter + eighth — the canonical jig pulse. Each "long-short" pair fills one dotted-quarter beat.',
+        notes: [
+          { m: 60, t: 'q' }, { m: 62, t: 'e' },
+          { m: 64, t: 'q' }, { m: 65, t: 'e' },
+          { m: 67, t: 'q' }, { m: 65, t: 'e' },
+          { m: 64, t: 'q' }, { m: 60, t: 'e' },
+        ],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'Running eighths',
+        description: 'Six even eighths per bar — the busy "running" feel inside compound time.',
+        notes: [
+          { m: 60, t: 'e' }, { m: 62, t: 'e' }, { m: 64, t: 'e' },
+          { m: 65, t: 'e' }, { m: 67, t: 'e' }, { m: 64, t: 'e' },
+          { m: 62, t: 'e' }, { m: 60, t: 'e' }, { m: 64, t: 'e' },
+          { m: 67, t: 'e' }, { m: 64, t: 'e' }, { m: 60, t: 'e' },
+        ],
+        style: 'melody',
+      },
+      {
+        type: 'exercise',
+        title: 'Lullaby phrase (dotted-quarters)',
+        description: 'A dotted quarter per beat — slow, swinging compound feel. Brahms\' lullaby lives here.',
+        notes: [
+          { m: 67, t: 'qd' }, { m: 67, t: 'qd' },
+          { m: 69, t: 'qd' }, { m: 72, t: 'qd' },
+          { m: 71, t: 'qd' }, { m: 67, t: 'qd' },
+        ],
+        style: 'melody',
+      },
+    ],
+  },
   // ================= DUETS =================
   {
     id: 'duets',

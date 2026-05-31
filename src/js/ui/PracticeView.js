@@ -11,13 +11,16 @@
 // workout, master slider, key picker, seed reroll, audio playback, print
 // stylesheet (no per-act overrides yet — those land in PR 2).
 
-import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, clampMidiToRange } from './practice-studies.js';
+import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, SCALE_PATTERNS, SCALE_SHAPES, VOICE_OPTIONS, clampMidiToRange } from './practice-studies.js';
 import { getStudyField } from './practice-translations.js';
 import { mulberry32, randomSeed } from '../generate/rng.js';
 import { generateMelody } from '../generate/melody.js';
 import { generateCounterpoint } from '../generate/counterpoint.js';
 import { generateRhythm } from '../generate/rhythm.js';
 import { generateWalkingBass, progressionToChords, chordSymbolFor } from '../generate/walking-bass.js';
+import { loadAll as loadSamples, getPlaybackFor } from '../audio/SampleLibrary.js';
+import { createVoice } from '../audio/Voice.js';
+import { createSynthVoice } from '../audio/SynthVoice.js';
 import { chordFromDegree, PROGRESSIONS } from '../theory/chords.js';
 import { songToMusicXML } from '../export/musicxml.js';
 import { t, onLangChange } from '../i18n/i18n.js';
@@ -33,7 +36,7 @@ let practiceOSMD = null;
 let lastSong = null;            // most recent generated song (for playback)
 let lastBpm = 100;
 let playbackTimer = null;
-let scheduledNodes = [];
+let scheduledVoices = [];
 
 // =============================================================================
 // Persistence
@@ -89,6 +92,7 @@ function getStudyPrefs(studyId) {
   if (p.contourId == null) p.contourId = 'auto';
   if (p.swing == null) p.swing = 0;
   if (p.intensity == null) p.intensity = 100;
+  if (p.voiceId == null) p.voiceId = null;   // null = use the kind's default
   return p;
 }
 
@@ -357,7 +361,216 @@ function buildWalkingBassSong(study, opts) {
 function buildSong(study, opts) {
   if (study.kind === 'two-voice-counterpoint') return buildTwoVoiceSong(study, opts);
   if (study.kind === 'walking-bass-workout') return buildWalkingBassSong(study, opts);
+  if (study.kind === 'scale-etude') return buildScaleEtudeSong(study, opts);
+  if (study.kind === 'solo-etude') return buildSoloEtudeSong(study, opts);
+  if (study.kind === 'modal-vamp') return buildModalVampSong(study, opts);
   throw new Error(`Unknown study kind: ${study.kind}`);
+}
+
+// =============================================================================
+// Generation — scale etude
+//
+// Each act runs a SCALE_PATTERNS function over the act's SCALE_SHAPES
+// scale to produce a stream of pitch-class steps. Notes render as eighth
+// notes (triplets for the threes patterns), one act after the next.
+
+function buildScaleEtudeSong(study, opts) {
+  const { keyPc, difficulty, clefVoices, scaleId, intensity: intensityPct } = opts;
+  const velocityScale = (intensityPct ?? 100) / 100;
+  const beatsPerBar = 4;
+  const events = [];
+  let accumulatedBeats = 0;
+  let actBpm = null;
+
+  const [clef] = clefVoices || ['treble'];
+  const anchor = CLEF_ANCHORS[clef] ?? 60;
+  const range = CLEF_RANGES[clef] || [36, 84];
+
+  for (let i = 0; i < study.acts.length; i++) {
+    const act = study.acts[i];
+    const p = scaleParams(act.params, difficulty / 100);
+    const actTonic = anchor + ((keyPc + (act.keyShift || 0)) % 12);
+    const scaleName = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
+    const shape = SCALE_SHAPES[scaleName] || SCALE_SHAPES.major;
+
+    // Combine the act's primary pattern with the optional secondary (used
+    // for the threes act so each etude bar gets up + down). Both run
+    // against the same scale shape.
+    const patternIds = [act.patternId, act.patternIdSecond].filter(Boolean);
+    const isTriplet = patternIds.some(id => id?.startsWith('threes'));
+    const noteType = isTriplet ? 'et' : 'e';
+    const beatPerNote = isTriplet ? (1 / 3) : 0.5;
+
+    const sequence = [];
+    for (const pid of patternIds) {
+      const groups = SCALE_PATTERNS[pid].build(shape.length);
+      for (const g of groups) for (const idx of g) sequence.push(shape[idx]);
+    }
+
+    for (let j = 0; j < sequence.length; j++) {
+      const midi = clampMidiToRange(actTonic + sequence[j], range);
+      events.push({
+        type: 'melody',
+        midi,
+        atBeat: accumulatedBeats + j * beatPerNote,
+        durationBeats: beatPerNote,
+        velocity: Math.min(1, 0.75 * velocityScale),
+        noteType,
+      });
+    }
+
+    accumulatedBeats += act.bars * beatsPerBar;
+    if (actBpm == null) actBpm = p.tempo || 90;
+  }
+
+  return {
+    bars: accumulatedBeats / beatsPerBar,
+    beatsPerBar,
+    lengthBeats: accumulatedBeats,
+    events,
+    bpm: actBpm,
+  };
+}
+
+// =============================================================================
+// Generation — solo etude (single voice over real chord changes)
+//
+// Same shape as the two-voice invention but only voice 1. Inherits the
+// rhythm / contour / scale / swing / intensity controls so everything in
+// the Adjust panel still works.
+
+function buildSoloEtudeSong(study, opts) {
+  const {
+    keyPc, seed, difficulty, clefVoices, rhythmPresetId,
+    scaleId, contourId, swing: swingPct, intensity: intensityPct,
+  } = opts;
+  const swing = (swingPct ?? 0) / 100;
+  const velocityScale = (intensityPct ?? 100) / 100;
+  const beatsPerBar = 4;
+  const events = [];
+  let accumulatedBeats = 0;
+  let actBpm = null;
+
+  const [clef] = clefVoices || ['treble'];
+  const anchor = CLEF_ANCHORS[clef] ?? 60;
+  const range = CLEF_RANGES[clef] || [36, 84];
+  const rhythmPreset = rhythmPresetId && RHYTHM_PRESETS[rhythmPresetId];
+
+  for (let i = 0; i < study.acts.length; i++) {
+    const act = study.acts[i];
+    const p = scaleParams(act.params, difficulty / 100);
+    const rng = mulberry32(seed + i * 1000003);
+
+    const tonic = anchor + ((keyPc + (act.keyShift || 0)) % 12);
+    const scale = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
+    const degrees = PROGRESSIONS[act.progression] || PROGRESSIONS.pop;
+    const beatsPerChord = (act.bars * beatsPerBar) / degrees.length;
+    const progression = degrees.map((deg, idx) => ({
+      startBeat: idx * beatsPerChord,
+      durationBeats: beatsPerChord,
+      notes: chordFromDegree(tonic, scale, deg),
+    }));
+
+    const density = rhythmPreset ? rhythmPreset.density : p.density;
+    const template = rhythmPreset ? rhythmPreset.template : 'auto';
+    const rhythm = generateRhythm(rng, { bars: act.bars, beatsPerBar, density, swing, template });
+    const contour = (contourId && contourId !== 'auto') ? contourId : (p.contour || 'auto');
+    const line = generateMelody(rng, { progression, rhythm, scale, tonic, contour });
+
+    for (const ev of line) {
+      events.push({
+        type: 'melody',
+        midi: clampMidiToRange(ev.midi, range),
+        atBeat: accumulatedBeats + ev.atBeat,
+        durationBeats: ev.durationBeats,
+        velocity: Math.min(1, (ev.velocity ?? 0.7) * velocityScale),
+      });
+    }
+
+    accumulatedBeats += act.bars * beatsPerBar;
+    if (actBpm == null) actBpm = p.tempo || 90;
+  }
+
+  return {
+    bars: accumulatedBeats / beatsPerBar,
+    beatsPerBar,
+    lengthBeats: accumulatedBeats,
+    events,
+    bpm: actBpm,
+  };
+}
+
+// =============================================================================
+// Generation — modal vamp
+//
+// Each act repeats a short chord vamp (e.g. [1, 4] for i-IV) for the
+// act's bar count, and a single voice improvises over it in the act's
+// chosen mode. Single voice; clef + range controls apply.
+
+function buildModalVampSong(study, opts) {
+  const {
+    keyPc, seed, difficulty, clefVoices, rhythmPresetId,
+    scaleId, contourId, swing: swingPct, intensity: intensityPct,
+  } = opts;
+  const swing = (swingPct ?? 0) / 100;
+  const velocityScale = (intensityPct ?? 100) / 100;
+  const beatsPerBar = 4;
+  const events = [];
+  let accumulatedBeats = 0;
+  let actBpm = null;
+
+  const [clef] = clefVoices || ['treble'];
+  const anchor = CLEF_ANCHORS[clef] ?? 60;
+  const range = CLEF_RANGES[clef] || [36, 84];
+  const rhythmPreset = rhythmPresetId && RHYTHM_PRESETS[rhythmPresetId];
+
+  for (let i = 0; i < study.acts.length; i++) {
+    const act = study.acts[i];
+    const p = scaleParams(act.params, difficulty / 100);
+    const rng = mulberry32(seed + i * 1000003);
+
+    const tonic = anchor + ((keyPc + (act.keyShift || 0)) % 12);
+    const scale = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
+    // Each vamp degree gets 2 bars; cycle through act.bars.
+    const vamp = act.vampDegrees || [1, 5];
+    const beatsPerChord = beatsPerBar * 2;
+    const totalChords = Math.ceil((act.bars * beatsPerBar) / beatsPerChord);
+    const progression = [];
+    for (let k = 0; k < totalChords; k++) {
+      progression.push({
+        startBeat: k * beatsPerChord,
+        durationBeats: beatsPerChord,
+        notes: chordFromDegree(tonic, scale, vamp[k % vamp.length]),
+      });
+    }
+
+    const density = rhythmPreset ? rhythmPreset.density : p.density;
+    const template = rhythmPreset ? rhythmPreset.template : 'auto';
+    const rhythm = generateRhythm(rng, { bars: act.bars, beatsPerBar, density, swing, template });
+    const contour = (contourId && contourId !== 'auto') ? contourId : (p.contour || 'auto');
+    const line = generateMelody(rng, { progression, rhythm, scale, tonic, contour });
+
+    for (const ev of line) {
+      events.push({
+        type: 'melody',
+        midi: clampMidiToRange(ev.midi, range),
+        atBeat: accumulatedBeats + ev.atBeat,
+        durationBeats: ev.durationBeats,
+        velocity: Math.min(1, (ev.velocity ?? 0.7) * velocityScale),
+      });
+    }
+
+    accumulatedBeats += act.bars * beatsPerBar;
+    if (actBpm == null) actBpm = p.tempo || 90;
+  }
+
+  return {
+    bars: accumulatedBeats / beatsPerBar,
+    beatsPerBar,
+    lengthBeats: accumulatedBeats,
+    events,
+    bpm: actBpm,
+  };
 }
 
 // =============================================================================
@@ -539,6 +752,25 @@ function populateControls() {
     document.getElementById('practice-intensity-display').textContent = `${intInput.value}%`;
   }
 
+  // Voice picker — defaults to the study kind's preferred instrument when
+  // the user hasn't picked one. 'auto' = follow the per-kind default.
+  const voiceSel = document.getElementById('practice-voice');
+  if (voiceSel) {
+    voiceSel.innerHTML = '';
+    const autoOpt = document.createElement('option');
+    autoOpt.value = '';
+    autoOpt.textContent = `Auto (${DEFAULT_VOICE_BY_KIND[activeStudy.kind] || 'piano'})`;
+    if (!studyPrefs.voiceId) autoOpt.selected = true;
+    voiceSel.appendChild(autoOpt);
+    for (const v of VOICE_OPTIONS) {
+      const o = document.createElement('option');
+      o.value = v.id;
+      o.textContent = v.label;
+      if (v.id === studyPrefs.voiceId) o.selected = true;
+      voiceSel.appendChild(o);
+    }
+  }
+
   const diff = document.getElementById('practice-difficulty');
   diff.value = String(studyPrefs.difficulty);
   document.getElementById('practice-difficulty-display').textContent = `${studyPrefs.difficulty}%`;
@@ -602,7 +834,9 @@ async function regenerate() {
   // Pick which track types to include based on the study kind.
   const tracks = activeStudy.kind === 'two-voice-counterpoint'
     ? ['melody', 'melody2']
-    : ['bass'];
+    : activeStudy.kind === 'walking-bass-workout'
+    ? ['bass']
+    : ['melody'];   // scale-etude / solo-etude / modal-vamp
   const clefOverrides = {
     melody: clefVoices[0],
     melody2: clefVoices[1] || clefVoices[0],
@@ -620,8 +854,42 @@ async function regenerate() {
 // =============================================================================
 // Audio playback
 
-function midiToFreq(midi) {
-  return 440 * 2 ** ((midi - 69) / 12);
+// Default instrument per study kind. 'piano' uses the SampleLibrary; the
+// others map to SynthVoice presets. Per-prefs override via the Voice
+// picker on the Adjust panel.
+const DEFAULT_VOICE_BY_KIND = {
+  'two-voice-counterpoint': 'piano',
+  'walking-bass-workout': 'bass',
+  'scale-etude': 'piano',
+  'solo-etude': 'piano',
+  'modal-vamp': 'epiano',
+};
+
+let samplesReady = false;
+let samplesLoading = null;
+
+async function ensureSamplesLoaded(ctx) {
+  if (samplesReady) return true;
+  if (samplesLoading) {
+    try { await samplesLoading; return samplesReady; } catch { return false; }
+  }
+  samplesLoading = loadSamples(ctx)
+    .then(() => { samplesReady = true; })
+    .catch(err => { console.warn('Practice: piano samples unavailable, falling back to synth.', err); samplesReady = false; });
+  await samplesLoading;
+  return samplesReady;
+}
+
+// Returns a voice for the given midi + chosen instrument id. Falls back
+// to a synth preset when the piano samples aren't loaded yet.
+function spawnVoice(ctx, dest, midi, instrument, when, duration, velocity) {
+  if (instrument === 'piano' && samplesReady) {
+    const { buffer, playbackRate } = getPlaybackFor(midi);
+    return createVoice(ctx, dest, { buffer, playbackRate, velocity, when, duration, releaseTime: 0.25 });
+  }
+  // Map 'piano' fallback + any other id to a synth preset.
+  const preset = instrument === 'piano' ? 'epiano' : instrument;
+  return createSynthVoice(ctx, dest, { midi, velocity, when, duration, preset, releaseTime: 0.2 });
 }
 
 async function playSong() {
@@ -633,24 +901,22 @@ async function playSong() {
   if (!dest) return;
   stopPlayback();
 
+  // Pick the voice for this study. Walking-bass studies get the synth
+  // bass; melodic studies prefer the piano samples (fall back to epiano
+  // if the samples don't load — e.g. offline).
+  const studyKind = activeStudy?.kind;
+  const sp = activeStudy ? getStudyPrefs(activeStudy.id) : null;
+  const instrument = sp?.voiceId || DEFAULT_VOICE_BY_KIND[studyKind] || 'piano';
+  if (instrument === 'piano') await ensureSamplesLoaded(ctx);
+
   const beatDuration = 60 / lastBpm;
   const startAt = ctx.currentTime + 0.05;
   for (const ev of lastSong.events) {
     const when = startAt + ev.atBeat * beatDuration;
     const dur = ev.durationBeats * beatDuration;
-    const osc = ctx.createOscillator();
-    osc.type = ev.type === 'bass' ? 'triangle' : 'sine';
-    osc.frequency.setValueAtTime(midiToFreq(ev.midi), when);
-    const gain = ctx.createGain();
-    const v = (ev.velocity || 0.7) * 0.4;
-    gain.gain.setValueAtTime(0, when);
-    gain.gain.linearRampToValueAtTime(v, when + 0.01);
-    gain.gain.linearRampToValueAtTime(0, when + dur);
-    osc.connect(gain);
-    gain.connect(dest);
-    osc.start(when);
-    osc.stop(when + dur + 0.05);
-    scheduledNodes.push(osc, gain);
+    const v = (ev.velocity || 0.7) * 0.6;
+    const voice = spawnVoice(ctx, dest, ev.midi, instrument, when, dur, v);
+    scheduledVoices.push(voice);
   }
 
   const totalSec = lastSong.lengthBeats * beatDuration + 0.5;
@@ -673,11 +939,10 @@ async function playSong() {
 
 function stopPlayback() {
   if (playbackTimer) { clearTimeout(playbackTimer); playbackTimer = null; }
-  for (const n of scheduledNodes) {
-    try { n.stop?.(); } catch { /* ignore */ }
-    try { n.disconnect(); } catch { /* ignore */ }
+  for (const v of scheduledVoices) {
+    try { v?.release?.(0.1); } catch { /* ignore */ }
   }
-  scheduledNodes = [];
+  scheduledVoices = [];
   const playBtn = document.getElementById('practice-play');
   if (playBtn) playBtn.classList.remove('is-playing');
   const t = document.getElementById('practice-playback-time');
@@ -988,6 +1253,13 @@ export function initPracticeView({ audioApi } = {}) {
     document.getElementById('practice-intensity-display').textContent = `${sp.intensity}%`;
     savePrefs();
     regenerate();
+  });
+  document.getElementById('practice-voice')?.addEventListener('change', (e) => {
+    if (!activeStudy) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.voiceId = e.target.value || null;
+    savePrefs();
+    // No regenerate() — voice only affects playback, not the score.
   });
   document.getElementById('practice-difficulty')?.addEventListener('input', (e) => {
     if (!activeStudy) return;

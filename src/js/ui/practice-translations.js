@@ -29,6 +29,42 @@ export const TR = {
       eyebrow: 'Bajo · 3 actos',
     },
   },
+  'scale-etude': {
+    pt: {
+      title: 'Estudo de Escala',
+      summary: 'Padrões de método (pares e tríades, sub. + desc.) montados como uma peça contínua por ato. Escolha a escala, leve o estudo.',
+      eyebrow: 'Técnica · 3 atos',
+    },
+    es: {
+      title: 'Estudio de Escala',
+      summary: 'Patrones de método (pares y tríadas, asc. + desc.) montados como una pieza continua por acto. Elige la escala, recibe el estudio.',
+      eyebrow: 'Técnica · 3 actos',
+    },
+  },
+  'solo-etude': {
+    pt: {
+      title: 'Estudo Solo',
+      summary: 'Uma voz sobre mudanças reais de acordes — 3 movimentos, cada um uma melodia procedural que você lê sozinho.',
+      eyebrow: 'Melodia · 3 atos',
+    },
+    es: {
+      title: 'Estudio Solo',
+      summary: 'Una voz sobre cambios reales de acordes — 3 movimientos, cada uno una melodía procedural que lees solo.',
+      eyebrow: 'Melodía · 3 actos',
+    },
+  },
+  'modal-vamp': {
+    pt: {
+      title: 'Vamp Modal',
+      summary: 'Um vamp de dois acordes embaixo de uma exploração melódica — um modo por ato. Treina o ouvido pra cor modal.',
+      eyebrow: 'Modal · 3 atos',
+    },
+    es: {
+      title: 'Vamp Modal',
+      summary: 'Un vamp de dos acordes bajo una exploración melódica — un modo por acto. Entrena el oído para el color modal.',
+      eyebrow: 'Modal · 3 actos',
+    },
+  },
 };
 
 // Look up a localized study field with EN fallback.

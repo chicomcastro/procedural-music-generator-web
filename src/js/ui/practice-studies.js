@@ -89,6 +89,47 @@ export const CONTOUR_OPTIONS = [
   { id: 'descending', label: 'Descending' },
 ];
 
+// Voice presets the Practice player can switch to. 'piano' uses the
+// real-sample library; the others are SynthVoice presets. Each study
+// declares a default kind-appropriate voice, and learners can override.
+export const VOICE_OPTIONS = [
+  { id: 'piano',  label: 'Piano (samples)' },
+  { id: 'epiano', label: 'Electric piano' },
+  { id: 'strings', label: 'Strings' },
+  { id: 'bass',   label: 'Synth bass' },
+  { id: 'organ',  label: 'Organ' },
+  { id: 'marimba', label: 'Marimba' },
+  { id: 'pluck',  label: 'Pluck' },
+];
+
+// Scale-etude pattern definitions. Each pattern is a function of the
+// scale's pitch classes (0-indexed within the scale) → an array of
+// pitch-class steps that build the line. Combined with a key + a scale
+// shape (a list of semitone offsets from the tonic), the buildSong path
+// can produce a full method-book piece.
+export const SCALE_PATTERNS = {
+  asc:         { label: 'Ascending',         build: (n) => Array.from({ length: n }, (_, i) => [i]) },
+  desc:        { label: 'Descending',        build: (n) => Array.from({ length: n }, (_, i) => [n - 1 - i]) },
+  pairs_asc:   { label: 'Pairs ascending',   build: (n) => Array.from({ length: n - 1 }, (_, i) => [i, i + 1]) },
+  pairs_desc:  { label: 'Pairs descending',  build: (n) => Array.from({ length: n - 1 }, (_, i) => [n - 1 - i, n - 2 - i]) },
+  threes_asc:  { label: 'Threes ascending',  build: (n) => Array.from({ length: n - 2 }, (_, i) => [i, i + 1, i + 2]) },
+  threes_desc: { label: 'Threes descending', build: (n) => Array.from({ length: n - 2 }, (_, i) => [n - 1 - i, n - 2 - i, n - 3 - i]) },
+};
+
+// Scale shapes — semitone offsets from the tonic, ending on the octave.
+// Used by scale-etude when applying a pattern.
+export const SCALE_SHAPES = {
+  major:          [0, 2, 4, 5, 7, 9, 11, 12],
+  natural_minor:  [0, 2, 3, 5, 7, 8, 10, 12],
+  harmonic_minor: [0, 2, 3, 5, 7, 8, 11, 12],
+  dorian:         [0, 2, 3, 5, 7, 9, 10, 12],
+  mixolydian:     [0, 2, 4, 5, 7, 9, 10, 12],
+  lydian:         [0, 2, 4, 6, 7, 9, 11, 12],
+  pentatonic_major: [0, 2, 4, 7, 9, 12],
+  pentatonic_minor: [0, 3, 5, 7, 10, 12],
+  blues:          [0, 3, 5, 6, 7, 10, 12],
+};
+
 // Octave-shift a midi number so it lands inside [low, high]. If the note
 // is below `low`, repeatedly raise by 12; if above `high`, drop by 12.
 // Falls back to the nearest range bound on degenerate ranges.
@@ -204,6 +245,128 @@ export const STUDIES = [
         keyShift: 0,
         progression: '12-bar-blues',
         params: { tempo: 130, scale: 'natural_minor' },
+      },
+    ],
+  },
+  {
+    id: 'scale-etude',
+    kind: 'scale-etude',
+    category: 'technique',
+    title: 'Scale Etude',
+    summary: 'Method-book patterns (pairs and threes, asc + desc) built into one continuous piece per act. Pick the scale, get the etude.',
+    eyebrow: 'Technique · 3 acts',
+    clefPresets: [
+      { id: 'bass',   label: 'Bass clef (cello / bass)',  voices: ['bass'] },
+      { id: 'treble', label: 'Treble clef (violin / RH)', voices: ['treble'] },
+      { id: 'alto',   label: 'Alto clef (viola)',         voices: ['alto'] },
+    ],
+    keyOptions: [0, 2, 5, 7, 9],
+    acts: [
+      {
+        id: 'ascending',
+        title: 'I — Up the scale (pairs)',
+        bars: 4,
+        keyShift: 0,
+        patternId: 'pairs_asc',
+        params: { tempo: 80, scale: 'major' },
+      },
+      {
+        id: 'descending',
+        title: 'II — Down the scale (pairs)',
+        bars: 4,
+        keyShift: 0,
+        patternId: 'pairs_desc',
+        params: { tempo: 88, scale: 'major' },
+      },
+      {
+        id: 'threes',
+        title: 'III — Threes up + down',
+        bars: 8,
+        keyShift: 0,
+        patternId: 'threes_asc',     // build path chains asc + desc for this act
+        patternIdSecond: 'threes_desc',
+        params: { tempo: 96, scale: 'major' },
+      },
+    ],
+  },
+  {
+    id: 'solo-etude',
+    kind: 'solo-etude',
+    category: 'melody',
+    title: 'Solo Etude',
+    summary: 'One voice over real chord changes — 3 movements, each a procedural melody you can read alone.',
+    eyebrow: 'Melody · 3 acts',
+    clefPresets: [
+      { id: 'treble', label: 'Treble clef',                voices: ['treble'] },
+      { id: 'bass',   label: 'Bass clef (cello / bass)',   voices: ['bass'] },
+      { id: 'alto',   label: 'Alto clef (viola)',          voices: ['alto'] },
+    ],
+    rhythmDefault: 'square',
+    keyOptions: [0, 2, 5, 7, 9],
+    acts: [
+      {
+        id: 'exposition',
+        title: 'I — Pop axis',
+        bars: 8,
+        keyShift: 0,
+        progression: 'pop',
+        params: { density: 0.5, chromaticPct: 0, tempo: 90, contour: 'arc' },
+      },
+      {
+        id: 'jazz',
+        title: 'II — ii-V-I changes',
+        bars: 8,
+        keyShift: 0,
+        progression: 'ii-V-I',
+        params: { density: 0.6, chromaticPct: 0.15, tempo: 100, contour: 'wave', scale: 'major' },
+      },
+      {
+        id: 'blues',
+        title: 'III — Blues turnaround',
+        bars: 12,
+        keyShift: 0,
+        progression: '12-bar-blues',
+        params: { density: 0.55, chromaticPct: 0.1, tempo: 110, contour: 'descending', scale: 'blues' },
+      },
+    ],
+  },
+  {
+    id: 'modal-vamp',
+    kind: 'modal-vamp',
+    category: 'modal',
+    title: 'Modal Vamp',
+    summary: 'A repeating two-chord vamp under a melodic exploration — one mode per act. Builds your ear for modal colour.',
+    eyebrow: 'Modal · 3 acts',
+    clefPresets: [
+      { id: 'treble', label: 'Treble clef',              voices: ['treble'] },
+      { id: 'bass',   label: 'Bass clef (cello / bass)', voices: ['bass'] },
+    ],
+    rhythmDefault: 'flowing',
+    keyOptions: [0, 2, 5, 7, 9],
+    acts: [
+      {
+        id: 'dorian',
+        title: 'I — Dorian (i — IV)',
+        bars: 8,
+        keyShift: 0,
+        vampDegrees: [1, 4],
+        params: { density: 0.55, chromaticPct: 0, tempo: 90, contour: 'wave', scale: 'dorian' },
+      },
+      {
+        id: 'mixolydian',
+        title: 'II — Mixolydian (I — ♭VII)',
+        bars: 8,
+        keyShift: 0,
+        vampDegrees: [1, 7],
+        params: { density: 0.6, chromaticPct: 0, tempo: 96, contour: 'arc', scale: 'mixolydian' },
+      },
+      {
+        id: 'lydian',
+        title: 'III — Lydian (I — II)',
+        bars: 8,
+        keyShift: 0,
+        vampDegrees: [1, 2],
+        params: { density: 0.55, chromaticPct: 0.05, tempo: 88, contour: 'wave', scale: 'lydian' },
       },
     ],
   },
