@@ -68,13 +68,17 @@ if (typeof HTMLCanvasElement !== 'undefined') {
   HTMLCanvasElement.prototype.toBlob = function (cb) { cb(new Blob([], { type: 'image/png' })); };
 }
 
-// PointerEvent isn't in jsdom; fall back to MouseEvent for the tests.
-if (typeof globalThis.PointerEvent === 'undefined') {
-  globalThis.PointerEvent = class PointerEvent extends MouseEvent {
-    constructor(type, init = {}) {
-      super(type, init);
-      this.pointerId = init.pointerId || 0;
-      this.pointerType = init.pointerType || 'mouse';
-    }
-  };
+// PointerEvent isn't in jsdom; fall back to MouseEvent for the tests
+// that synthesise drags. Guard the polyfill — if MouseEvent isn't on
+// this realm (e.g. node tests not running in jsdom) skip the patch.
+if (typeof globalThis.PointerEvent === 'undefined' && typeof globalThis.MouseEvent !== 'undefined') {
+  try {
+    globalThis.PointerEvent = class PointerEvent extends globalThis.MouseEvent {
+      constructor(type, init = {}) {
+        super(type, init);
+        this.pointerId = init.pointerId || 0;
+        this.pointerType = init.pointerType || 'mouse';
+      }
+    };
+  } catch { /* ignore — MouseEvent may not be constructable in some envs */ }
 }

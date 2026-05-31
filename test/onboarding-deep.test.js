@@ -6,7 +6,21 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const STORAGE_KEY = 'seedsong-onboarding-done';
 
-const settle = () => new Promise(r => setTimeout(r, 350));
+// Onboarding's renderStep schedules content via setTimeout(300). Wait
+// for that to land + a small grace window. Polls instead of fixed-delay
+// to be CI-runtime tolerant (the previous fixed 350ms tripped on the
+// slower GitHub Actions runner).
+async function settle(maxWaitMs = 1500) {
+  // Wait for the latest content tick — the step-num span is what
+  // renderStep writes inside its setTimeout. We resolve as soon as it's
+  // up to date, or fall through at maxWaitMs.
+  const deadline = Date.now() + maxWaitMs;
+  await new Promise(r => setTimeout(r, 320));   // pass the 300ms setTimeout
+  while (Date.now() < deadline) {
+    if (document.querySelector('.onboarding-step-num')) return;
+    await new Promise(r => setTimeout(r, 50));
+  }
+}
 
 function scaffoldDom() {
   document.body.innerHTML = `
@@ -120,10 +134,11 @@ describe('Onboarding — full flow', () => {
     expect(document.querySelector('.onboarding-card')).toBeFalsy();
   });
 
-  it('walking through every step ends on the finish button + setLocalStorage', async () => {
+  it('walking through every step ends on the finish button + setLocalStorage', { timeout: 15000 }, async () => {
     const { startOnboarding } = await import('../src/js/ui/Onboarding.js');
     startOnboarding();
-    for (let i = 0; i < 20; i++) {
+    // STEPS.length is 9 — cap a little above to be safe but not 20.
+    for (let i = 0; i < 12; i++) {
       await settle();
       const nextBtn = document.querySelector('.onboarding-next');
       if (!nextBtn) break;
