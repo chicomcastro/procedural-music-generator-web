@@ -113,4 +113,40 @@ describe('songToMusicXML', () => {
     const bassPart = xml.match(/<part id="P3">[\s\S]*?<\/part>/);
     if (bassPart) expect(bassPart[0]).not.toMatch(/<harmony>/);
   });
+
+  it('emits a light-light barline at every bar in doubleBarsBefore', () => {
+    const xml = songToMusicXML(makeSong({ bars: 4, lengthBeats: 16 }), {
+      tracks: ['melody'],
+      doubleBarsBefore: [2],
+    });
+    const matches = xml.match(/<bar-style>light-light<\/bar-style>/g) || [];
+    expect(matches.length).toBe(1);
+    expect(xml).toMatch(/<barline location="left">/);
+  });
+
+  it('emits multiple double barlines when multiple boundaries are passed', () => {
+    const xml = songToMusicXML(makeSong({ bars: 8, lengthBeats: 32 }), {
+      tracks: ['melody'],
+      doubleBarsBefore: [2, 4, 6],
+    });
+    const matches = xml.match(/<bar-style>light-light<\/bar-style>/g) || [];
+    expect(matches.length).toBe(3);
+  });
+
+  it('skips double barlines when doubleBarsBefore is missing or empty', () => {
+    const xmlMissing = songToMusicXML(makeSong(), { tracks: ['melody'] });
+    expect(xmlMissing).not.toMatch(/<bar-style>light-light/);
+    const xmlEmpty = songToMusicXML(makeSong(), { tracks: ['melody'], doubleBarsBefore: [] });
+    expect(xmlEmpty).not.toMatch(/<bar-style>light-light/);
+  });
+
+  it('places double barlines per-part (each staff shows the divider)', () => {
+    const xml = songToMusicXML(makeSong({ bars: 4, lengthBeats: 16 }), {
+      tracks: ['melody', 'bass'],
+      doubleBarsBefore: [2],
+    });
+    // 2 parts × 1 boundary = 2 light-light tags.
+    const matches = xml.match(/<bar-style>light-light<\/bar-style>/g) || [];
+    expect(matches.length).toBe(2);
+  });
 });

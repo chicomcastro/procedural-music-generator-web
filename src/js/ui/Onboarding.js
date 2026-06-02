@@ -146,7 +146,7 @@ function positionCard(target, position) {
     cardEl.setAttribute('data-arrow', 'up');
   }
 
-  requestAnimationFrame(() => cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+  requestAnimationFrame(() => cardEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
 }
 
 function next() {

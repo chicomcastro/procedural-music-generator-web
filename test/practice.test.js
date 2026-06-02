@@ -538,3 +538,47 @@ describe('new study kinds — scale-etude / solo-etude / modal-vamp', () => {
     for (const ev of song.events) expect(ev.midi).toBeGreaterThanOrEqual(40);
   });
 });
+
+describe('chord symbols + double bars on Practice studies', () => {
+  it('two-voice-invention emits a chord symbol at the start of each chord span', () => {
+    const study = STUDIES.find(s => s.id === 'two-voice-invention');
+    const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass', 'bass'] });
+    expect(Array.isArray(song.chordSymbols)).toBe(true);
+    // 3 acts × 8 bars each = 24 bars. Each act has 4 chords spanning 2
+    // bars each, so 4 chord symbols per act, 12 total.
+    const nonEmpty = song.chordSymbols.filter(s => s);
+    expect(nonEmpty.length).toBe(12);
+  });
+
+  it('walking-bass-workout emits one chord per bar', () => {
+    const study = STUDIES.find(s => s.id === 'walking-bass-workout');
+    const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass'] });
+    expect(song.chordSymbols.length).toBe(song.bars);
+  });
+
+  it('solo-etude + modal-vamp emit chord symbols', () => {
+    for (const id of ['solo-etude', 'modal-vamp']) {
+      const study = STUDIES.find(s => s.id === id);
+      const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['treble'] });
+      expect(song.chordSymbols.filter(s => s).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('every multi-act study marks the act boundaries with doubleBarsBefore', () => {
+    for (const study of STUDIES) {
+      const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: study.clefPresets[0].voices });
+      // Acts−1 boundaries (no boundary AFTER the last act).
+      expect(song.doubleBarsBefore).toHaveLength(study.acts.length - 1);
+      // Each entry is the bar index where the boundary sits.
+      let cumulative = 0;
+      for (let i = 0; i < study.acts.length - 1; i++) {
+        cumulative += study.acts[i].bars;
+        expect(song.doubleBarsBefore[i]).toBe(cumulative);
+      }
+    }
+  });
+});
+
+describe('musicxml emission — chord symbols + double bars', () => {
+  it.todo('moved to test/musicxml.test.js');
+});

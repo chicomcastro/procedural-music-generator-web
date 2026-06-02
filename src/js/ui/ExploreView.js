@@ -611,7 +611,9 @@ export function initExploreView({ audioApi, onLoadSeed }) {
   // Keyboard shortcuts
   document.addEventListener('keydown', (e) => {
     if (document.getElementById('view-explore')?.classList.contains('hidden')) return;
-    if (e.target.matches('input, textarea, select')) return;
+    // e.target can be the document (when a keydown is dispatched at the
+    // document level), in which case .matches isn't defined. Guard.
+    if (e.target?.matches?.('input, textarea, select')) return;
     if (e.key === 'ArrowLeft') { swipeAndAdvance('left', 'skip'); e.preventDefault(); }
     else if (e.key === 'ArrowRight') { swipeAndAdvance('right', 'like'); e.preventDefault(); }
     else if (e.key === 'ArrowUp') { saveBtn?.click(); e.preventDefault(); }
