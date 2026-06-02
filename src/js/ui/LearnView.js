@@ -17,22 +17,30 @@ const SUPPORTED_CLEFS = ['treble', 'bass', 'alto'];
 // octave shift that keeps a step's notes within a comfortable range.
 const TESSITURA_CENTER = { treble: 71, bass: 50, alto: 60 };
 
+// Bump when changing the default for an existing pref so the old value gets
+// overridden once. `prefsV` tracks the migration the user's localStorage has
+// already been through.
+const PREFS_VERSION = 2;
+
 function readPrefs() {
   try {
     const v = JSON.parse(localStorage.getItem(PREFS_KEY)) || {};
+    // The repeat default flipped from true to false. Override stored values
+    // from older versions so existing users see the new default once.
+    const migratedRepeat = v.prefsV === PREFS_VERSION ? v.repeat === true : false;
     return {
       clef: SUPPORTED_CLEFS.includes(v.clef) ? v.clef : 'treble',
       tempo: Number.isFinite(v.tempo) ? Math.max(40, Math.min(200, v.tempo)) : 110,
-      // Repeat each example twice by default — feels more like a practice loop.
-      repeat: v.repeat !== false,
+      repeat: migratedRepeat,
       recordMode: v.recordMode === true,
     };
-  } catch { return { clef: 'treble', tempo: 110, repeat: true, recordMode: false }; }
+  } catch { return { clef: 'treble', tempo: 110, repeat: false, recordMode: false }; }
 }
 
 function writePrefs(prefs) {
   try {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
+      prefsV: PREFS_VERSION,
       clef: prefs.clef,
       tempo: prefs.tempo,
       repeat: !!prefs.repeat,
@@ -823,6 +831,23 @@ async function playStep(step, opts) {
     entriesPerPass = xnotes.length;
   }
 
+  // Pre-compute the cumulative END time (in ms) of every entry in one pass —
+  // the cursor should sit on entry i while the clock is between bounds[i-1]
+  // and bounds[i]. Uniform for chord/progression; per-note for melody.
+  const entryEndsMs = [];
+  if (step.style === 'chord') {
+    entryEndsMs.push(passDur * 1000);
+  } else if (step.style === 'progression') {
+    const each = passDur * 1000 / entriesPerPass;
+    for (let i = 0; i < entriesPerPass; i++) entryEndsMs.push((i + 1) * each);
+  } else {
+    let cumMs = 0;
+    for (const n of xnotes) {
+      cumMs += noteBeats(n) * beatDur * 1000;
+      entryEndsMs.push(cumMs);
+    }
+  }
+
   for (let loop = 0; loop < loops; loop++) {
     const offset = loop * (passDur + interLoopGap);
     if (step.style === 'chord' && Array.isArray(xnotes) && typeof xnotes[0] === 'number') {
@@ -868,27 +893,37 @@ async function playStep(step, opts) {
   } catch { /* ignore */ }
   const startMs = performance.now();
   const totalMs = totalDur * 1000;
-  let lastEntry = -1;
-  let lastLoop = -1;
+  // After osmd.cursor.reset() the cursor sits ON entry 0, so that's where
+  // we start tracking from — not -1. Calling cursor.next() advances to N+1,
+  // so we only call it when we cross into a new entry.
+  let lastEntry = 0;
+  let lastLoop = 0;
   if (playbackTimer) clearInterval(playbackTimer);
   playbackTimer = setInterval(() => {
     const elapsed = performance.now() - startMs;
     const pct = Math.min(100, (elapsed / totalMs) * 100);
     setPlaybackProgress(pct);
 
-    // Compute the current loop and the index inside the loop.
+    // Which loop are we in, and how far through it (in ms)?
     const passSpanMs = (passDur + interLoopGap) * 1000;
     const currentLoop = Math.min(loops - 1, Math.floor(elapsed / passSpanMs));
     const inLoopMs = elapsed - currentLoop * passSpanMs;
-    const entry = Math.min(entriesPerPass - 1, Math.max(0, Math.floor(inLoopMs / (passDur / entriesPerPass) / 1000 * 1000)));
+
+    // Find the entry the audio is currently on. entryEndsMs[i] is the *end*
+    // of entry i, so the current entry is the first one whose end is still
+    // ahead of us. Cap at the last entry so we never advance past the staff.
+    let entry = entryEndsMs.findIndex(b => inLoopMs < b);
+    if (entry < 0) entry = entriesPerPass - 1;
+
     // If we entered a new loop, reset the cursor to the top of the staff.
-    if (currentLoop !== lastLoop && currentLoop >= 0) {
+    if (currentLoop !== lastLoop) {
       try { exerciseOSMD?.cursor?.reset(); } catch { /* ignore */ }
       lastLoop = currentLoop;
-      lastEntry = -1;
+      lastEntry = 0;
     }
-    // Advance the cursor as we cross entry boundaries.
-    while (lastEntry < entry) {
+    // Advance the cursor as we cross entry boundaries. Cap at the last entry.
+    const target = Math.min(entry, entriesPerPass - 1);
+    while (lastEntry < target) {
       try { exerciseOSMD?.cursor?.next(); } catch { break; }
       lastEntry += 1;
     }
@@ -982,7 +1017,7 @@ const exerciseOpts = {
   octaveShift: 0,
   transpose: 0,
   tempo: 110,
-  repeat: true,
+  repeat: false,
   recordMode: false,
 };
 
