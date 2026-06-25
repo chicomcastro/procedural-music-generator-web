@@ -1178,6 +1178,23 @@ button {
   background: var(--accent-glow);
 }
 
+.section-meta-chip-pivot {
+  color: #ffb86b;
+  border-color: #ffb86b;
+  background: rgba(255, 184, 107, 0.08);
+}
+
+.section-edit-field-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-edit-field-checkbox > span {
+  display: inline;
+  justify-content: flex-start;
+}
+
 .section-block-tracks {
   display: flex;
   flex-wrap: wrap;

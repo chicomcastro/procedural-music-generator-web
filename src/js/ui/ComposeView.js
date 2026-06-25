@@ -3,6 +3,7 @@ import { generateSong } from '../generate/song.js';
 import { audioBufferToWav } from '../export/wav.js';
 import { downloadBlob } from '../export/download.js';
 import { playDrumHit } from '../audio/DrumSynth.js';
+import { SCALES } from '../theory/scales.js';
 import { t, onLangChange } from '../i18n/i18n.js';
 
 const STORAGE_KEY = 'seedsong-compose-project';
@@ -43,6 +44,7 @@ function templateFromSection(sec) {
     tracks: [...(sec.tracks || ['melody', 'chord', 'bass', 'drum'])],
     transitionIn: sec.transitionIn || 'hard',
     transitionBars: sec.transitionBars ?? 1,
+    pivotNote: !!sec.pivotNote,
   };
 }
 
@@ -129,6 +131,7 @@ function load() {
   for (const s of sections) {
     if (s.transitionIn == null) s.transitionIn = 'hard';
     if (s.transitionBars == null) s.transitionBars = 1;
+    if (s.pivotNote == null) s.pivotNote = false;
   }
 }
 function save(takeSnapshot = true) {
@@ -146,6 +149,37 @@ let playStartTime = 0;
 let activeSectionIndex = -1;
 
 function midiToFreq(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
+
+// ADR 0003: pick a pivot pitch class that's in both keys, scored by its
+// scale-degree role in the INCOMING key. Deterministic given the inputs.
+function pickPivotPitchClass(tonicPrev, scalePrev, tonicCurr, scaleCurr) {
+  const intervalsPrev = SCALES[scalePrev] || SCALES.major;
+  const intervalsCurr = SCALES[scaleCurr] || SCALES.major;
+  const pcPrev = new Set(intervalsPrev.map(i => ((tonicPrev + i) % 12 + 12) % 12));
+  const pcCurr = new Set(intervalsCurr.map(i => ((tonicCurr + i) % 12 + 12) % 12));
+  const common = [...pcCurr].filter(pc => pcPrev.has(pc));
+  if (common.length === 0) return ((tonicCurr % 12) + 12) % 12;
+  function score(pc) {
+    const rel = ((pc - tonicCurr) % 12 + 12) % 12;
+    if (rel === 0) return 100;
+    if (rel === 7) return 80;
+    if (rel === 5) return 60;
+    if (rel === 3 || rel === 4) return 40;
+    return 10;
+  }
+  let best = common[0];
+  let bestScore = -1;
+  for (const pc of common) {
+    const s = score(pc);
+    if (s > bestScore) { bestScore = s; best = pc; }
+  }
+  return best;
+}
+
+function pivotMidiForBoundary(prev, curr) {
+  const pc = pickPivotPitchClass(prev.tonic | 0, prev.scale, curr.tonic | 0, curr.scale);
+  return 60 + pc + 12;
+}
 
 function scheduleNote(ctx, dest, midi, when, dur, type, peakVel) {
   const osc = ctx.createOscillator();
@@ -184,6 +218,32 @@ function crossfadeScaleFor(eventAbsSec, sectionIdx, starts, sectionList) {
     if (t >= 0 && t < 1) scale *= Math.max(0, Math.min(1, 1 - t));
   }
   return scale;
+}
+
+// Schedule the pivot note for the boundary INTO section `curr` (the
+// preceding section is `prev`). The note spans 1 beat of prev's tail
+// and 1 beat of curr's head, centered on the boundary at boundaryAbsSec.
+// Works against any AudioContext-like (live or offline).
+function schedulePivotNote(ctxLike, dest, prev, curr, boundaryAbsSec) {
+  if (!curr.pivotNote || !prev) return;
+  const midi = pivotMidiForBoundary(prev, curr);
+  const bdPrev = 60 / prev.bpm;
+  const bdCurr = 60 / curr.bpm;
+  const when = boundaryAbsSec - bdPrev;
+  const totalDur = bdPrev + bdCurr;
+  const peak = 0.04;
+  const osc = ctxLike.createOscillator();
+  const gain = ctxLike.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = midiToFreq(midi);
+  gain.gain.setValueAtTime(0, when);
+  gain.gain.linearRampToValueAtTime(peak, when + 0.08);
+  gain.gain.setValueAtTime(peak, when + totalDur - 0.12);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + totalDur);
+  osc.connect(gain).connect(dest);
+  osc.start(when);
+  osc.stop(when + totalDur + 0.05);
+  return osc;
 }
 
 async function playComposition() {
@@ -233,6 +293,10 @@ async function playComposition() {
       const type = ev.type === 'chord' ? 'triangle' : ev.type === 'bass' ? 'sawtooth' : 'sine';
       const vel = (ev.type === 'chord' ? 0.06 : ev.type === 'bass' ? 0.07 : 0.10) * crossfade;
       scheduleNote(ctx, dest, ev.midi, when, dur, type, vel);
+    }
+    if (i > 0 && sec.pivotNote) {
+      const osc = schedulePivotNote(ctx, melodyDest, sections[i - 1], sec, baseWhen + starts[i].start);
+      if (osc) activeOscillators.push(osc);
     }
   }
 
@@ -345,6 +409,7 @@ function makeSection(template) {
     // 'gap' = insert `transitionBars` of silence.
     transitionIn: t.transitionIn || 'hard',
     transitionBars: t.transitionBars ?? 1,
+    pivotNote: !!t.pivotNote,
   };
 }
 
@@ -430,6 +495,9 @@ function render() {
             ${i > 0 && s.transitionIn && s.transitionIn !== 'hard'
               ? `<span class="section-meta-chip section-meta-chip-transition" title="Transition from previous section">⇢ ${s.transitionIn === 'crossfade' ? 'Crossfade' : 'Gap'} ${s.transitionBars ?? 1}b</span>`
               : ''}
+            ${i > 0 && s.pivotNote
+              ? `<span class="section-meta-chip section-meta-chip-pivot" title="Pivot note across the boundary">♪ Pivot</span>`
+              : ''}
           </div>
           <div class="section-block-tracks">${trackChips}</div>
         </div>
@@ -479,6 +547,10 @@ function render() {
             <label class="section-edit-field"${s.transitionIn === 'hard' ? ' hidden' : ''}>
               <span>Transition length <em>${s.transitionBars ?? 1} beat${(s.transitionBars ?? 1) === 1 ? '' : 's'}</em></span>
               <input type="range" data-edit="transitionBars" min="0" max="8" step="1" value="${s.transitionBars ?? 1}">
+            </label>
+            <label class="section-edit-field section-edit-field-checkbox">
+              <input type="checkbox" data-edit="pivotNote"${s.pivotNote ? ' checked' : ''}>
+              <span>Pivot note across boundary</span>
             </label>
           ` : ''}
         </div>
@@ -642,6 +714,7 @@ function applyEdit(id, field, value) {
   else if (field === 'voice') sections[idx].voice = String(value);
   else if (field === 'transitionIn') sections[idx].transitionIn = ['hard', 'crossfade', 'gap'].includes(value) ? value : 'hard';
   else if (field === 'transitionBars') sections[idx].transitionBars = Math.max(0, Math.min(8, Number(value) | 0));
+  else if (field === 'pivotNote') sections[idx].pivotNote = (value === true || value === 'true' || value === 'on');
   save(false);
   // Re-render only the affected block to preserve editor open state and focus
   const block = document.querySelector(`.section-block[data-id="${id}"]`);
@@ -762,6 +835,9 @@ async function renderCompositionMix() {
       const evAbs = start + ev.atBeat * beatDur;
       const cf = crossfadeScaleFor(evAbs, index, starts, sections);
       scheduleOfflineEvent(offline, masterGain, ev, beatDur, start, cf);
+    }
+    if (index > 0 && sec.pivotNote) {
+      schedulePivotNote(offline, masterGain, sections[index - 1], sec, start);
     }
   }
 
@@ -895,6 +971,7 @@ function normalizeSection(s) {
     tracks: tracks.length > 0 ? tracks : ALL_TRACKS.slice(),
     transitionIn: ['hard', 'crossfade', 'gap'].includes(s.transitionIn) ? s.transitionIn : 'hard',
     transitionBars: Number.isFinite(s.transitionBars) ? Math.max(0, Math.min(8, s.transitionBars | 0)) : 1,
+    pivotNote: s.pivotNote === true,
   };
 }
 
@@ -1073,7 +1150,8 @@ export function initComposeView({ onLoadSeed, audioApi }) {
       return;
     }
     if (e.target.dataset.edit) {
-      applyEdit(block.dataset.id, e.target.dataset.edit, e.target.value);
+      const v = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+      applyEdit(block.dataset.id, e.target.dataset.edit, v);
     }
   });
 
