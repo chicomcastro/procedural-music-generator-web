@@ -6529,6 +6529,36 @@ body.sidebar-open .practice-stage { padding-left: 240px; }
   font-size: 13px;
 }
 .practice-control input[type="range"] { width: 100%; }
+.practice-control-wide { grid-column: 1 / -1; }
+.practice-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.practice-vocab-chip,
+.practice-part-chip {
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 11px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-hover);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.practice-vocab-chip:hover,
+.practice-part-chip:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+.practice-vocab-chip.is-active,
+.practice-part-chip.is-active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-glow);
+  font-weight: 600;
+}
 .practice-seed-row { display: flex; gap: 8px; }
 .practice-seed-row input { flex: 1 1 auto; }
 .practice-ghost-btn {

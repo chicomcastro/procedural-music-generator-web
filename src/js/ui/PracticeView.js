@@ -11,7 +11,7 @@
 // workout, master slider, key picker, seed reroll, audio playback, print
 // stylesheet (no per-act overrides yet — those land in PR 2).
 
-import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, SCALE_PATTERNS, SCALE_SHAPES, VOICE_OPTIONS, clampMidiToRange } from './practice-studies.js';
+import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, SCALE_PATTERNS, SCALE_SHAPES, VOICE_OPTIONS, clampMidiToRange, RHYTHM_VOCAB, RHYTHM_VOCAB_DEFAULTS, PROGRESSION_OPTIONS, PART_VIEW_OPTIONS } from './practice-studies.js';
 import { getStudyField } from './practice-translations.js';
 import { mulberry32, randomSeed } from '../generate/rng.js';
 import { generateMelody } from '../generate/melody.js';
@@ -93,6 +93,9 @@ function getStudyPrefs(studyId) {
       contourId: 'auto',
       swing: 0,
       intensity: 100,        // velocity multiplier %, 100 = baseline
+      rhythmVocab: study?.kind === 'duet-workshop' ? [...RHYTHM_VOCAB_DEFAULTS] : null,
+      progressionId: study?.kind === 'duet-workshop' ? 'pop' : null,
+      partView: study?.kind === 'duet-workshop' ? 'both' : null,
     };
   }
   // Backfill new fields for users who already have a saved prefs blob from a
@@ -112,7 +115,38 @@ function getStudyPrefs(studyId) {
   if (p.swing == null) p.swing = 0;
   if (p.intensity == null) p.intensity = 100;
   if (p.voiceId == null) p.voiceId = null;   // null = use the kind's default
+  if (study?.kind === 'duet-workshop') {
+    if (!Array.isArray(p.rhythmVocab) || p.rhythmVocab.length === 0) p.rhythmVocab = [...RHYTHM_VOCAB_DEFAULTS];
+    if (!p.progressionId) p.progressionId = 'pop';
+    if (!p.partView) p.partView = 'both';
+  }
   return p;
+}
+
+// ADR 0004: post-process generateRhythm's onsets to honour the user-
+// picked vocab. Drops off-beat onsets when eighths aren't allowed, then
+// snaps each onset's durationBeats DOWN to the largest allowed value
+// ≤ the gap to the next onset.
+function filterRhythmToVocab(onsets, allowed, totalBeats) {
+  if (!Array.isArray(allowed) || allowed.length === 0) return onsets;
+  const allowedBeats = allowed
+    .map(id => RHYTHM_VOCAB[id]?.beats)
+    .filter(b => typeof b === 'number')
+    .sort((a, b) => a - b);
+  if (allowedBeats.length === 0) return onsets;
+  const eighthAllowed = allowedBeats.includes(0.5);
+  const kept = onsets.filter(o => eighthAllowed || Number.isInteger(o.atBeat));
+  if (kept.length === 0) return onsets;
+  for (let i = 0; i < kept.length; i++) {
+    const next = i < kept.length - 1 ? kept[i + 1].atBeat : totalBeats;
+    const gap = next - kept[i].atBeat;
+    let chosen = allowedBeats[0];   // fall back to smallest if gap < every allowed value
+    for (const b of allowedBeats) {
+      if (b <= gap) chosen = b;
+    }
+    kept[i] = { ...kept[i], durationBeats: chosen };
+  }
+  return kept;
 }
 
 function activeClefVoices(study, studyPrefs) {
@@ -182,6 +216,7 @@ function buildTwoVoiceSong(study, opts) {
   const {
     keyPc, seed, difficulty, clefVoices, rhythmPresetId, duetStyleId,
     scaleId, contourId, swing: swingPct, intensity: intensityPct,
+    rhythmVocab, progressionId,   // ADR 0004: only used by 'duet-workshop' kind
   } = opts;
   const swing = (swingPct ?? 0) / 100;
   const velocityScale = (intensityPct ?? 100) / 100;
@@ -226,7 +261,11 @@ function buildTwoVoiceSong(study, opts) {
     // Build the progression: PROGRESSIONS[name] is a degree array. Anchor
     // chord roots to voice 1's tessitura so the harmonic context tracks
     // the upper voice; the counterpoint is then placed relative to it.
-    const degrees = PROGRESSIONS[act.progression] || PROGRESSIONS.pop;
+    // ADR 0004: duet-workshop lets the user override the act's progression.
+    const progKey = (study.kind === 'duet-workshop' && progressionId && PROGRESSIONS[progressionId])
+      ? progressionId
+      : act.progression;
+    const degrees = PROGRESSIONS[progKey] || PROGRESSIONS.pop;
     const beatsPerChord = (act.bars * beatsPerBar) / degrees.length;
     const progression = degrees.map((deg, idx) => {
       const notes = chordFromDegree(tonicMidi1, scale, deg);
@@ -242,13 +281,17 @@ function buildTwoVoiceSong(study, opts) {
     const rhythmDensity = rhythmPreset ? rhythmPreset.density : p.density;
     const rhythmTemplate = rhythmPreset ? rhythmPreset.template : 'auto';
 
-    const rhythm = generateRhythm(rng, {
+    let rhythm = generateRhythm(rng, {
       bars: act.bars,
       beatsPerBar,
       density: rhythmDensity,
       swing,
       template: rhythmTemplate,
     });
+    // ADR 0004: duet-workshop applies a user-picked note-value vocab.
+    if (study.kind === 'duet-workshop' && Array.isArray(rhythmVocab)) {
+      rhythm = filterRhythmToVocab(rhythm, rhythmVocab, act.bars * beatsPerBar);
+    }
     // Contour picker beats the act default ('auto' = fall back per-act).
     const contour = (contourId && contourId !== 'auto') ? contourId : (p.contour || 'auto');
     const v1 = generateMelody(rng, {
@@ -399,6 +442,7 @@ function buildWalkingBassSong(study, opts) {
 
 function buildSong(study, opts) {
   if (study.kind === 'two-voice-counterpoint') return buildTwoVoiceSong(study, opts);
+  if (study.kind === 'duet-workshop')          return buildTwoVoiceSong(study, opts);
   if (study.kind === 'walking-bass-workout') return buildWalkingBassSong(study, opts);
   if (study.kind === 'scale-etude') return buildScaleEtudeSong(study, opts);
   if (study.kind === 'solo-etude') return buildSoloEtudeSong(study, opts);
@@ -786,10 +830,11 @@ function populateControls() {
     }
   }
 
-  // Contour picker — only meaningful for melodic studies (the invention).
+  // Contour picker — only meaningful for melodic studies (the invention + duet workshop).
+  const isTwoVoice = activeStudy.kind === 'two-voice-counterpoint' || activeStudy.kind === 'duet-workshop';
   const contourSel = document.getElementById('practice-contour');
   const contourField = document.getElementById('practice-contour-field');
-  if (contourSel && activeStudy.kind === 'two-voice-counterpoint') {
+  if (contourSel && isTwoVoice) {
     contourSel.innerHTML = '';
     for (const opt of CONTOUR_OPTIONS) {
       const o = document.createElement('option');
@@ -803,10 +848,67 @@ function populateControls() {
     contourField.style.display = 'none';
   }
 
+  // ADR 0004: rhythm-vocabulary chip group — duet workshop only.
+  const vocabHost = document.getElementById('practice-rhythm-vocab-chips');
+  const vocabField = document.getElementById('practice-rhythm-vocab-field');
+  if (vocabHost && activeStudy.kind === 'duet-workshop') {
+    const active = new Set(studyPrefs.rhythmVocab || RHYTHM_VOCAB_DEFAULTS);
+    vocabHost.innerHTML = '';
+    for (const [id, def] of Object.entries(RHYTHM_VOCAB)) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'practice-vocab-chip' + (active.has(id) ? ' is-active' : '');
+      btn.dataset.vocab = id;
+      btn.setAttribute('aria-pressed', active.has(id) ? 'true' : 'false');
+      btn.textContent = def.label;
+      vocabHost.appendChild(btn);
+    }
+    if (vocabField) vocabField.style.display = '';
+  } else if (vocabField) {
+    vocabField.style.display = 'none';
+  }
+
+  // ADR 0004: progression picker — duet workshop only.
+  const progSel = document.getElementById('practice-progression');
+  const progField = document.getElementById('practice-progression-field');
+  if (progSel && activeStudy.kind === 'duet-workshop') {
+    progSel.innerHTML = '';
+    for (const opt of PROGRESSION_OPTIONS) {
+      const o = document.createElement('option');
+      o.value = opt.id;
+      o.textContent = opt.label;
+      if (opt.id === studyPrefs.progressionId) o.selected = true;
+      progSel.appendChild(o);
+    }
+    if (progField) progField.style.display = '';
+  } else if (progField) {
+    progField.style.display = 'none';
+  }
+
+  // ADR 0004: part-view segmented toggle — duet workshop only.
+  const partHost = document.getElementById('practice-part-view-chips');
+  const partField = document.getElementById('practice-part-view-field');
+  if (partHost && activeStudy.kind === 'duet-workshop') {
+    const current = studyPrefs.partView || 'both';
+    partHost.innerHTML = '';
+    for (const opt of PART_VIEW_OPTIONS) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'practice-part-chip' + (opt.id === current ? ' is-active' : '');
+      btn.dataset.part = opt.id;
+      btn.setAttribute('aria-pressed', opt.id === current ? 'true' : 'false');
+      btn.textContent = opt.label;
+      partHost.appendChild(btn);
+    }
+    if (partField) partField.style.display = '';
+  } else if (partField) {
+    partField.style.display = 'none';
+  }
+
   // Swing slider — only meaningful for melodic studies.
   const swingInput = document.getElementById('practice-swing');
   const swingField = document.getElementById('practice-swing-field');
-  if (swingInput && activeStudy.kind === 'two-voice-counterpoint') {
+  if (swingInput && isTwoVoice) {
     swingInput.value = String(studyPrefs.swing ?? 0);
     document.getElementById('practice-swing-display').textContent = `${swingInput.value}%`;
     if (swingField) swingField.style.display = '';
@@ -901,11 +1003,17 @@ async function regenerate() {
   lastSong = song;
   lastBpm = song.bpm;
   // Pick which track types to include based on the study kind.
-  const tracks = activeStudy.kind === 'two-voice-counterpoint'
-    ? ['melody', 'melody2']
-    : activeStudy.kind === 'walking-bass-workout'
-    ? ['bass']
-    : ['melody'];   // scale-etude / solo-etude / modal-vamp
+  let tracks;
+  if (activeStudy.kind === 'two-voice-counterpoint') tracks = ['melody', 'melody2'];
+  else if (activeStudy.kind === 'duet-workshop') {
+    // ADR 0004: part-view filters which staff renders. Audio always
+    // plays both voices (handled by playSong).
+    if (sp.partView === 'voice1') tracks = ['melody'];
+    else if (sp.partView === 'voice2') tracks = ['melody2'];
+    else tracks = ['melody', 'melody2'];
+  }
+  else if (activeStudy.kind === 'walking-bass-workout') tracks = ['bass'];
+  else tracks = ['melody'];   // scale-etude / solo-etude / modal-vamp
   const clefOverrides = {
     melody: clefVoices[0],
     melody2: clefVoices[1] || clefVoices[0],
@@ -1075,6 +1183,10 @@ export function buildShareUrl(studyId, sp) {
   if (sp.swing) params.set('swing', String(sp.swing));
   if (sp.intensity != null && sp.intensity !== 100) params.set('intensity', String(sp.intensity));
   if (sp.difficulty != null) params.set('diff', String(sp.difficulty));
+  // ADR 0004: duet-workshop extras.
+  if (Array.isArray(sp.rhythmVocab) && sp.rhythmVocab.length) params.set('vocab', sp.rhythmVocab.join(','));
+  if (sp.progressionId) params.set('prog', sp.progressionId);
+  if (sp.partView && sp.partView !== 'both') params.set('part', sp.partView);
   const base = `${window.location.origin}${window.location.pathname}`;
   return `${base}#/practice?${params.toString()}`;
 }
@@ -1134,6 +1246,13 @@ export function applyShareParams() {
   if (params.get('duet'))    sp.duetStyleId = params.get('duet');
   if (params.get('scale'))   sp.scaleId = params.get('scale');
   if (params.get('contour')) sp.contourId = params.get('contour');
+  // ADR 0004
+  if (params.get('vocab')) {
+    const ids = params.get('vocab').split(',').filter(id => RHYTHM_VOCAB[id]);
+    if (ids.length > 0) sp.rhythmVocab = ids;
+  }
+  if (params.get('prog')) sp.progressionId = params.get('prog');
+  if (params.get('part')) sp.partView = params.get('part');
   savePrefs();
   return studyId;
 }
@@ -1383,6 +1502,51 @@ export function initPracticeView({ audioApi } = {}) {
   document.getElementById('practice-play')?.addEventListener('click', () => {
     if (playbackTimer) stopPlayback();
     else playSong();
+  });
+
+  // ADR 0004: rhythm-vocab chip toggles.
+  document.getElementById('practice-rhythm-vocab-chips')?.addEventListener('click', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'duet-workshop') return;
+    const btn = e.target.closest('[data-vocab]');
+    if (!btn) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    const set = new Set(sp.rhythmVocab || RHYTHM_VOCAB_DEFAULTS);
+    const id = btn.dataset.vocab;
+    if (set.has(id)) {
+      if (set.size > 1) set.delete(id);   // never let the user empty the set
+    } else {
+      set.add(id);
+    }
+    sp.rhythmVocab = Array.from(set);
+    savePrefs();
+    btn.classList.toggle('is-active', set.has(id));
+    btn.setAttribute('aria-pressed', set.has(id) ? 'true' : 'false');
+    regenerate();
+  });
+
+  // ADR 0004: progression picker.
+  document.getElementById('practice-progression')?.addEventListener('change', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'duet-workshop') return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.progressionId = e.target.value;
+    savePrefs();
+    regenerate();
+  });
+
+  // ADR 0004: part-view segmented toggle.
+  document.getElementById('practice-part-view-chips')?.addEventListener('click', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'duet-workshop') return;
+    const btn = e.target.closest('[data-part]');
+    if (!btn) return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.partView = btn.dataset.part;
+    savePrefs();
+    for (const sibling of document.querySelectorAll('#practice-part-view-chips [data-part]')) {
+      const on = sibling === btn;
+      sibling.classList.toggle('is-active', on);
+      sibling.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    regenerate();
   });
 }
 

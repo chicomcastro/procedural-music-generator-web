@@ -17,6 +17,18 @@ export const TR = {
       eyebrow: 'Contrapunto · 3 actos',
     },
   },
+  'duet-workshop': {
+    pt: {
+      title: 'Oficina de Duetos',
+      summary: 'Um movimento configurável: escolha a escala, a progressão, o vocabulário rítmico e o estilo de dueto. O modo "parte única" mostra só uma das vozes — gere, imprima, toquem juntos.',
+      eyebrow: 'Contraponto · sandbox',
+    },
+    es: {
+      title: 'Taller de Dúos',
+      summary: 'Un movimiento configurable: elige la escala, la progresión, el vocabulario rítmico y el estilo de dúo. El modo "vista por parte" muestra solo una voz — genera, imprime, toquen juntos.',
+      eyebrow: 'Contrapunto · sandbox',
+    },
+  },
   'walking-bass-workout': {
     pt: {
       title: 'Treino de Walking-Bass',
