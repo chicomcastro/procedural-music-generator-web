@@ -78,6 +78,12 @@ function load() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) sections = JSON.parse(raw);
   } catch { sections = []; }
+  // Backfill new fields on older projects so the transition selector
+  // doesn't show a blank.
+  for (const s of sections) {
+    if (s.transitionIn == null) s.transitionIn = 'hard';
+    if (s.transitionBars == null) s.transitionBars = 1;
+  }
 }
 function save(takeSnapshot = true) {
   if (takeSnapshot) pushUndo();
@@ -109,6 +115,31 @@ function scheduleNote(ctx, dest, midi, when, dur, type, peakVel) {
   activeOscillators.push(osc);
 }
 
+// Crossfade scale for one event. Sections joined by `crossfade` overlap
+// `transitionBars * beatDur` of beats; the incoming section ramps from 0
+// to 1 and the outgoing section ramps from 1 to 0 across that window.
+// Returns 1 (no scaling) for sections joined hard / by gap.
+function crossfadeScaleFor(eventAbsSec, sectionIdx, starts, sectionList) {
+  let scale = 1;
+  const sec = starts[sectionIdx];
+  // Fade IN: this section starts with a crossfade.
+  if (sectionList[sectionIdx].transitionIn === 'crossfade' && sectionIdx > 0) {
+    const winSec = (sectionList[sectionIdx].transitionBars || 1) * sec.beatDur;
+    const t = (eventAbsSec - sec.start) / winSec;
+    if (t >= 0 && t < 1) scale *= Math.max(0, Math.min(1, t));
+  }
+  // Fade OUT: the NEXT section will start with a crossfade, which means
+  // this section's tail overlaps it.
+  const next = sectionList[sectionIdx + 1];
+  if (next && next.transitionIn === 'crossfade') {
+    const nextStart = starts[sectionIdx + 1].start;
+    const winSec = (next.transitionBars || 1) * (60 / next.bpm);
+    const t = (eventAbsSec - nextStart) / winSec;
+    if (t >= 0 && t < 1) scale *= Math.max(0, Math.min(1, 1 - t));
+  }
+  return scale;
+}
+
 async function playComposition() {
   if (!audioApiRef || sections.length === 0) return;
   if (isPlaying) { stopComposition(); return; }
@@ -123,13 +154,14 @@ async function playComposition() {
   isPlaying = true;
   setPlayUI(true);
 
-  let cursorSec = ctx.currentTime + 0.05;
-  playStartTime = cursorSec;
-  totalDurationSec = 0;
-  const sectionStarts = [];
+  const baseWhen = ctx.currentTime + 0.05;
+  playStartTime = baseWhen;
+  const { starts, totalSec } = computeSectionStarts(sections);
+  totalDurationSec = totalSec;
 
-  for (const sec of sections) {
-    const beatDur = 60 / sec.bpm;
+  for (let i = 0; i < sections.length; i++) {
+    const sec = sections[i];
+    const beatDur = starts[i].beatDur;
     const song = generateSong({
       seed: sec.seed,
       tonic: 60 + (sec.tonic | 0),
@@ -138,29 +170,29 @@ async function playComposition() {
       beatsPerBar: 4,
       density: sec.density,
     });
-    const sectionLengthSec = song.lengthBeats * beatDur;
-    sectionStarts.push({ start: cursorSec - playStartTime, length: sectionLengthSec });
 
     const enabled = new Set(sec.tracks || ALL_TRACKS);
     for (const ev of song.events) {
       if (!enabled.has(ev.type)) continue;
-      const when = cursorSec + ev.atBeat * beatDur;
+      const evAbs = starts[i].start + ev.atBeat * beatDur;
+      const when = baseWhen + evAbs;
+      const crossfade = crossfadeScaleFor(evAbs, i, starts, sections);
+      if (crossfade <= 0.001) continue;   // fully attenuated, skip
       if (ev.type === 'drum') {
-        playDrumHit(ctx, drumDest, { drum: ev.drum, when, velocity: ev.velocity ?? 0.6 });
+        playDrumHit(ctx, drumDest, { drum: ev.drum, when, velocity: (ev.velocity ?? 0.6) * crossfade });
         continue;
       }
       const dur = Math.max(0.05, ev.durationBeats * beatDur * 0.92);
       const dest = ev.type === 'chord' ? chordDest : ev.type === 'bass' ? bassDest : melodyDest;
       const type = ev.type === 'chord' ? 'triangle' : ev.type === 'bass' ? 'sawtooth' : 'sine';
-      const vel = ev.type === 'chord' ? 0.06 : ev.type === 'bass' ? 0.07 : 0.10;
+      const vel = (ev.type === 'chord' ? 0.06 : ev.type === 'bass' ? 0.07 : 0.10) * crossfade;
       scheduleNote(ctx, dest, ev.midi, when, dur, type, vel);
     }
-
-    cursorSec += sectionLengthSec;
-    totalDurationSec += sectionLengthSec;
   }
 
-  startProgressTimer(sectionStarts);
+  // sectionStarts the progress timer expects: { start, length } in
+  // composition-relative seconds.
+  startProgressTimer(starts.map(s => ({ start: s.start, length: s.length })));
   stopTimeoutHandle = window.setTimeout(() => stopComposition(), totalDurationSec * 1000 + 200);
 }
 
@@ -257,7 +289,37 @@ function makeSection(template) {
     density: t.density,
     voice: 'piano',
     tracks: ['melody', 'chord', 'bass', 'drum'],
+    // Transition INTO this section from the previous one.
+    // 'hard' = no overlap, no gap (default; same as old behaviour).
+    // 'crossfade' = overlap `transitionBars` of the prev tail with this head.
+    // 'gap' = insert `transitionBars` of silence.
+    transitionIn: 'hard',
+    transitionBars: 1,
   };
+}
+
+// Compute the per-section absolute start times in seconds, applying
+// transitionIn deltas (crossfade subtracts; gap adds). The first section
+// always starts at 0 — its transitionIn is ignored.
+function computeSectionStarts(sectionList) {
+  const starts = [];
+  let cursor = 0;
+  for (let i = 0; i < sectionList.length; i++) {
+    const sec = sectionList[i];
+    const beatDur = 60 / sec.bpm;
+    const lengthBeats = sec.bars * 4;
+    const lengthSec = lengthBeats * beatDur;
+    if (i > 0) {
+      const tType = sec.transitionIn || 'hard';
+      const tBars = Math.max(0, Math.min(8, sec.transitionBars ?? 1));
+      const tSec = tBars * beatDur;
+      if (tType === 'crossfade') cursor -= tSec;
+      else if (tType === 'gap') cursor += tSec;
+    }
+    starts.push({ start: cursor, length: lengthSec, beatDur, transitionIn: sec.transitionIn || 'hard', transitionBars: sec.transitionBars ?? 1 });
+    cursor += lengthSec;
+  }
+  return { starts, totalSec: cursor };
 }
 
 const SCALES_LIST = ['major', 'natural_minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'pentatonic_major', 'pentatonic_minor', 'blues'];
@@ -315,6 +377,9 @@ function render() {
             <span class="section-meta-chip" title="Tempo">${s.bpm} BPM</span>
             <span class="section-meta-chip" title="Density">${Math.round(s.density * 100)}%</span>
             <span class="section-meta-chip section-meta-chip-voice" title="Voice">${s.voice}</span>
+            ${i > 0 && s.transitionIn && s.transitionIn !== 'hard'
+              ? `<span class="section-meta-chip section-meta-chip-transition" title="Transition from previous section">⇢ ${s.transitionIn === 'crossfade' ? 'Crossfade' : 'Gap'} ${s.transitionBars ?? 1}b</span>`
+              : ''}
           </div>
           <div class="section-block-tracks">${trackChips}</div>
         </div>
@@ -351,6 +416,20 @@ function render() {
             <span>Voice</span>
             <select data-edit="voice">${VOICES_LIST.map(v => `<option value="${v}"${v === s.voice ? ' selected' : ''}>${v}</option>`).join('')}</select>
           </label>
+          ${i > 0 ? `
+            <label class="section-edit-field">
+              <span>Transition in</span>
+              <select data-edit="transitionIn">
+                <option value="hard"${s.transitionIn === 'hard' ? ' selected' : ''}>Hard cut</option>
+                <option value="crossfade"${s.transitionIn === 'crossfade' ? ' selected' : ''}>Crossfade</option>
+                <option value="gap"${s.transitionIn === 'gap' ? ' selected' : ''}>Gap (silence)</option>
+              </select>
+            </label>
+            <label class="section-edit-field"${s.transitionIn === 'hard' ? ' hidden' : ''}>
+              <span>Transition length <em>${s.transitionBars ?? 1} beat${(s.transitionBars ?? 1) === 1 ? '' : 's'}</em></span>
+              <input type="range" data-edit="transitionBars" min="0" max="8" step="1" value="${s.transitionBars ?? 1}">
+            </label>
+          ` : ''}
         </div>
       </div>
     `;
@@ -487,6 +566,8 @@ function applyEdit(id, field, value) {
   else if (field === 'bpm') sections[idx].bpm = Math.max(40, Math.min(240, Number(value) | 0));
   else if (field === 'density') sections[idx].density = Math.max(0.1, Math.min(1, Number(value)));
   else if (field === 'voice') sections[idx].voice = String(value);
+  else if (field === 'transitionIn') sections[idx].transitionIn = ['hard', 'crossfade', 'gap'].includes(value) ? value : 'hard';
+  else if (field === 'transitionBars') sections[idx].transitionBars = Math.max(0, Math.min(8, Number(value) | 0));
   save(false);
   // Re-render only the affected block to preserve editor open state and focus
   const block = document.querySelector(`.section-block[data-id="${id}"]`);
@@ -519,37 +600,39 @@ function refreshFileButtons() {
 // Pre-compute the per-section playback layout used by both the stem
 // renderer and the mix renderer.
 function buildOfflineSections() {
-  let totalSec = 0;
-  const sectionData = sections.map(sec => {
-    const beatDur = 60 / sec.bpm;
-    const song = generateSong({
+  const { starts, totalSec } = computeSectionStarts(sections);
+  const sectionData = sections.map((sec, i) => ({
+    sec,
+    song: generateSong({
       seed: sec.seed,
       tonic: 60 + (sec.tonic | 0),
       scale: sec.scale,
       bars: sec.bars,
       beatsPerBar: 4,
       density: sec.density,
-    });
-    const lengthSec = song.lengthBeats * beatDur;
-    const start = totalSec;
-    totalSec += lengthSec;
-    return { sec, song, beatDur, start };
-  });
-  return { sectionData, totalSec };
+    }),
+    beatDur: starts[i].beatDur,
+    start: starts[i].start,
+    index: i,
+  }));
+  return { sectionData, totalSec, starts };
 }
 
 // Schedule one event into an OfflineAudioContext. Mirrors the live
 // scheduleNote shape but driven by the event's track type so the same
 // helper can render melody/chord/bass/drum.
-function scheduleOfflineEvent(offline, dest, ev, beatDur, sectionStartSec) {
+// `crossfade` is a multiplier in [0, 1] applied to the event's gain so
+// the offline path produces the same audible crossfade as live playback.
+function scheduleOfflineEvent(offline, dest, ev, beatDur, sectionStartSec, crossfade = 1) {
   const when = sectionStartSec + ev.atBeat * beatDur;
+  if (crossfade <= 0.001) return;
   if (ev.type === 'drum') {
-    playDrumHit(offline, dest, { drum: ev.drum, when, velocity: ev.velocity ?? 0.5 });
+    playDrumHit(offline, dest, { drum: ev.drum, when, velocity: (ev.velocity ?? 0.5) * crossfade });
     return;
   }
   const dur = Math.max(0.05, ev.durationBeats * beatDur * 0.92);
   const wave = ev.type === 'chord' ? 'triangle' : ev.type === 'bass' ? 'sawtooth' : 'sine';
-  const peakVel = ev.type === 'chord' ? 0.06 : ev.type === 'bass' ? 0.07 : 0.10;
+  const peakVel = (ev.type === 'chord' ? 0.06 : ev.type === 'bass' ? 0.07 : 0.10) * crossfade;
   const osc = offline.createOscillator();
   const gain = offline.createGain();
   osc.type = wave;
@@ -564,7 +647,7 @@ function scheduleOfflineEvent(offline, dest, ev, beatDur, sectionStartSec) {
 
 async function renderCompositionStem(trackType) {
   if (sections.length === 0) return null;
-  const { sectionData, totalSec } = buildOfflineSections();
+  const { sectionData, totalSec, starts } = buildOfflineSections();
   const tailSeconds = 1.5;
   const sampleRate = 44100;
   const offline = new OfflineAudioContext(2, Math.ceil(sampleRate * (totalSec + tailSeconds)), sampleRate);
@@ -572,12 +655,14 @@ async function renderCompositionStem(trackType) {
   masterGain.gain.value = 0.85;
   masterGain.connect(offline.destination);
 
-  for (const { sec, song, beatDur, start } of sectionData) {
+  for (const { sec, song, beatDur, start, index } of sectionData) {
     const enabled = new Set(sec.tracks || ALL_TRACKS);
     if (!enabled.has(trackType)) continue;
     for (const ev of song.events) {
       if (ev.type !== trackType) continue;
-      scheduleOfflineEvent(offline, masterGain, ev, beatDur, start);
+      const evAbs = start + ev.atBeat * beatDur;
+      const cf = crossfadeScaleFor(evAbs, index, starts, sections);
+      scheduleOfflineEvent(offline, masterGain, ev, beatDur, start, cf);
     }
   }
 
@@ -588,7 +673,7 @@ async function renderCompositionStem(trackType) {
 // stereo buffer. Caller can then turn it into a single WAV.
 async function renderCompositionMix() {
   if (sections.length === 0) return null;
-  const { sectionData, totalSec } = buildOfflineSections();
+  const { sectionData, totalSec, starts } = buildOfflineSections();
   const tailSeconds = 1.5;
   const sampleRate = 44100;
   const offline = new OfflineAudioContext(2, Math.ceil(sampleRate * (totalSec + tailSeconds)), sampleRate);
@@ -596,11 +681,13 @@ async function renderCompositionMix() {
   masterGain.gain.value = 0.85;
   masterGain.connect(offline.destination);
 
-  for (const { sec, song, beatDur, start } of sectionData) {
+  for (const { sec, song, beatDur, start, index } of sectionData) {
     const enabled = new Set(sec.tracks || ALL_TRACKS);
     for (const ev of song.events) {
       if (!enabled.has(ev.type)) continue;
-      scheduleOfflineEvent(offline, masterGain, ev, beatDur, start);
+      const evAbs = start + ev.atBeat * beatDur;
+      const cf = crossfadeScaleFor(evAbs, index, starts, sections);
+      scheduleOfflineEvent(offline, masterGain, ev, beatDur, start, cf);
     }
   }
 
@@ -732,6 +819,8 @@ function normalizeSection(s) {
     density: typeof s.density === 'number' ? Math.max(0.1, Math.min(1, s.density)) : 0.5,
     voice: typeof s.voice === 'string' ? s.voice : 'piano',
     tracks: tracks.length > 0 ? tracks : ALL_TRACKS.slice(),
+    transitionIn: ['hard', 'crossfade', 'gap'].includes(s.transitionIn) ? s.transitionIn : 'hard',
+    transitionBars: Number.isFinite(s.transitionBars) ? Math.max(0, Math.min(8, s.transitionBars | 0)) : 1,
   };
 }
 
@@ -833,12 +922,15 @@ export function initComposeView({ onLoadSeed, audioApi }) {
   tl?.addEventListener('input', (e) => {
     const block = e.target.closest('.section-block');
     if (!block) return;
-    if (e.target.dataset.edit === 'bpm' || e.target.dataset.edit === 'density') {
+    if (e.target.dataset.edit === 'bpm' || e.target.dataset.edit === 'density' || e.target.dataset.edit === 'transitionBars') {
       const labelEm = e.target.closest('label')?.querySelector('em');
       if (labelEm) {
+        const v = e.target.value;
         labelEm.textContent = e.target.dataset.edit === 'bpm'
-          ? String(e.target.value)
-          : `${Math.round(Number(e.target.value) * 100)}%`;
+          ? String(v)
+          : e.target.dataset.edit === 'density'
+          ? `${Math.round(Number(v) * 100)}%`
+          : `${v} beat${Number(v) === 1 ? '' : 's'}`;
       }
     }
   });

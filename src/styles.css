@@ -1172,6 +1172,12 @@ button {
   border-color: var(--border-hover);
 }
 
+.section-meta-chip-transition {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
 .section-block-tracks {
   display: flex;
   flex-wrap: wrap;
