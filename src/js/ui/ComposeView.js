@@ -6,6 +6,7 @@ import { playDrumHit } from '../audio/DrumSynth.js';
 import { t, onLangChange } from '../i18n/i18n.js';
 
 const STORAGE_KEY = 'seedsong-compose-project';
+const TEMPLATES_KEY = 'seedsong-compose-templates';
 const FILE_VERSION = 1;
 const UNDO_STACK_LIMIT = 60;
 
@@ -16,6 +17,51 @@ const SECTION_TEMPLATES = [
   { name: 'Bridge', density: 0.5, bars: 4 },
   { name: 'Outro', density: 0.35, bars: 4 },
 ];
+
+// User-saved templates. Persisted to localStorage; loaded at boot.
+let customTemplates = [];
+
+function loadCustomTemplates() {
+  try {
+    const raw = localStorage.getItem(TEMPLATES_KEY);
+    customTemplates = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(customTemplates)) customTemplates = [];
+  } catch { customTemplates = []; }
+}
+
+function saveCustomTemplates() {
+  try { localStorage.setItem(TEMPLATES_KEY, JSON.stringify(customTemplates)); } catch { /* ignore */ }
+}
+
+// Captures the per-section parameters that survive into a template
+// — everything except the seed (which is regenerated when applied so
+// each instantiation of a template is a fresh roll) and the id/name.
+function templateFromSection(sec) {
+  return {
+    scale: sec.scale, tonic: sec.tonic, bpm: sec.bpm,
+    bars: sec.bars, density: sec.density, voice: sec.voice,
+    tracks: [...(sec.tracks || ['melody', 'chord', 'bass', 'drum'])],
+    transitionIn: sec.transitionIn || 'hard',
+    transitionBars: sec.transitionBars ?? 1,
+  };
+}
+
+function addCustomTemplate(name, sectionParams) {
+  const t = {
+    id: `t${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    name: String(name || 'Custom').slice(0, 32),
+    ...sectionParams,
+  };
+  customTemplates.push(t);
+  if (customTemplates.length > 20) customTemplates.shift();   // cap
+  saveCustomTemplates();
+  return t;
+}
+
+function removeCustomTemplate(id) {
+  customTemplates = customTemplates.filter(t => t.id !== id);
+  saveCustomTemplates();
+}
 
 const SCALE_LABELS = {
   major: 'Major',
@@ -282,19 +328,23 @@ function makeSection(template) {
     id: `s${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     name: t.name,
     seed: randomSeed(),
-    scale: 'major',
-    tonic: 0,
-    bpm: 110,
+    // Templates may override every field — custom templates serialise
+    // the full section parameter set (scale / tonic / bpm / tracks /
+    // transition…). Built-in templates only carry name / bars /
+    // density, so the fallback defaults below kick in.
+    scale: t.scale || 'major',
+    tonic: t.tonic ?? 0,
+    bpm: t.bpm ?? 110,
     bars: t.bars,
     density: t.density,
-    voice: 'piano',
-    tracks: ['melody', 'chord', 'bass', 'drum'],
+    voice: t.voice || 'piano',
+    tracks: t.tracks ? [...t.tracks] : ['melody', 'chord', 'bass', 'drum'],
     // Transition INTO this section from the previous one.
     // 'hard' = no overlap, no gap (default; same as old behaviour).
     // 'crossfade' = overlap `transitionBars` of the prev tail with this head.
     // 'gap' = insert `transitionBars` of silence.
-    transitionIn: 'hard',
-    transitionBars: 1,
+    transitionIn: t.transitionIn || 'hard',
+    transitionBars: t.transitionBars ?? 1,
   };
 }
 
@@ -386,6 +436,7 @@ function render() {
         <div class="section-block-actions">
           <button class="section-block-btn" data-action="toggle-edit" title="Edit parameters" aria-label="Edit parameters">⚙</button>
           <button class="section-block-btn" data-action="reseed" title="New seed" aria-label="Generate new seed">⟲</button>
+          <button class="section-block-btn" data-action="save-template" title="Save as template" aria-label="Save as template">★</button>
           <button class="section-block-btn" data-action="open" title="Open in Generator" aria-label="Open in Generator">↗</button>
           <button class="section-block-btn section-block-btn-danger" data-action="remove" title="Remove section" aria-label="Remove section">×</button>
         </div>
@@ -541,6 +592,29 @@ function handleAction(id, action, dataset, blockEl) {
     sections[idx].tracks = ALL_TRACKS.filter(t => set.has(t));
     save(false);
     render();
+    return;
+  }
+
+  if (action === 'save-template') {
+    if (isPlaying) stopComposition();
+    const sec = sections[idx];
+    const defaultName = sec.name || `Section ${idx + 1}`;
+    const name = window.prompt('Template name', defaultName);
+    if (!name) return;
+    addCustomTemplate(name, templateFromSection(sec));
+    // No section state changed — no undo entry, just refresh + feedback.
+    if (blockEl) {
+      const btn = blockEl.querySelector('[data-action="save-template"]');
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = '✓';
+        btn.classList.add('section-block-btn-confirm');
+        window.setTimeout(() => {
+          btn.textContent = orig;
+          btn.classList.remove('section-block-btn-confirm');
+        }, 1200);
+      }
+    }
     return;
   }
 
@@ -832,6 +906,7 @@ export function stopComposePlayback() {
 
 export function initComposeView({ onLoadSeed, audioApi }) {
   load();
+  loadCustomTemplates();
   onLoadSeedCb = onLoadSeed;
   audioApiRef = audioApi;
   render();
@@ -859,6 +934,90 @@ export function initComposeView({ onLoadSeed, audioApi }) {
     sections.push(makeSection());
     save(false);
     render();
+  });
+
+  // Template menu — opens via the ▾ chevron next to "+ Add section".
+  // Lists built-ins + user-saved templates; click adds a section with
+  // that template applied; × removes a user template.
+  const menuBtn = document.getElementById('compose-add-menu-btn');
+  const menu = document.getElementById('compose-add-menu');
+
+  function closeTemplateMenu() {
+    if (menu) menu.hidden = true;
+    if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function renderTemplateMenu() {
+    if (!menu) return;
+    menu.innerHTML = '';
+    const heading = document.createElement('div');
+    heading.className = 'compose-add-menu-heading';
+    heading.textContent = 'Built-in';
+    menu.appendChild(heading);
+    for (const t of SECTION_TEMPLATES) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'compose-add-menu-item';
+      btn.textContent = t.name;
+      btn.addEventListener('click', () => {
+        pushUndo();
+        sections.push(makeSection(t));
+        save(false);
+        render();
+        closeTemplateMenu();
+      });
+      menu.appendChild(btn);
+    }
+    if (customTemplates.length > 0) {
+      const sep = document.createElement('div');
+      sep.className = 'compose-add-menu-heading';
+      sep.textContent = 'Saved';
+      menu.appendChild(sep);
+      for (const t of customTemplates) {
+        const row = document.createElement('div');
+        row.className = 'compose-add-menu-row';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'compose-add-menu-item';
+        btn.textContent = t.name;
+        btn.addEventListener('click', () => {
+          pushUndo();
+          sections.push(makeSection(t));
+          save(false);
+          render();
+          closeTemplateMenu();
+        });
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'compose-add-menu-remove';
+        del.setAttribute('aria-label', `Delete template ${t.name}`);
+        del.title = 'Delete template';
+        del.textContent = '×';
+        del.addEventListener('click', (e) => {
+          e.stopPropagation();
+          removeCustomTemplate(t.id);
+          renderTemplateMenu();
+        });
+        row.appendChild(btn);
+        row.appendChild(del);
+        menu.appendChild(row);
+      }
+    }
+  }
+
+  menuBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (menu.hidden) {
+      renderTemplateMenu();
+      menu.hidden = false;
+      menuBtn.setAttribute('aria-expanded', 'true');
+    } else {
+      closeTemplateMenu();
+    }
+  });
+  document.addEventListener('click', (e) => {
+    if (menu?.hidden) return;
+    if (!menu?.contains(e.target) && e.target !== menuBtn) closeTemplateMenu();
   });
 
   clearBtn?.addEventListener('click', () => {
