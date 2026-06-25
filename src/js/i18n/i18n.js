@@ -84,6 +84,7 @@ const TRANSLATIONS = {
     'compose.add': 'Add section',
     'compose.clear': 'Clear',
     'compose.export_stems': 'Export stems',
+    'compose.export_mix': 'Export mix',
     'compose.empty': 'No sections yet — tap + Add section to start arranging.',
     'compose.coming_next': "What's coming next",
 
@@ -299,6 +300,7 @@ const TRANSLATIONS = {
     'compose.add': 'Adicionar seção',
     'compose.clear': 'Limpar',
     'compose.export_stems': 'Exportar stems',
+    'compose.export_mix': 'Exportar mix',
     'compose.empty': 'Nenhuma seção ainda — toque em + Adicionar seção para começar.',
     'compose.coming_next': 'Em breve',
 
@@ -514,6 +516,7 @@ const TRANSLATIONS = {
     'compose.add': 'Agregar sección',
     'compose.clear': 'Limpiar',
     'compose.export_stems': 'Exportar stems',
+    'compose.export_mix': 'Exportar mix',
     'compose.empty': 'Aún no hay secciones — toca + Agregar sección para empezar.',
     'compose.coming_next': 'Próximamente',
 
