@@ -152,6 +152,26 @@ describe('ExploreView smoke', () => {
     expect(onLoadSeed).toHaveBeenCalled();
   });
 
+  it('pointer drag left (>50px) records skip + advances', async () => {
+    const { initExploreView } = await import('../src/js/ui/ExploreView.js');
+    initExploreView({ audioApi, onLoadSeed: vi.fn() });
+    const card = document.getElementById('feed-card');
+    const before = document.getElementById('feed-seed').textContent;
+    card.dispatchEvent(new PointerEvent('pointerdown', { clientX: 200, clientY: 0, bubbles: true }));
+    card.dispatchEvent(new PointerEvent('pointerup',   { clientX: 0, clientY: 0, bubbles: true }));
+    await new Promise(r => setTimeout(r, 320));
+    expect(document.getElementById('feed-seed').textContent).not.toBe(before);
+  });
+
+  it('like button spawns a heart burst', async () => {
+    document.getElementById('feed-like').innerHTML = '<span class="like-burst"></span>';
+    const { initExploreView } = await import('../src/js/ui/ExploreView.js');
+    initExploreView({ audioApi, onLoadSeed: vi.fn() });
+    document.getElementById('feed-like').click();
+    await new Promise(r => setTimeout(r, 30));
+    expect(document.querySelectorAll('.like-burst-piece').length).toBeGreaterThan(0);
+  });
+
   it('pointer drag too short is ignored', async () => {
     const onLoadSeed = vi.fn();
     const { initExploreView } = await import('../src/js/ui/ExploreView.js');
@@ -177,5 +197,164 @@ describe('ExploreView smoke', () => {
     initExploreView({ audioApi, onLoadSeed: vi.fn() });
     expect(() => refreshExplore()).not.toThrow();
     expect(() => stopExplorePlayback()).not.toThrow();
+  });
+});
+
+describe('ExploreView — Wrapped with ≥3 likes', () => {
+  function scaffoldWithWrappedBody() {
+    document.body.innerHTML += `
+      <div id="wrapped-body"></div>
+      <div id="wrapped-actions" hidden></div>
+    `;
+  }
+
+  function seedLikes(count = 5) {
+    const likes = [];
+    for (let i = 0; i < count; i++) {
+      likes.push({
+        action: 'like', seed: 1000 + i,
+        scale: i % 2 === 0 ? 'major' : 'dorian',
+        tonic: i % 12, bpm: 90 + i * 5,
+        voice: i % 2 === 0 ? 'piano' : 'pad',
+        density: 0.5, swing: 0.1, at: Date.now(),
+      });
+    }
+    localStorage.setItem('seedsong-explore-feedback', JSON.stringify(likes));
+  }
+
+  it('opens Wrapped with full summary when ≥3 likes are present', async () => {
+    scaffoldWithWrappedBody();
+    seedLikes(5);
+    const { initExploreView } = await import('../src/js/ui/ExploreView.js');
+    initExploreView({ audioApi, onLoadSeed: vi.fn() });
+    document.getElementById('explore-wrapped-btn').click();
+    const body = document.getElementById('wrapped-body');
+    expect(body.innerHTML).toContain('Total liked');
+    expect(body.innerHTML).toContain('Favourite');
+    expect(document.getElementById('wrapped-actions').hidden).toBe(false);
+  });
+
+  it('shows the empty Wrapped state when <3 likes', async () => {
+    scaffoldWithWrappedBody();
+    seedLikes(1);
+    const { initExploreView } = await import('../src/js/ui/ExploreView.js');
+    initExploreView({ audioApi, onLoadSeed: vi.fn() });
+    document.getElementById('explore-wrapped-btn').click();
+    const body = document.getElementById('wrapped-body');
+    expect(body.innerHTML).toContain('Like at least 3 seeds');
+    expect(document.getElementById('wrapped-actions').hidden).toBe(true);
+  });
+
+  it('downloadWrapped attempts to render + create a download', async () => {
+    scaffoldWithWrappedBody();
+    seedLikes(5);
+    const { initExploreView } = await import('../src/js/ui/ExploreView.js');
+    initExploreView({ audioApi, onLoadSeed: vi.fn() });
+    // jsdom doesn't implement canvas.toBlob; provide a stub
+    HTMLCanvasElement.prototype.getContext = function () {
+      return {
+        scale() {}, fillStyle: '', strokeStyle: '', font: '', textBaseline: '', textAlign: '',
+        beginPath() {}, arc() {}, fill() {}, fillRect() {}, fillText() {},
+        clearRect() {}, save() {}, restore() {}, setTransform() {},
+        roundRect() {}, stroke() {}, moveTo() {}, lineTo() {}, lineWidth: 1,
+        createLinearGradient() { return { addColorStop() {} }; },
+      };
+    };
+    HTMLCanvasElement.prototype.toBlob = function (cb) { cb(new Blob(['x'], { type: 'image/png' })); };
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:fake');
+    URL.revokeObjectURL = vi.fn();
+    document.getElementById('explore-wrapped-btn').click();
+    document.getElementById('wrapped-download').click();
+    expect(URL.createObjectURL).toHaveBeenCalled();
+  });
+
+  it('shareWrapped falls back to clipboard when navigator.share is not present', async () => {
+    scaffoldWithWrappedBody();
+    seedLikes(5);
+    HTMLCanvasElement.prototype.getContext = function () {
+      return {
+        scale() {}, fillStyle: '', font: '', beginPath() {}, arc() {}, fill() {},
+        fillRect() {}, fillText() {}, clearRect() {}, save() {}, restore() {},
+        setTransform() {}, roundRect() {}, stroke() {}, moveTo() {}, lineTo() {},
+        createLinearGradient() { return { addColorStop() {} }; },
+      };
+    };
+    HTMLCanvasElement.prototype.toBlob = function (cb) { cb(new Blob(['x'], { type: 'image/png' })); };
+    delete navigator.canShare;
+    delete navigator.share;
+    navigator.clipboard = { write: vi.fn().mockResolvedValue(undefined) };
+    window.ClipboardItem = class { constructor() {} };
+    const { initExploreView } = await import('../src/js/ui/ExploreView.js');
+    initExploreView({ audioApi, onLoadSeed: vi.fn() });
+    document.getElementById('explore-wrapped-btn').click();
+    document.getElementById('wrapped-share').click();
+    await new Promise(r => setTimeout(r, 30));
+    expect(navigator.clipboard.write).toHaveBeenCalled();
+  });
+
+  it('shareWrapped uses navigator.share when available', async () => {
+    scaffoldWithWrappedBody();
+    seedLikes(5);
+    HTMLCanvasElement.prototype.getContext = function () {
+      return {
+        scale() {}, fillStyle: '', font: '', beginPath() {}, arc() {}, fill() {},
+        fillRect() {}, fillText() {}, clearRect() {}, save() {}, restore() {},
+        setTransform() {}, roundRect() {}, stroke() {}, moveTo() {}, lineTo() {},
+        createLinearGradient() { return { addColorStop() {} }; },
+      };
+    };
+    HTMLCanvasElement.prototype.toBlob = function (cb) { cb(new Blob(['x'], { type: 'image/png' })); };
+    navigator.canShare = vi.fn().mockReturnValue(true);
+    navigator.share = vi.fn().mockResolvedValue(undefined);
+    const { initExploreView } = await import('../src/js/ui/ExploreView.js');
+    initExploreView({ audioApi, onLoadSeed: vi.fn() });
+    document.getElementById('explore-wrapped-btn').click();
+    document.getElementById('wrapped-share').click();
+    await new Promise(r => setTimeout(r, 30));
+    expect(navigator.share).toHaveBeenCalled();
+  });
+});
+
+describe('ExploreView — back button', () => {
+  it('starts disabled, becomes enabled after one card load', async () => {
+    const { initExploreView } = await import('../src/js/ui/ExploreView.js');
+    initExploreView({ audioApi, onLoadSeed: vi.fn() });
+    const back = document.getElementById('feed-back');
+    // First card loaded → no history yet
+    expect(back.disabled).toBe(true);
+    // Advance one card
+    document.getElementById('feed-skip').click();
+    await new Promise(r => setTimeout(r, 300));
+    expect(back.disabled).toBe(false);
+  });
+
+  it('clicking back revisits the previous card', async () => {
+    const { initExploreView } = await import('../src/js/ui/ExploreView.js');
+    initExploreView({ audioApi, onLoadSeed: vi.fn() });
+    const first = document.getElementById('feed-seed').textContent;
+    document.getElementById('feed-skip').click();
+    await new Promise(r => setTimeout(r, 300));
+    document.getElementById('feed-back').click();
+    expect(document.getElementById('feed-seed').textContent).toBe(first);
+  });
+});
+
+describe('ExploreView — affinity (taste-aware generation)', () => {
+  it('with ≥2 likes, the candidate generator runs the taste branch', async () => {
+    // Add #feed-tags element so the affinity tag has a target.
+    document.getElementById('view-explore')?.insertAdjacentHTML('beforeend', '<div id="feed-tags"></div>');
+    const likes = [
+      { action: 'like', seed: 11, scale: 'major', tonic: 0, bpm: 110, voice: 'piano', density: 0.5, swing: 0, at: 1 },
+      { action: 'like', seed: 12, scale: 'major', tonic: 0, bpm: 115, voice: 'piano', density: 0.6, swing: 0.1, at: 2 },
+    ];
+    localStorage.setItem('seedsong-explore-feedback', JSON.stringify(likes));
+    vi.spyOn(Math, 'random').mockReturnValue(0.1);
+    const { initExploreView } = await import('../src/js/ui/ExploreView.js');
+    initExploreView({ audioApi, onLoadSeed: vi.fn() });
+    const tags = document.getElementById('feed-tags');
+    // With Math.random = 0.1 (< 0.55), pickWeighted uses the taste map.
+    // The affinity tag is emitted whenever the taste branch runs.
+    expect(tags.innerHTML).toContain('★');
+    Math.random.mockRestore();
   });
 });
