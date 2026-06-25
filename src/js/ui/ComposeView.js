@@ -2,6 +2,7 @@ import { randomSeed } from '../generate/rng.js';
 import { generateSong } from '../generate/song.js';
 import { audioBufferToWav } from '../export/wav.js';
 import { downloadBlob } from '../export/download.js';
+import { playDrumHit } from '../audio/DrumSynth.js';
 import { t, onLangChange } from '../i18n/i18n.js';
 
 const STORAGE_KEY = 'seedsong-compose-project';
@@ -117,6 +118,7 @@ async function playComposition() {
   const melodyDest = audioApiRef.getTrackDest('melody') || audioApiRef.getMasterGain();
   const chordDest = audioApiRef.getTrackDest('chord') || melodyDest;
   const bassDest = audioApiRef.getTrackDest('bass') || melodyDest;
+  const drumDest = audioApiRef.getTrackDest('drum') || melodyDest;
 
   isPlaying = true;
   setPlayUI(true);
@@ -141,9 +143,12 @@ async function playComposition() {
 
     const enabled = new Set(sec.tracks || ALL_TRACKS);
     for (const ev of song.events) {
-      if (ev.type === 'drum') continue;
       if (!enabled.has(ev.type)) continue;
       const when = cursorSec + ev.atBeat * beatDur;
+      if (ev.type === 'drum') {
+        playDrumHit(ctx, drumDest, { drum: ev.drum, when, velocity: ev.velocity ?? 0.6 });
+        continue;
+      }
       const dur = Math.max(0.05, ev.durationBeats * beatDur * 0.92);
       const dest = ev.type === 'chord' ? chordDest : ev.type === 'bass' ? bassDest : melodyDest;
       const type = ev.type === 'chord' ? 'triangle' : ev.type === 'bass' ? 'sawtooth' : 'sine';
@@ -189,7 +194,16 @@ function highlightActiveBlock() {
 function updateStatusTime(elapsed) {
   const e = Math.max(0, Math.min(totalDurationSec, elapsed));
   const t = document.getElementById('compose-status-time');
-  if (t) t.textContent = `${formatTime(e)} / ${formatTime(totalDurationSec)}`;
+  if (t) t.textContent = formatTime(e);
+  const totalEl = document.getElementById('compose-status-total');
+  if (totalEl) totalEl.textContent = `/ ${formatTime(totalDurationSec)}`;
+  // Drive the timeline-wide progress bar so the user has a single
+  // glance reference for where in the composition we are.
+  const fill = document.getElementById('compose-status-progress-fill');
+  if (fill) {
+    const pct = totalDurationSec > 0 ? (e / totalDurationSec) * 100 : 0;
+    fill.style.width = `${pct.toFixed(1)}%`;
+  }
 }
 
 function formatTime(s) {
@@ -208,6 +222,8 @@ function stopComposition() {
   if (progressTimerHandle) { window.clearInterval(progressTimerHandle); progressTimerHandle = null; }
   activeSectionIndex = -1;
   highlightActiveBlock();
+  const fill = document.getElementById('compose-status-progress-fill');
+  if (fill) fill.style.width = '0%';
   setPlayUI(false);
 }
 
@@ -240,14 +256,14 @@ function makeSection(template) {
     bars: t.bars,
     density: t.density,
     voice: 'piano',
-    tracks: ['melody', 'chord', 'bass'],
+    tracks: ['melody', 'chord', 'bass', 'drum'],
   };
 }
 
 const SCALES_LIST = ['major', 'natural_minor', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'pentatonic_major', 'pentatonic_minor', 'blues'];
 const VOICES_LIST = ['piano', 'pad', 'pluck', 'organ', 'strings', 'marimba', 'epiano'];
 const BARS_LIST = [2, 4, 8];
-const ALL_TRACKS = ['melody', 'chord', 'bass'];
+const ALL_TRACKS = ['melody', 'chord', 'bass', 'drum'];
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -492,15 +508,17 @@ function applyEdit(id, field, value) {
 function refreshFileButtons() {
   const saveBtn = document.getElementById('compose-save-file');
   const stemsBtn = document.getElementById('compose-export-stems');
+  const mixBtn = document.getElementById('compose-export-mix');
   if (saveBtn) saveBtn.disabled = sections.length === 0;
   if (stemsBtn) stemsBtn.disabled = sections.length === 0;
+  if (mixBtn) mixBtn.disabled = sections.length === 0;
 }
 
 /* ---- Stem export ---- */
 
-async function renderCompositionStem(trackType) {
-  if (sections.length === 0) return null;
-  // Compute total length first
+// Pre-compute the per-section playback layout used by both the stem
+// renderer and the mix renderer.
+function buildOfflineSections() {
   let totalSec = 0;
   const sectionData = sections.map(sec => {
     const beatDur = 60 / sec.bpm;
@@ -517,6 +535,36 @@ async function renderCompositionStem(trackType) {
     totalSec += lengthSec;
     return { sec, song, beatDur, start };
   });
+  return { sectionData, totalSec };
+}
+
+// Schedule one event into an OfflineAudioContext. Mirrors the live
+// scheduleNote shape but driven by the event's track type so the same
+// helper can render melody/chord/bass/drum.
+function scheduleOfflineEvent(offline, dest, ev, beatDur, sectionStartSec) {
+  const when = sectionStartSec + ev.atBeat * beatDur;
+  if (ev.type === 'drum') {
+    playDrumHit(offline, dest, { drum: ev.drum, when, velocity: ev.velocity ?? 0.5 });
+    return;
+  }
+  const dur = Math.max(0.05, ev.durationBeats * beatDur * 0.92);
+  const wave = ev.type === 'chord' ? 'triangle' : ev.type === 'bass' ? 'sawtooth' : 'sine';
+  const peakVel = ev.type === 'chord' ? 0.06 : ev.type === 'bass' ? 0.07 : 0.10;
+  const osc = offline.createOscillator();
+  const gain = offline.createGain();
+  osc.type = wave;
+  osc.frequency.value = 440 * Math.pow(2, (ev.midi - 69) / 12);
+  gain.gain.setValueAtTime(0, when);
+  gain.gain.linearRampToValueAtTime(peakVel, when + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  osc.connect(gain).connect(dest);
+  osc.start(when);
+  osc.stop(when + dur + 0.05);
+}
+
+async function renderCompositionStem(trackType) {
+  if (sections.length === 0) return null;
+  const { sectionData, totalSec } = buildOfflineSections();
   const tailSeconds = 1.5;
   const sampleRate = 44100;
   const offline = new OfflineAudioContext(2, Math.ceil(sampleRate * (totalSec + tailSeconds)), sampleRate);
@@ -524,30 +572,72 @@ async function renderCompositionStem(trackType) {
   masterGain.gain.value = 0.85;
   masterGain.connect(offline.destination);
 
-  const wave = trackType === 'chord' ? 'triangle' : trackType === 'bass' ? 'sawtooth' : 'sine';
-  const peakVel = trackType === 'chord' ? 0.06 : trackType === 'bass' ? 0.07 : 0.10;
-
   for (const { sec, song, beatDur, start } of sectionData) {
     const enabled = new Set(sec.tracks || ALL_TRACKS);
     if (!enabled.has(trackType)) continue;
     for (const ev of song.events) {
       if (ev.type !== trackType) continue;
-      const when = start + ev.atBeat * beatDur;
-      const dur = Math.max(0.05, ev.durationBeats * beatDur * 0.92);
-      const osc = offline.createOscillator();
-      const gain = offline.createGain();
-      osc.type = wave;
-      osc.frequency.value = 440 * Math.pow(2, (ev.midi - 69) / 12);
-      gain.gain.setValueAtTime(0, when);
-      gain.gain.linearRampToValueAtTime(peakVel, when + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
-      osc.connect(gain).connect(masterGain);
-      osc.start(when);
-      osc.stop(when + dur + 0.05);
+      scheduleOfflineEvent(offline, masterGain, ev, beatDur, start);
     }
   }
 
   return offline.startRendering();
+}
+
+// Render the full mix — every enabled track of every section — into one
+// stereo buffer. Caller can then turn it into a single WAV.
+async function renderCompositionMix() {
+  if (sections.length === 0) return null;
+  const { sectionData, totalSec } = buildOfflineSections();
+  const tailSeconds = 1.5;
+  const sampleRate = 44100;
+  const offline = new OfflineAudioContext(2, Math.ceil(sampleRate * (totalSec + tailSeconds)), sampleRate);
+  const masterGain = offline.createGain();
+  masterGain.gain.value = 0.85;
+  masterGain.connect(offline.destination);
+
+  for (const { sec, song, beatDur, start } of sectionData) {
+    const enabled = new Set(sec.tracks || ALL_TRACKS);
+    for (const ev of song.events) {
+      if (!enabled.has(ev.type)) continue;
+      scheduleOfflineEvent(offline, masterGain, ev, beatDur, start);
+    }
+  }
+
+  return offline.startRendering();
+}
+
+async function exportMix() {
+  if (sections.length === 0) return;
+  const btn = document.getElementById('compose-export-mix');
+  if (btn) {
+    btn.disabled = true;
+    btn.dataset.label = btn.textContent;
+    btn.textContent = 'Rendering…';
+  }
+  try {
+    const buffer = await renderCompositionMix();
+    if (buffer) {
+      const wav = audioBufferToWav(buffer);
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadBlob(wav, `seedsong-${stamp}-mix.wav`, 'audio/wav');
+    }
+    if (btn) {
+      btn.textContent = '✓ Mix';
+      window.setTimeout(() => {
+        btn.textContent = btn.dataset.label || 'Export mix';
+        btn.disabled = false;
+      }, 1800);
+    }
+  } catch (_err) {
+    if (btn) {
+      btn.textContent = 'Failed';
+      window.setTimeout(() => {
+        btn.textContent = btn.dataset.label || 'Export mix';
+        btn.disabled = false;
+      }, 1800);
+    }
+  }
 }
 
 async function exportStems() {
@@ -696,6 +786,7 @@ export function initComposeView({ onLoadSeed, audioApi }) {
 
   saveFileBtn?.addEventListener('click', downloadProject);
   document.getElementById('compose-export-stems')?.addEventListener('click', exportStems);
+  document.getElementById('compose-export-mix')?.addEventListener('click', exportMix);
   loadFileInput?.addEventListener('change', (e) => {
     const file = e.target.files?.[0];
     if (file) loadProjectFile(file);

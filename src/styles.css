@@ -16,6 +16,7 @@
   --chord-color: rgba(74, 170, 136, 0.35);
   --locked-bg: rgba(74, 170, 136, 0.08);
   --bass-color: rgba(100, 149, 237, 0.5);
+  --drum-color: rgba(232, 167, 53, 0.7);
   --melody2-color: rgba(199, 125, 255, 0.75);
   --key-white: #f0f0f0;
   --key-black: #1a1a1a;
@@ -963,7 +964,10 @@ button {
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
-  width: fit-content;
+  /* Span the full width so the progress bar is a useful cursor across
+   * the whole composition. */
+  width: 100%;
+  max-width: 540px;
 }
 
 .compose-status[hidden] { display: none; }
@@ -971,7 +975,27 @@ button {
 .compose-status-time {
   font-family: monospace;
   font-weight: 500;
-  opacity: 0.8;
+}
+
+.compose-status-total {
+  font-family: monospace;
+  font-weight: 400;
+  opacity: 0.65;
+  margin-left: -8px;   /* hug the time */
+}
+
+.compose-status-progress {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.compose-status-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 100ms linear;
 }
 
 .compose-play-icon {
@@ -1193,6 +1217,7 @@ button {
 .section-track-dot-melody { background: var(--melody-color); }
 .section-track-dot-chord { background: var(--chord-color); }
 .section-track-dot-bass { background: var(--bass-color); }
+.section-track-dot-drum { background: var(--drum-color); }
 
 .section-block-editor {
   margin-top: 12px;
