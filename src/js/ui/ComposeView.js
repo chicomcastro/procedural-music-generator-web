@@ -795,7 +795,9 @@ export function initComposeView({ onLoadSeed, audioApi }) {
 
   document.addEventListener('keydown', (e) => {
     if (document.getElementById('view-compose')?.classList.contains('hidden')) return;
-    if (e.target.matches('input, textarea, select')) return;
+    // e.target may be `document` when the event is dispatched at the
+    // document level (vitest does this). Guard with optional chaining.
+    if (e.target?.matches?.('input, textarea, select')) return;
     const meta = e.metaKey || e.ctrlKey;
     if (!meta) return;
     if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
