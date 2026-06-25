@@ -13,7 +13,7 @@ describe('practice-studies catalog', () => {
   it('every study has a non-empty acts array and a recognised kind', () => {
     for (const s of STUDIES) {
       expect(s.acts.length).toBeGreaterThan(0);
-      expect(['two-voice-counterpoint', 'walking-bass-workout', 'scale-etude', 'solo-etude', 'modal-vamp']).toContain(s.kind);
+      expect(['two-voice-counterpoint', 'duet-workshop', 'walking-bass-workout', 'scale-etude', 'solo-etude', 'modal-vamp']).toContain(s.kind);
     }
   });
 });

@@ -52,6 +52,44 @@ export const DUET_STYLES = {
   call_response:   { label: 'Call & response',        mode: 'call_response',   independence: 0.5 },
 };
 
+// ADR 0004: Note-value vocabulary for the Duet Workshop. Each id maps to
+// the duration in beats. The Duet Workshop's rhythm-vocabulary chip set
+// post-filters generateRhythm's output to onlykeep onsets/durations that
+// land on one of the user-allowed values.
+export const RHYTHM_VOCAB = {
+  eighth:          { label: 'Eighth',         beats: 0.5 },
+  quarter:         { label: 'Quarter',        beats: 1 },
+  'dotted-quarter':{ label: 'Dotted quarter', beats: 1.5 },
+  half:            { label: 'Half',           beats: 2 },
+  'dotted-half':   { label: 'Dotted half',    beats: 3 },
+  whole:           { label: 'Whole',          beats: 4 },
+};
+
+// Default selection for the Duet Workshop's rhythm vocab chips. A
+// forgiving first-read set: quarter + half + eighth.
+export const RHYTHM_VOCAB_DEFAULTS = ['quarter', 'half', 'eighth'];
+
+// Progression picker labels for the Duet Workshop. IDs match
+// src/js/theory/chords.js → PROGRESSIONS so the override drops in
+// without translation. Order matters: dropdown options render in this
+// sequence.
+export const PROGRESSION_OPTIONS = [
+  { id: 'pop',         label: 'I–V–vi–IV (pop)' },
+  { id: 'fifties',     label: 'I–vi–IV–V (50s)' },
+  { id: 'jazz_ii_V_I', label: 'ii–V–I (jazz)' },
+  { id: 'minor_loop',  label: 'i–VI–III–VII (minor loop)' },
+  { id: 'pachelbel',   label: 'Pachelbel' },
+  { id: 'twelve_bar',  label: '12-bar blues' },
+];
+
+// Part-view toggle states for the Duet Workshop. Pure display setting —
+// audio playback always renders both voices.
+export const PART_VIEW_OPTIONS = [
+  { id: 'both',   label: 'Both voices' },
+  { id: 'voice1', label: 'Voice 1 only' },
+  { id: 'voice2', label: 'Voice 2 only' },
+];
+
 // Rhythm presets for the two-voice invention. Map to generateRhythm's
 // density + template knobs. "Square" is the new default — half notes,
 // dotted quarters, occasional eighths; suitable for first-read duet.
@@ -205,6 +243,39 @@ export const STUDIES = [
           tempo: 84,
           contour: 'descending',
           independence: 0.45,
+        },
+      },
+    ],
+  },
+  {
+    id: 'duet-workshop',
+    kind: 'duet-workshop',
+    category: 'counterpoint',
+    title: 'Duet Workshop',
+    summary: 'A single configurable movement: pick the scale, progression, rhythm vocabulary, and duet style. Single-staff "part view" lets each musician focus on their own line — generate, print, play together.',
+    eyebrow: 'Counterpoint · sandbox',
+    clefPresets: [
+      { id: 'bass-bass',     label: 'Bass + Bass (cello duo)',     voices: ['bass', 'bass'] },
+      { id: 'treble-bass',   label: 'Treble + Bass',               voices: ['treble', 'bass'] },
+      { id: 'treble-treble', label: 'Treble + Treble',             voices: ['treble', 'treble'] },
+      { id: 'alto-bass',     label: 'Alto + Bass (viola + cello)', voices: ['alto', 'bass'] },
+    ],
+    rhythmDefault: 'walking',
+    duetDefault: 'free',
+    keyOptions: [0, 2, 5, 7, 9],
+    acts: [
+      {
+        id: 'duet',
+        title: 'Duet',
+        bars: 8,
+        keyShift: 0,
+        progression: 'pop',
+        params: {
+          density: 0.6,
+          chromaticPct: 0,
+          tempo: 88,
+          contour: 'arc',
+          independence: 0.5,
         },
       },
     ],
