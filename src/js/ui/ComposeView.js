@@ -220,7 +220,7 @@ async function playComposition() {
     const enabled = new Set(sec.tracks || ALL_TRACKS);
     for (const ev of song.events) {
       if (!enabled.has(ev.type)) continue;
-      const evAbs = starts[i].start + ev.atBeat * beatDur;
+      const evAbs = starts[i].start + timeOffsetForBeat(starts, i, ev.atBeat, sections);
       const when = baseWhen + evAbs;
       const crossfade = crossfadeScaleFor(evAbs, i, starts, sections);
       if (crossfade <= 0.001) continue;   // fully attenuated, skip
@@ -228,6 +228,10 @@ async function playComposition() {
         playDrumHit(ctx, drumDest, { drum: ev.drum, when, velocity: (ev.velocity ?? 0.6) * crossfade });
         continue;
       }
+      // Note duration uses the local beatDur at the event's start —
+      // ramp-internal events get a slightly skewed duration, which is
+      // acceptable: durations are short and re-anchoring per-event is
+      // overkill for the tempo difference between adjacent sections.
       const dur = Math.max(0.05, ev.durationBeats * beatDur * 0.92);
       const dest = ev.type === 'chord' ? chordDest : ev.type === 'bass' ? bassDest : melodyDest;
       const type = ev.type === 'chord' ? 'triangle' : ev.type === 'bass' ? 'sawtooth' : 'sine';
@@ -348,9 +352,41 @@ function makeSection(template) {
   };
 }
 
+// Closed-form ramp integral. ADR 0002: the last K beats of an outgoing
+// section linearly interpolate beat-duration from bd0 to bd1. For an
+// offset `s` (in beats) into the ramp:
+//   bd(s) = bd0 + (bd1-bd0) * (s/K)
+//   t(s)  = bd0*s + (bd1-bd0)*s^2 / (2K)
+// (Trapezoidal integral of the linear bd curve — exact, not discrete.)
+function rampElapsed(bd0, bd1, K, s) {
+  if (K <= 0) return 0;
+  return bd0 * s + (bd1 - bd0) * s * s / (2 * K);
+}
+
+// Absolute time offset (from starts[i].start) for an event at `atBeat`
+// inside section `i`. Handles the tempo-ramp window at the section's
+// tail when the NEXT section's transitionIn === 'tempo-ramp'.
+function timeOffsetForBeat(starts, sectionIdx, atBeat, sectionList) {
+  const s = starts[sectionIdx];
+  const next = sectionList[sectionIdx + 1];
+  const rampBeats = (next && next.transitionIn === 'tempo-ramp')
+    ? Math.max(0, Math.min(8, next.transitionBars ?? 1))
+    : 0;
+  const lengthBeats = sectionList[sectionIdx].bars * 4;
+  const rampStartBeat = lengthBeats - rampBeats;
+  if (atBeat <= rampStartBeat || rampBeats <= 0) {
+    return atBeat * s.beatDur;
+  }
+  const bd0 = s.beatDur;
+  const bd1 = 60 / next.bpm;
+  const into = atBeat - rampStartBeat;
+  return rampStartBeat * bd0 + rampElapsed(bd0, bd1, rampBeats, into);
+}
+
 // Compute the per-section absolute start times in seconds, applying
-// transitionIn deltas (crossfade subtracts; gap adds). The first section
-// always starts at 0 — its transitionIn is ignored.
+// transitionIn deltas (crossfade subtracts; gap adds; tempo-ramp warps
+// the outgoing section's tail). The first section always starts at 0 —
+// its transitionIn is ignored.
 function computeSectionStarts(sectionList) {
   const starts = [];
   let cursor = 0;
@@ -358,13 +394,26 @@ function computeSectionStarts(sectionList) {
     const sec = sectionList[i];
     const beatDur = 60 / sec.bpm;
     const lengthBeats = sec.bars * 4;
-    const lengthSec = lengthBeats * beatDur;
+    // Base length; tempo-ramp at this section's END (driven by the
+    // NEXT section's transitionIn) replaces the last K beats with the
+    // closed-form ramp integral.
+    const next = sectionList[i + 1];
+    let lengthSec = lengthBeats * beatDur;
+    if (next && next.transitionIn === 'tempo-ramp') {
+      const K = Math.max(0, Math.min(8, next.transitionBars ?? 1));
+      if (K > 0 && K <= lengthBeats) {
+        const bd1 = 60 / next.bpm;
+        lengthSec = lengthSec - K * beatDur + rampElapsed(beatDur, bd1, K, K);
+      }
+    }
     if (i > 0) {
       const tType = sec.transitionIn || 'hard';
       const tBars = Math.max(0, Math.min(8, sec.transitionBars ?? 1));
       const tSec = tBars * beatDur;
       if (tType === 'crossfade') cursor -= tSec;
       else if (tType === 'gap') cursor += tSec;
+      // tempo-ramp does NOT shift the boundary — the ramp lives inside
+      // the OUTGOING section and the recomputed lengthSec covers it.
     }
     starts.push({ start: cursor, length: lengthSec, beatDur, transitionIn: sec.transitionIn || 'hard', transitionBars: sec.transitionBars ?? 1 });
     cursor += lengthSec;
@@ -428,7 +477,7 @@ function render() {
             <span class="section-meta-chip" title="Density">${Math.round(s.density * 100)}%</span>
             <span class="section-meta-chip section-meta-chip-voice" title="Voice">${s.voice}</span>
             ${i > 0 && s.transitionIn && s.transitionIn !== 'hard'
-              ? `<span class="section-meta-chip section-meta-chip-transition" title="Transition from previous section">⇢ ${s.transitionIn === 'crossfade' ? 'Crossfade' : 'Gap'} ${s.transitionBars ?? 1}b</span>`
+              ? `<span class="section-meta-chip section-meta-chip-transition" title="Transition from previous section">⇢ ${s.transitionIn === 'crossfade' ? 'Crossfade' : s.transitionIn === 'gap' ? 'Gap' : 'Tempo ramp'} ${s.transitionBars ?? 1}b</span>`
               : ''}
           </div>
           <div class="section-block-tracks">${trackChips}</div>
@@ -474,6 +523,7 @@ function render() {
                 <option value="hard"${s.transitionIn === 'hard' ? ' selected' : ''}>Hard cut</option>
                 <option value="crossfade"${s.transitionIn === 'crossfade' ? ' selected' : ''}>Crossfade</option>
                 <option value="gap"${s.transitionIn === 'gap' ? ' selected' : ''}>Gap (silence)</option>
+                <option value="tempo-ramp"${s.transitionIn === 'tempo-ramp' ? ' selected' : ''}>Tempo ramp</option>
               </select>
             </label>
             <label class="section-edit-field"${s.transitionIn === 'hard' ? ' hidden' : ''}>
@@ -640,7 +690,7 @@ function applyEdit(id, field, value) {
   else if (field === 'bpm') sections[idx].bpm = Math.max(40, Math.min(240, Number(value) | 0));
   else if (field === 'density') sections[idx].density = Math.max(0.1, Math.min(1, Number(value)));
   else if (field === 'voice') sections[idx].voice = String(value);
-  else if (field === 'transitionIn') sections[idx].transitionIn = ['hard', 'crossfade', 'gap'].includes(value) ? value : 'hard';
+  else if (field === 'transitionIn') sections[idx].transitionIn = ['hard', 'crossfade', 'gap', 'tempo-ramp'].includes(value) ? value : 'hard';
   else if (field === 'transitionBars') sections[idx].transitionBars = Math.max(0, Math.min(8, Number(value) | 0));
   save(false);
   // Re-render only the affected block to preserve editor open state and focus
@@ -695,11 +745,14 @@ function buildOfflineSections() {
 // Schedule one event into an OfflineAudioContext. Mirrors the live
 // scheduleNote shape but driven by the event's track type so the same
 // helper can render melody/chord/bass/drum.
+// `evAbs` is the absolute time within the composition (seconds from 0);
+// the caller computes it via timeOffsetForBeat so the same call site
+// works for hard / crossfade / gap / tempo-ramp transitions.
 // `crossfade` is a multiplier in [0, 1] applied to the event's gain so
 // the offline path produces the same audible crossfade as live playback.
-function scheduleOfflineEvent(offline, dest, ev, beatDur, sectionStartSec, crossfade = 1) {
-  const when = sectionStartSec + ev.atBeat * beatDur;
+function scheduleOfflineEventAt(offline, dest, ev, evAbs, beatDur, crossfade = 1) {
   if (crossfade <= 0.001) return;
+  const when = evAbs;
   if (ev.type === 'drum') {
     playDrumHit(offline, dest, { drum: ev.drum, when, velocity: (ev.velocity ?? 0.5) * crossfade });
     return;
@@ -734,9 +787,10 @@ async function renderCompositionStem(trackType) {
     if (!enabled.has(trackType)) continue;
     for (const ev of song.events) {
       if (ev.type !== trackType) continue;
-      const evAbs = start + ev.atBeat * beatDur;
+      const eventOffset = timeOffsetForBeat(starts, index, ev.atBeat, sections);
+      const evAbs = start + eventOffset;
       const cf = crossfadeScaleFor(evAbs, index, starts, sections);
-      scheduleOfflineEvent(offline, masterGain, ev, beatDur, start, cf);
+      scheduleOfflineEventAt(offline, masterGain, ev, evAbs, beatDur, cf);
     }
   }
 
@@ -759,9 +813,10 @@ async function renderCompositionMix() {
     const enabled = new Set(sec.tracks || ALL_TRACKS);
     for (const ev of song.events) {
       if (!enabled.has(ev.type)) continue;
-      const evAbs = start + ev.atBeat * beatDur;
+      const eventOffset = timeOffsetForBeat(starts, index, ev.atBeat, sections);
+      const evAbs = start + eventOffset;
       const cf = crossfadeScaleFor(evAbs, index, starts, sections);
-      scheduleOfflineEvent(offline, masterGain, ev, beatDur, start, cf);
+      scheduleOfflineEventAt(offline, masterGain, ev, evAbs, beatDur, cf);
     }
   }
 
@@ -893,7 +948,7 @@ function normalizeSection(s) {
     density: typeof s.density === 'number' ? Math.max(0.1, Math.min(1, s.density)) : 0.5,
     voice: typeof s.voice === 'string' ? s.voice : 'piano',
     tracks: tracks.length > 0 ? tracks : ALL_TRACKS.slice(),
-    transitionIn: ['hard', 'crossfade', 'gap'].includes(s.transitionIn) ? s.transitionIn : 'hard',
+    transitionIn: ['hard', 'crossfade', 'gap', 'tempo-ramp'].includes(s.transitionIn) ? s.transitionIn : 'hard',
     transitionBars: Number.isFinite(s.transitionBars) ? Math.max(0, Math.min(8, s.transitionBars | 0)) : 1,
   };
 }
