@@ -6715,3 +6715,69 @@ body.practice-overlay-open { overflow: hidden; }
   body.practice-printing .practice-share-toast,
   body.practice-printing .practice-favorites-section { display: none !important; }
 }
+
+/* ---- Compose: + Add section popover for templates ---- */
+.compose-add-group {
+  position: relative;
+  display: inline-flex;
+}
+.compose-add-main { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.compose-add-menu-btn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: -1px;
+  padding: 6px 8px;
+  min-width: 28px;
+}
+.compose-add-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 220px;
+  z-index: 30;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.compose-add-menu[hidden] { display: none; }
+.compose-add-menu-heading {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 8px 10px 4px;
+}
+.compose-add-menu-item {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  flex: 1;
+}
+.compose-add-menu-item:hover { background: var(--bg-input); }
+.compose-add-menu-row {
+  display: flex;
+  align-items: stretch;
+}
+.compose-add-menu-remove {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0 8px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.compose-add-menu-remove:hover { color: var(--danger); background: var(--bg-input); }
+
+.section-block-btn-confirm { color: var(--accent); border-color: var(--accent); }

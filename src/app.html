@@ -780,9 +780,13 @@
                             <span id="compose-play-label" data-i18n="compose.play">Play composition</span>
                         </button>
                         <div class="compose-toolbar-secondary">
-                            <button id="compose-add" type="button" class="view-cta-ghost">
-                                <span aria-hidden="true">+</span> <span data-i18n="compose.add">Add section</span>
-                            </button>
+                            <div class="compose-add-group">
+                                <button id="compose-add" type="button" class="view-cta-ghost compose-add-main">
+                                    <span aria-hidden="true">+</span> <span data-i18n="compose.add">Add section</span>
+                                </button>
+                                <button id="compose-add-menu-btn" type="button" class="view-cta-ghost compose-add-menu-btn" aria-haspopup="true" aria-expanded="false" title="Pick a template">▾</button>
+                                <div id="compose-add-menu" class="compose-add-menu" role="menu" hidden></div>
+                            </div>
                             <div class="compose-tool-group" role="group" aria-label="History">
                                 <button id="compose-undo" type="button" class="compose-tool-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>↶</button>
                                 <button id="compose-redo" type="button" class="compose-tool-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" disabled>↷</button>
