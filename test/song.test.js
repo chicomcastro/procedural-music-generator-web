@@ -53,4 +53,44 @@ describe('generateSong', () => {
     const highMelody = high.events.filter(e => e.type === 'melody').length;
     expect(highMelody).toBeGreaterThan(lowMelody);
   });
+
+  it('structure=full builds a multi-section song with sections array', () => {
+    const song = generateSong({ seed: 42, bars: 8, structure: 'full' });
+    expect(Array.isArray(song.sections)).toBe(true);
+    expect(song.sections.length).toBe(6);
+    expect(song.sections[0].label).toBe('Intro');
+    expect(song.sections[song.sections.length - 1].label).toBe('Outro');
+    // Total length should be sum of section lengths
+    const totalLen = song.sections.reduce((a, s) => a + s.lengthBeats, 0);
+    expect(song.lengthBeats).toBe(totalLen);
+  });
+
+  it('structure=short builds a 4-section song', () => {
+    const song = generateSong({ seed: 42, bars: 8, structure: 'short' });
+    expect(song.sections.length).toBe(4);
+  });
+
+  it('structure with unknown name falls back to "full"', () => {
+    const song = generateSong({ seed: 42, bars: 8, structure: 'bogus' });
+    expect(song.sections.length).toBe(6);   // same as full
+  });
+
+  it('duet=true generates a second melodic voice (melody2)', () => {
+    const song = generateSong({ seed: 42, density: 0.7, bars: 4, duet: true });
+    const melody2 = song.events.filter(e => e.type === 'melody2');
+    expect(melody2.length).toBeGreaterThan(0);
+  });
+
+  it('duet=false omits melody2 events', () => {
+    const song = generateSong({ seed: 42, bars: 4, duet: false });
+    const melody2 = song.events.filter(e => e.type === 'melody2');
+    expect(melody2.length).toBe(0);
+  });
+
+  it('Intro section has noDrums=true → no drum events in intro span', () => {
+    const song = generateSong({ seed: 42, bars: 8, structure: 'full' });
+    const introEnd = song.sections[0].startBeat + song.sections[0].lengthBeats;
+    const drumsInIntro = song.events.filter(e => e.type === 'drum' && e.atBeat < introEnd).length;
+    expect(drumsInIntro).toBe(0);
+  });
 });
