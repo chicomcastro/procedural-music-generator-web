@@ -44,13 +44,13 @@ export const TR = {
   'scale-etude': {
     pt: {
       title: 'Estudo de Escala',
-      summary: 'Exercícios de padrões de método (pares e tríades, asc. + desc.). Escolha a escala e o padrão, e treine.',
-      eyebrow: 'Técnica · 3 exercícios',
+      summary: 'Um exercício de técnica configurável: escolha a escala, o padrão (escala, pares, ternas, terças/quartas/quintas quebradas), uma ou duas oitavas e a figura rítmica — subida e descida numa passagem só.',
+      eyebrow: 'Técnica · sandbox',
     },
     es: {
       title: 'Estudio de Escala',
-      summary: 'Ejercicios de patrones de método (pares y tríadas, asc. + desc.). Elige la escala y el patrón, y practica.',
-      eyebrow: 'Técnica · 3 ejercicios',
+      summary: 'Un ejercicio de técnica configurable: elige la escala, el patrón (escala, pares, ternas, terceras/cuartas/quintas quebradas), una o dos octavas y la figura rítmica — subida y bajada en una sola pasada.',
+      eyebrow: 'Técnica · sandbox',
     },
   },
   'solo-etude': {

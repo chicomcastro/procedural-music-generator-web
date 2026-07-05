@@ -486,16 +486,16 @@ describe('new study kinds — scale-etude / solo-etude / modal-vamp', () => {
     expect(STUDIES.find(s => s.id === 'modal-vamp')).toBeTruthy();
   });
 
-  it('scale-etude builds a single-voice exercise; the threes drill is triplets (ADR 0007)', () => {
+  it('scale-etude builds a single-voice drill; note value follows the rhythm option (ADR 0008)', () => {
     const study = STUDIES.find(s => s.id === 'scale-etude');
-    // Exercise 1 (default): straight eighths.
-    const ex0 = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass'], actIdx: 0 });
-    expect(ex0.events.every(e => e.type === 'melody')).toBe(true);
-    expect(ex0.events.every(e => e.noteType === 'e')).toBe(true);
-    // Exercise 3 chains threes_asc + threes_desc — all triplet eighths.
-    const ex2 = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass'], actIdx: 2 });
-    expect(ex2.events.length).toBeGreaterThan(0);
-    expect(ex2.events.every(e => e.noteType === 'et')).toBe(true);
+    // Default: eighths.
+    const e8 = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass'] });
+    expect(e8.events.every(e => e.type === 'melody')).toBe(true);
+    expect(e8.events.every(e => e.noteType === 'e')).toBe(true);
+    // Triplets via the note-value dropdown.
+    const et = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass'], etudeRhythm: 'triplet' });
+    expect(et.events.length).toBeGreaterThan(0);
+    expect(et.events.every(e => e.noteType === 'et')).toBe(true);
   });
 
   it('scale-etude is deterministic with the same inputs', () => {

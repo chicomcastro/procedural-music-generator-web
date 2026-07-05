@@ -140,19 +140,71 @@ export const VOICE_OPTIONS = [
   { id: 'pluck',  label: 'Pluck' },
 ];
 
-// Scale-etude pattern definitions. Each pattern is a function of the
-// scale's pitch classes (0-indexed within the scale) → an array of
-// pitch-class steps that build the line. Combined with a key + a scale
-// shape (a list of semitone offsets from the tonic), the buildSong path
-// can produce a full method-book piece.
-export const SCALE_PATTERNS = {
-  asc:         { label: 'Ascending',         build: (n) => Array.from({ length: n }, (_, i) => [i]) },
-  desc:        { label: 'Descending',        build: (n) => Array.from({ length: n }, (_, i) => [n - 1 - i]) },
-  pairs_asc:   { label: 'Pairs ascending',   build: (n) => Array.from({ length: n - 1 }, (_, i) => [i, i + 1]) },
-  pairs_desc:  { label: 'Pairs descending',  build: (n) => Array.from({ length: n - 1 }, (_, i) => [n - 1 - i, n - 2 - i]) },
-  threes_asc:  { label: 'Threes ascending',  build: (n) => Array.from({ length: n - 2 }, (_, i) => [i, i + 1, i + 2]) },
-  threes_desc: { label: 'Threes descending', build: (n) => Array.from({ length: n - 2 }, (_, i) => [n - 1 - i, n - 2 - i, n - 3 - i]) },
-};
+// ADR 0008: Scale-etude pattern catalog. Each pattern maps a degree
+// count `n` to a FLAT sequence of degree indices covering the ascending
+// AND descending halves in one continuous line — the way method books
+// (Ševčík / Hanon / Flesch) print technique drills.
+function brokenInterval(k) {
+  return (n) => {
+    const seq = [];
+    for (let i = 0; i + k < n; i++) seq.push(i, i + k);      // up:   (i, i+k)
+    for (let i = n - 1; i - k >= 0; i--) seq.push(i, i - k); // down: (i, i-k)
+    return seq;
+  };
+}
+
+export const ETUDE_PATTERNS = [
+  {
+    id: 'scale',
+    label: 'Scale (up + down)',
+    build: (n) => {
+      const up = Array.from({ length: n }, (_, i) => i);
+      return [...up, ...up.slice(0, -1).reverse()];   // top note not repeated
+    },
+  },
+  {
+    id: 'pairs',
+    label: 'Pairs — 2 by 2',
+    build: (n) => {
+      const seq = [];
+      for (let i = 0; i + 1 < n; i++) seq.push(i, i + 1);
+      for (let i = n - 1; i - 1 >= 0; i--) seq.push(i, i - 1);
+      return seq;
+    },
+  },
+  {
+    id: 'threes',
+    label: 'Threes — 3 by 3',
+    build: (n) => {
+      const seq = [];
+      for (let i = 0; i + 2 < n; i++) seq.push(i, i + 1, i + 2);
+      for (let i = n - 1; i - 2 >= 0; i--) seq.push(i, i - 1, i - 2);
+      return seq;
+    },
+  },
+  { id: 'thirds',  label: 'Broken thirds',  build: brokenInterval(2) },
+  { id: 'fourths', label: 'Broken fourths', build: brokenInterval(3) },
+  { id: 'fifths',  label: 'Broken fifths',  build: brokenInterval(4) },
+];
+
+// Octave range for the etude. Two octaves stack a second copy of the
+// shape on top (skipping the shared octave note).
+export const ETUDE_OCTAVE_OPTIONS = [1, 2];
+
+export function extendShapeOctaves(shape, octaves) {
+  if (!Array.isArray(shape) || shape.length === 0 || octaves <= 1) return shape;
+  const top = shape[shape.length - 1];
+  return [...shape, ...shape.slice(1).map(o => o + top)];
+}
+
+// Note-value choices — `beats` drives both playback timing and the
+// engraved duration (triplets currently engrave approximated, ADR 0008).
+export const ETUDE_RHYTHMS = [
+  { id: 'quarter',   label: 'Quarter notes',   beats: 1,     noteType: 'q'  },
+  { id: 'eighth',    label: 'Eighth notes',    beats: 0.5,   noteType: 'e'  },
+  { id: 'triplet',   label: 'Triplet eighths', beats: 1 / 3, noteType: 'et' },
+  { id: 'sixteenth', label: 'Sixteenth notes', beats: 0.25,  noteType: 's'  },
+];
 
 // Scale shapes — semitone offsets from the tonic, ending on the octave.
 // Used by scale-etude when applying a pattern.
@@ -338,11 +390,11 @@ export const STUDIES = [
     id: 'scale-etude',
     kind: 'scale-etude',
     category: 'technique',
-    // ADR 0007: each pattern is its own drill.
-    actMode: 'exercises',
+    // ADR 0008: single-act sandbox — the Pattern / Octaves / Note value
+    // dropdowns replaced the fixed exercise tabs.
     title: 'Scale Etude',
-    summary: 'Method-book pattern exercises (pairs and threes, asc + desc). Pick the scale and the pattern, drill it.',
-    eyebrow: 'Technique · 3 exercises',
+    summary: 'One configurable technique drill: pick the scale, the pattern (scale, pairs, threes, broken thirds/fourths/fifths), one or two octaves, and the note value — up and down in a single pass.',
+    eyebrow: 'Technique · sandbox',
     clefPresets: [
       { id: 'bass',   label: 'Bass clef (cello / bass)',  voices: ['bass'] },
       { id: 'treble', label: 'Treble clef (violin / RH)', voices: ['treble'] },
@@ -351,29 +403,11 @@ export const STUDIES = [
     keyOptions: [0, 2, 5, 7, 9],
     acts: [
       {
-        id: 'ascending',
-        title: 'I — Up the scale (pairs)',
-        bars: 4,
+        id: 'etude',
+        title: 'Etude',
         keyShift: 0,
-        patternId: 'pairs_asc',
+        // bars are DERIVED from pattern length x note value (ADR 0008).
         params: { tempo: 80, scale: 'major' },
-      },
-      {
-        id: 'descending',
-        title: 'II — Down the scale (pairs)',
-        bars: 4,
-        keyShift: 0,
-        patternId: 'pairs_desc',
-        params: { tempo: 88, scale: 'major' },
-      },
-      {
-        id: 'threes',
-        title: 'III — Threes up + down',
-        bars: 8,
-        keyShift: 0,
-        patternId: 'threes_asc',     // build path chains asc + desc for this act
-        patternIdSecond: 'threes_desc',
-        params: { tempo: 96, scale: 'major' },
       },
     ],
   },
