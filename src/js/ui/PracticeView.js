@@ -532,22 +532,32 @@ function buildScaleEtudeSong(study, opts) {
   // pulled back toward the clef's default reading band.
   const etudeRange = [Math.min(range[0], tonic), Math.max(range[1], tonic + maxOffset)];
 
-  const sequence = pattern.build(shape.length);
+  // ADR 0010: rhythm is a repeating cell pattern — note j takes
+  // cells[j % cells.length]. atBeat accumulates each cell's duration.
+  const cells = rhythm.cells;
+  // A wide interval (e.g. broken sevenths) may not fit a short scale
+  // (pentatonic, one octave) — fall back to the plain scale so the drill
+  // is never empty.
+  let sequence = pattern.build(shape.length);
+  if (sequence.length === 0) sequence = ETUDE_PATTERNS[0].build(shape.length);
+  let at = 0;
   for (let j = 0; j < sequence.length; j++) {
+    const cell = cells[j % cells.length];
     const midi = clampMidiToRange(tonic + shape[sequence[j]], etudeRange);
     events.push({
       type: 'melody',
       midi,
-      atBeat: j * rhythm.beats,
-      durationBeats: rhythm.beats,
+      atBeat: at,
+      durationBeats: cell.beats,
       velocity: 0.75,
-      noteType: rhythm.noteType,
+      noteType: cell.noteType,
     });
+    at += cell.beats;
   }
 
-  // Bars derive from the sequence; the serializer pads the last bar
-  // with rests.
-  const totalBeats = sequence.length * rhythm.beats;
+  // Bars derive from the accumulated duration; the serializer pads the
+  // last bar with rests.
+  const totalBeats = at;
   const bars = Math.max(1, Math.ceil(totalBeats / beatsPerBar - 1e-9));
 
   return {

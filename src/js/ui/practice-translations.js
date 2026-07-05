@@ -44,12 +44,12 @@ export const TR = {
   'scale-etude': {
     pt: {
       title: 'Estudo de Escala',
-      summary: 'Um exercício de técnica configurável: escolha a escala, o padrão (escala, pares, ternas, terças/quartas/quintas quebradas), uma ou duas oitavas e a figura rítmica — subida e descida numa passagem só.',
+      summary: 'Um exercício de técnica configurável: escolha a escala, o padrão (escala, pares, ternas, terças até sétimas quebradas), uma ou duas oitavas e a figura rítmica (incl. figuras compostas) — subida e descida numa passagem só.',
       eyebrow: 'Técnica · sandbox',
     },
     es: {
       title: 'Estudio de Escala',
-      summary: 'Un ejercicio de técnica configurable: elige la escala, el patrón (escala, pares, ternas, terceras/cuartas/quintas quebradas), una o dos octavas y la figura rítmica — subida y bajada en una sola pasada.',
+      summary: 'Un ejercicio de técnica configurable: elige la escala, el patrón (escala, pares, ternas, terceras hasta séptimas quebradas), una o dos octavas y la figura rítmica (incl. figuras compuestas) — subida y bajada en una sola pasada.',
       eyebrow: 'Técnica · sandbox',
     },
   },

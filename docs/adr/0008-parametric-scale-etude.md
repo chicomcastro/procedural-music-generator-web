@@ -74,3 +74,16 @@ selection the tabs used to).
 - Interval patterns beyond the fifth (sixths, octaves) — trivial to add
   to `ETUDE_PATTERNS` when asked for.
 - `<tuplet>`/`<time-modification>` marks so triplets engrave with the 3.
+
+
+## Amendment (2026-07-05) — more intervals + composite rhythms
+
+- **Patterns**: broken **sixths** (interval 5) and **sevenths** (interval 6)
+  join thirds/fourths/fifths. A wide interval that can't fit a short scale
+  (e.g. sevenths on a one-octave pentatonic) yields an empty sequence; the
+  builder then falls back to the plain scale so a drill is never blank.
+- **Rhythm model** generalised from a single `beats` value to a repeating
+  **cell pattern** (`cells: [{ beats, noteType }, …]`); note *j* takes
+  `cells[j % cells.length]`. Simple values are one-cell. New composite
+  figures, each summing to one beat so they stay bar-aligned:
+  dotted-8th + 16th, 16th+8th+16th, 16th+16th+8th, 8th+16th+16th.

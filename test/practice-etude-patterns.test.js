@@ -28,21 +28,31 @@ describe('ETUDE_PATTERNS — sequence construction', () => {
     expect(P.thirds.build(5)).toEqual([0, 2, 1, 3, 2, 4, 4, 2, 3, 1, 2, 0]);
   });
 
-  it('broken fourths and fifths use intervals 3 and 4', () => {
+  it('broken fourths / fifths / sixths / sevenths use intervals 3–6', () => {
     expect(P.fourths.build(5)).toEqual([0, 3, 1, 4, 4, 1, 3, 0]);
     expect(P.fifths.build(6)).toEqual([0, 4, 1, 5, 5, 1, 4, 0]);
+    // sevenths (k=6) over an 8-degree scale: (0,6)(1,7) up, (7,1)(6,0) down.
+    expect(P.sevenths.build(8)).toEqual([0, 6, 1, 7, 7, 1, 6, 0]);
+    // sixths (k=5) over 8: (0,5)(1,6)(2,7) up, mirrored down.
+    expect(P.sixths.build(8)).toEqual([0, 5, 1, 6, 2, 7, 7, 2, 6, 1, 5, 0]);
   });
 
-  it('every pattern yields indices inside [0, n)', () => {
+  it('a wide interval that does not fit a short scale yields an empty sequence (builder falls back)', () => {
+    // Broken sevenths need >= 7 degrees; a 6-note pentatonic has none.
+    expect(P.sevenths.build(6)).toEqual([]);
+  });
+
+  it('every pattern yields in-bounds indices, and is non-empty for a wide enough scale', () => {
     for (const pat of ETUDE_PATTERNS) {
       for (const n of [6, 8, 15]) {
         const seq = pat.build(n);
-        expect(seq.length).toBeGreaterThan(0);
         for (const idx of seq) {
           expect(idx).toBeGreaterThanOrEqual(0);
           expect(idx).toBeLessThan(n);
         }
       }
+      // With a two-octave-sized scale every pattern produces notes.
+      expect(pat.build(15).length).toBeGreaterThan(0);
     }
   });
 });
@@ -130,6 +140,36 @@ describe('buildScaleEtudeSong — parametric build', () => {
     const song = buildSong(study, { ...base, etudePatternId: 'bogus', etudeRhythm: 'bogus' });
     expect(song.events.length).toBe(15);                 // scale pattern
     expect(song.events[0].durationBeats).toBe(0.5);      // eighths
+  });
+
+  it('broken sevenths on a pentatonic (1 octave) falls back to a non-empty scale drill', () => {
+    const song = buildSong(study, { ...base, scaleId: 'pentatonic_major', etudePatternId: 'sevenths', etudeOctaves: 1 });
+    expect(song.events.length).toBeGreaterThan(0);
+  });
+
+  it('broken sevenths on a full scale leaps a seventh (10–11 semitones)', () => {
+    const song = buildSong(study, { ...base, etudePatternId: 'sevenths' });
+    const leap = song.events[1].midi - song.events[0].midi;
+    expect(leap).toBeGreaterThanOrEqual(10);
+    expect(leap).toBeLessThanOrEqual(11);
+  });
+
+  it('composite rhythm cycles cell durations across the sequence', () => {
+    // 16-8-16: durations repeat 0.25, 0.5, 0.25, ...
+    const song = buildSong(study, { ...base, etudeRhythm: '16-8-16' });
+    expect(song.events[0].durationBeats).toBe(0.25);
+    expect(song.events[1].durationBeats).toBe(0.5);
+    expect(song.events[2].durationBeats).toBe(0.25);
+    expect(song.events[3].durationBeats).toBe(0.25);   // cycle restarts
+    // Each 3-cell group sums to one beat → onsets land on beats.
+    expect(song.events[3].atBeat).toBe(1);
+  });
+
+  it('dotted-eighth + sixteenth composite sums to a beat per pair', () => {
+    const song = buildSong(study, { ...base, etudeRhythm: 'dotted8-16' });
+    expect(song.events[0].durationBeats).toBe(0.75);
+    expect(song.events[1].durationBeats).toBe(0.25);
+    expect(song.events[2].atBeat).toBe(1);
   });
 
   it('keeps a single key signature from the selected scale', () => {
