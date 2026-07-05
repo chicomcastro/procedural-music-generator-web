@@ -1,7 +1,7 @@
 {
   "name": "SeedSong",
   "short_name": "SeedSong",
-  "description": "Infinite piano melodies from a single seed number.",
+  "description": "Infinite sheet music from a single seed number.",
   "start_url": "./app.html",
   "display": "standalone",
   "background_color": "#0f1117",

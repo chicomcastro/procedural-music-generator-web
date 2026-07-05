@@ -43,7 +43,7 @@
         </button>
         <div class="hero-title-group">
             <h1>SeedSong<span id="unsaved-dot" class="unsaved-dot" hidden aria-label="Unsaved changes" title="Unsaved changes"></span></h1>
-            <p class="tagline" data-i18n="tagline">Infinite piano melodies from a single seed number.</p>
+            <p class="tagline" data-i18n="tagline">Infinite sheet music from a single seed number.</p>
         </div>
         <div class="hero-actions">
             <button id="tour-btn" type="button" title="Take the tour" aria-label="Take the tour">&#9432;</button>
@@ -59,34 +59,20 @@
             <button id="sidebar-close" type="button" class="sidebar-close" aria-label="Close menu">&times;</button>
         </div>
         <nav class="sidebar-nav">
-            <a class="sidebar-link active" data-view="generator" href="#/generator">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                <span data-i18n="sidebar.generator">Generator</span>
-            </a>
-            <a class="sidebar-link" data-view="explore" href="#/explore">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></svg>
-                <span data-i18n="sidebar.explore">Explore</span>
-                <span class="sidebar-badge" data-i18n="sidebar.badge.new">New</span>
-            </a>
-            <a class="sidebar-link" data-view="radio" href="#/radio">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11h16v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M8 6 19 4l1 5"/><circle cx="9" cy="16" r="2.5"/><line x1="14" y1="14" x2="18" y2="14"/><line x1="14" y1="18" x2="18" y2="18"/></svg>
-                <span data-i18n="sidebar.radio">Radio</span>
-                <span class="sidebar-badge" data-i18n="sidebar.badge.new">New</span>
-            </a>
-            <a class="sidebar-link" data-view="compose" href="#/compose">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="6" height="12" rx="1"/><rect x="11" y="9" width="6" height="9" rx="1"/><rect x="19" y="6" width="2" height="12" rx="1"/></svg>
-                <span data-i18n="sidebar.compose">Compose</span>
-                <span class="sidebar-badge sidebar-badge-soon" data-i18n="sidebar.badge.beta">Beta</span>
+            <!-- ADR 0005 (practice-first): Practice is home; Learn feeds it;
+                 Generator is the engine playground. Explore / Radio / Compose
+                 left the nav — their hash routes still work for deep links. -->
+            <a class="sidebar-link active" data-view="practice" href="#/practice">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                <span data-i18n="sidebar.practice">Practice</span>
             </a>
             <a class="sidebar-link" data-view="learn" href="#/learn">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                 <span data-i18n="sidebar.learn">Learn</span>
-                <span class="sidebar-badge sidebar-badge-soon" data-i18n="sidebar.badge.beta">Beta</span>
             </a>
-            <a class="sidebar-link" data-view="practice" href="#/practice">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-                <span data-i18n="sidebar.practice">Practice</span>
-                <span class="sidebar-badge sidebar-badge-soon" data-i18n="sidebar.badge.beta">Beta</span>
+            <a class="sidebar-link" data-view="generator" href="#/generator">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                <span data-i18n="sidebar.generator">Generator</span>
             </a>
             <a class="sidebar-link" data-view="settings" href="#/settings">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -100,8 +86,8 @@
         </div>
     </aside>
 
-    <main id="daw-main" class="view-host" data-active-view="generator">
-        <section class="app-view" id="view-generator" data-view="generator" aria-label="Generator view">
+    <main id="daw-main" class="view-host" data-active-view="practice">
+        <section class="app-view hidden" id="view-generator" data-view="generator" aria-label="Generator view">
         <section id="score-section" aria-label="Score visualization">
             <div class="score-toolbar">
                 <span id="song-info" class="score-toolbar-info" aria-live="polite"></span>
@@ -1071,7 +1057,7 @@
             </div>
         </section>
 
-        <section class="app-view hidden" id="view-practice" data-view="practice" aria-label="Practice view">
+        <section class="app-view" id="view-practice" data-view="practice" aria-label="Practice view">
             <div class="practice-shell">
                 <header class="view-head practice-head">
                     <div class="practice-head-title">
@@ -1274,7 +1260,7 @@
         </section>
     </main>
 
-    <div id="piano-drawer" class="collapsed">
+    <div id="piano-drawer" class="collapsed view-hidden">
         <div id="piano-scroll" role="region" aria-label="Piano keyboard">
             <div id="piano" role="application"></div>
         </div>
@@ -1284,7 +1270,7 @@
         </p>
     </div>
 
-    <footer id="transport-bar">
+    <footer id="transport-bar" class="view-hidden">
         <div class="transport-left">
             <button id="play-pause" type="button" title="Play / Pause" aria-label="Play">&#9654;</button>
             <button id="stop-btn" type="button" title="Stop and rewind" aria-label="Stop">&#9632;</button>

@@ -29,16 +29,17 @@ beforeEach(() => {
 });
 
 describe('Sidebar', () => {
-  it('getActiveView returns the default when no hash is set', () => {
+  it('getActiveView returns the default (practice, per ADR 0005) when no hash is set', () => {
     location.hash = '';
-    expect(getActiveView()).toBe('generator');
+    expect(getActiveView()).toBe('practice');
   });
 
   it('getActiveView reads the hash, ignoring unknown values', () => {
     location.hash = '#/learn';
     expect(getActiveView()).toBe('learn');
     location.hash = '#/bogus';
-    expect(getActiveView()).toBe('generator');
+    expect(getActiveView()).toBe('practice');
+    // Explore left the nav but its deep-link route must keep working.
     location.hash = '#/explore';
     expect(getActiveView()).toBe('explore');
   });

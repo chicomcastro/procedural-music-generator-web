@@ -1,28 +1,34 @@
 # SeedSong
 
-**Infinite piano melodies from a single seed number.**
+**An infinite shelf of sheet music. Turn a number into a playable piece — at your level, for your instrument, in your clef.**
 
 [Try it live](https://chicomcastro.github.io/procedural-music-generator-web/) — no install, no sign-up.
 
-SeedSong generates procedural music right in your browser using the Web Audio API. Pick a scale, set a tempo, choose a mood, and let the algorithm compose multi-section songs with melody, chords, bass, and drums. Every song is determined by a seed number — share it and anyone can hear the exact same piece.
+SeedSong is a practice-first tool for amateur musicians — especially pairs who practice together. Every piece is generated procedurally from a seed number and rendered as real, printable sheet music. Same seed, same piece: share a link and your duo partner opens the exact same score. No practice session ever repeats the last one.
 
-![Generator view — score canvas with multi-section song and generator controls](docs/screenshots/generator.png)
+See [ADR 0005](docs/adr/0005-product-vision-practice-first.md) for the product vision.
 
-![Mixer view — per-track volume faders, pan, effects, and EQ](docs/screenshots/mixer.png)
+![Duet Workshop — configurable two-voice study with rhythm vocabulary, progression and part-view controls](docs/pr-evidence/prl/workshop-controls.png)
 
-## Features
+## What you can practice
 
-- **DAW-style layout** — fixed score canvas, tabbed controls (Generator / Mixer / History / Export / Gallery), sticky transport bar
-- **Multi-section songs** — intro, verse, chorus, outro with contrasting energy — not just looping phrases
-- **Playable piano** — click, touch, or use your keyboard (A–J white, W/E/T/Y/U black, Z/X to shift octave)
-- **Procedural generation** — weighted Markov walk over scale tones with chord-tone bias and selectable contour/rhythm templates
-- **Genre & mood presets** — Lo-fi, Jazz, Classical, Blues, Chill, Energetic, Dreamy — one click sets everything
-- **Full mixer console** — per-track volume, pan, mute/solo, 3-band EQ, reverb presets (room/hall/cathedral), delay, chorus
-- **Seed-based sharing** — same seed = same song. Share a URL and the recipient hears your exact melody with all settings
-- **Multi-track MIDI + WAV export** — Format 1 MIDI with separate tracks per instrument, or render to WAV
-- **Score canvas editing** — click to select notes, drag to move, resize edges, delete with Backspace
-- **Settings persistence** — mixer volumes, EQ, effects, and active tab survive page reloads
-- **Zero dependencies** — vanilla JS, no build step, no npm
+- **Duet Workshop** — a fully configurable two-voice duet: pick the scale, the chord progression, the allowed note values (quarter/half/eighth…), the duet style (parallel thirds/sixths, contrary motion, call & response) and the clef pair (cello duo, violin + cello, …). Single-part view lets each player read only their own line while the audio plays both.
+- **Two-voice Invention** — a structured 3-movement melody + counterpoint piece in the Bach inventions tradition.
+- **Walking-Bass Workout** — walking lines over real changes (ii–V–I, 12-bar blues), escalating tempo.
+- **Scale Etude** — method-book patterns (pairs and threes, ascending + descending) built into one continuous piece.
+- **Solo Etude & Modal Vamp** — single-voice melodies over changes, and modal color training.
+
+Every study has: difficulty dial, key/scale/clef pickers, seed reroll, favorites, print/PDF, and share URLs that reproduce the exact piece.
+
+**Learn** ships a companion theory track — bite-sized modules on scales, triads, progressions and counterpoint with audio examples and rendered notation.
+
+**Generator** is the engine playground: the raw procedural composer (melody, chords, bass, drums) with a piano-roll score canvas, mixer, and multi-track MIDI + WAV export. Everything Practice generates runs on this engine.
+
+## How it works
+
+- **Seed-based generation** — a seedable PRNG drives a weighted Markov walk over scale tones with chord-tone bias, contour and rhythm templates. Deterministic: same parameters, same piece.
+- **Real notation** — pieces render as MusicXML via OpenSheetMusicDisplay, calibrated to each clef's playable range (cello, viola, violin friendly).
+- **Runs entirely in the browser** — Web Audio API, vanilla JS, zero runtime dependencies, everything stored locally.
 
 ## Run locally
 
@@ -55,18 +61,6 @@ CI runs on every push and PR to `main`:
 | **unit** | Vitest run (`test:unit`) |
 | **e2e** | Cypress against the built app (auto-starts the server) |
 
-
-## Controls
-
-| Input | Action |
-|-------|--------|
-| Mouse / touch | Play piano keys |
-| `A S D F G H J` | White keys |
-| `W E T Y U` | Black keys |
-| `Z` / `X` | Shift octave down / up |
-| Preset buttons | Set genre-appropriate parameters |
-| Share button | Copy URL with all settings to clipboard |
-
 ## Architecture
 
 Vanilla JS with ES modules. No bundler, no framework, no dependencies — by design ([ADR-002](docs/decisions.md#adr-002--no-bundler-no-third-party-dependencies)).
@@ -76,11 +70,11 @@ src/js/
   audio/      AudioContext, sample loading, voices, effects, click
   theory/     Notes, scales, chords (pure functions)
   scheduler/  Lookahead scheduler + transport
-  generate/   Progression, rhythm, melody, song (seedable PRNG)
-  export/     MIDI (Format 1 multi-track) + WAV (16-bit PCM)
-  ui/         Piano, score canvas, history, gallery, theme, shortcuts
+  generate/   Progression, rhythm, melody, counterpoint, song (seedable PRNG)
+  export/     MIDI (Format 1 multi-track) + WAV (16-bit PCM) + MusicXML
+  ui/         Practice studies, Learn modules, piano, score canvas, theme
 ```
 
-For the reasoning behind the key architectural decisions, see [`docs/decisions.md`](docs/decisions.md).
+Product and architecture decision records live in [`docs/adr/`](docs/adr/) and [`docs/decisions.md`](docs/decisions.md).
 
-
+> **Note on hidden areas**: Explore, Radio and Compose left the navigation under [ADR 0005](docs/adr/0005-product-vision-practice-first.md) but their routes still work (`#/explore`, `#/radio`, `#/compose`) — code is kept until confirmed unmissed.

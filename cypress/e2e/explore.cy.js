@@ -1,13 +1,13 @@
 describe('Explore view — feed', () => {
   beforeEach(() => {
     cy.clearLocalStorage();
-    cy.visit('/app.html', {
+    // ADR 0005: Explore left the nav — reached via its (kept) deep link.
+    cy.visit('/app.html#/explore', {
       onBeforeLoad(win) {
         win.localStorage.setItem('seedsong-onboarding-done', '1');
       },
     });
-    cy.get('.sidebar-link[data-view="explore"]', { timeout: 8000 }).click();
-    cy.get('#view-explore').should('not.have.class', 'hidden');
+    cy.get('#view-explore', { timeout: 8000 }).should('not.have.class', 'hidden');
   });
 
   it('shows a feed card with seed and tags', () => {
