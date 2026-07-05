@@ -6684,6 +6684,95 @@ body.practice-overlay-open { overflow: hidden; }
   }
 }
 
+/* ---- Music-stand mode (ADR 0006) ----
+ * body.practice-stand-mode pins the sheet to the viewport. The OSMD
+ * instance stays bound to the same container (no DOM surgery); its
+ * autoResize option re-renders for the new size. */
+
+.practice-stand-toolbar { display: none; }
+
+/* The study overlay (.practice-stage) is a stacking context at z-index 50 —
+ * below the sidebar (90). In stand mode, lift the whole overlay above all
+ * chrome and hide the sidebar outright: this is a reading surface. */
+body.practice-stand-mode .practice-stage {
+  z-index: 400;
+  padding-left: 0 !important;
+}
+body.practice-stand-mode .sidebar,
+body.practice-stand-mode .sidebar-backdrop,
+body.practice-stand-mode #sidebar-toggle {
+  display: none !important;
+}
+
+body.practice-stand-mode #practice-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
+  overflow: hidden;               /* page turning steps scrollTop */
+  padding: 28px 40px 72px;        /* bottom clearance for the toolbar */
+  cursor: pointer;                /* tap zones turn pages */
+}
+
+body.practice-stand-mode .practice-stand-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 401;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(20, 24, 28, 0.82);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  opacity: 0.35;
+  transition: opacity 180ms;
+}
+
+body.practice-stand-mode .practice-stand-toolbar:hover,
+body.practice-stand-mode .practice-stand-toolbar:focus-within {
+  opacity: 1;
+}
+
+.practice-stand-btn {
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: #e8ecef;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.practice-stand-btn:hover { background: rgba(255, 255, 255, 0.12); }
+.practice-stand-btn:disabled { opacity: 0.3; cursor: default; }
+.practice-stand-exit { font-size: 14px; }
+.practice-stand-page {
+  font-family: monospace;
+  font-size: 13px;
+  color: #e8ecef;
+  min-width: 52px;
+  text-align: center;
+  user-select: none;
+}
+.practice-stand-sep {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
 /* ---- Practice favorites + share ---- */
 
 .practice-favorite-btn.is-favorited {

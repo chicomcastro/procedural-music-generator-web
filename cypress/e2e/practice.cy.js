@@ -161,4 +161,35 @@ describe('Practice view', () => {
     cy.get('#practice-rhythm-field').should('have.css', 'display', 'none');
     cy.get('#practice-duet-field').should('have.css', 'display', 'none');
   });
+
+  // ADR 0006 — music-stand mode
+  it('Stand mode goes fullscreen, turns pages via keyboard, and exits with Escape', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    // Wait for the sheet to render before entering stand mode.
+    cy.get('#practice-sheet svg, #practice-sheet .practice-sheet-fallback', { timeout: 15000 }).should('exist');
+    cy.get('#practice-study-stand').click();
+    cy.get('body').should('have.class', 'practice-stand-mode');
+    cy.get('#practice-stand-toolbar').should('be.visible');
+    cy.get('#practice-stand-page').invoke('text').should('match', /^\d+ \/ \d+$/);
+    // Page-turn keys (also what Bluetooth pedals emit) don't throw and
+    // keep the indicator well-formed.
+    cy.get('body').type('{rightarrow}');
+    cy.get('#practice-stand-page').invoke('text').should('match', /^\d+ \/ \d+$/);
+    cy.get('body').type('{esc}');
+    cy.get('body').should('not.have.class', 'practice-stand-mode');
+    cy.get('#practice-stand-toolbar').should('not.be.visible');
+  });
+
+  it('Stand-mode zoom buttons persist the zoom preference', () => {
+    cy.get('.practice-card[data-id="two-voice-invention"]').click();
+    cy.get('#practice-sheet svg, #practice-sheet .practice-sheet-fallback', { timeout: 15000 }).should('exist');
+    cy.get('#practice-study-stand').click();
+    cy.get('#practice-stand-zoom-in').click();
+    cy.window().then((win) => {
+      const prefs = JSON.parse(win.localStorage.getItem('seedsong-practice-prefs-v1'));
+      expect(prefs.standZoom).to.be.greaterThan(1.3);
+    });
+    cy.get('#practice-stand-exit').click();
+    cy.get('body').should('not.have.class', 'practice-stand-mode');
+  });
 });
