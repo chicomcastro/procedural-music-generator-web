@@ -4,6 +4,7 @@ import { getModuleField as mf, getStepField as sf, getStepArray as sfa } from '.
 import { generateWalkingBass, progressionToChords } from '../generate/walking-bass.js';
 import { randomSeed } from '../generate/rng.js';
 import { harmonyTagFor, transposeChordSymbol, escapeText } from '../export/harmony.js';
+import { practiceLinkForModule } from './learn-practice-bridge.js';
 
 const PROGRESS_KEY = 'seedsong-learn-progress-v2';
 const GENERATOR_PREFS_KEY = 'seedsong-learn-generator-prefs';
@@ -1131,6 +1132,14 @@ function openExercise(moduleIdx, stepIdx = 0) {
   const overlay = document.getElementById('learn-exercise-overlay');
   if (!overlay) return;
   overlay.classList.remove('hidden');
+  // ADR 0005 bridge: surface the "Practice this" CTA when the module maps
+  // to a Practice study.
+  const bridgeBtn = document.getElementById('exercise-practice-link');
+  if (bridgeBtn) {
+    const link = practiceLinkForModule(MODULES[moduleIdx]);
+    bridgeBtn.hidden = !link;
+    bridgeBtn.dataset.practiceHash = link || '';
+  }
   renderActiveStep();
 }
 
@@ -1783,6 +1792,17 @@ export function initLearnView({ audioApi }) {
   document.getElementById('exercise-close')?.addEventListener('click', closeExercise);
   document.getElementById('exercise-back-arrow')?.addEventListener('click', () => gotoStep(-1));
   document.getElementById('exercise-next')?.addEventListener('click', () => gotoStep(1));
+
+  // ADR 0005 bridge: jump from the module to the Practice study that
+  // exercises the same concept. Navigation is a plain hash deep link —
+  // PracticeView.applyShareParams hydrates the study from the query.
+  document.getElementById('exercise-practice-link')?.addEventListener('click', () => {
+    const btn = document.getElementById('exercise-practice-link');
+    const hash = btn?.dataset.practiceHash;
+    if (!hash) return;
+    closeExercise();
+    window.location.hash = hash;
+  });
 
   document.getElementById('exercise-favorite')?.addEventListener('click', () => {
     if (activeModuleIdx < 0) return;
