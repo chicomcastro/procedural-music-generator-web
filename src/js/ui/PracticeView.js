@@ -56,6 +56,13 @@ let practiceOSMD = null;
 let lastSong = null;            // most recent generated song (for playback)
 let lastBpm = 100;
 let playbackTimer = null;
+// Play/pause fix: playbackTimer is only set AFTER the async setup
+// (ensureInit + piano-sample loading), so it can't serve as the
+// "is playing" flag — a click during that window used to start a
+// SECOND playback on top. isPlaying flips synchronously on click;
+// playGeneration invalidates in-flight playSong runs on stop.
+let isPlaying = false;
+let playGeneration = 0;
 let scheduledVoices = [];
 
 // =============================================================================
@@ -1155,12 +1162,17 @@ function spawnVoice(ctx, dest, midi, instrument, when, duration, velocity) {
 
 async function playSong() {
   if (!lastSong || !audioApiRef) return;
+  stopPlayback();                       // clear any previous run (sync)
+  const gen = ++playGeneration;         // this run's token
+  isPlaying = true;
+  const playBtn = document.getElementById('practice-play');
+  if (playBtn) playBtn.classList.add('is-playing');   // responsive UI while samples load
+
   await audioApiRef.ensureInit();
+  if (gen !== playGeneration) return;   // paused / superseded during init
   const ctx = audioApiRef.getContext();
-  if (!ctx) return;
-  const dest = audioApiRef.getMasterGain();
-  if (!dest) return;
-  stopPlayback();
+  const dest = ctx ? audioApiRef.getMasterGain() : null;
+  if (!ctx || !dest) { stopPlayback(); return; }
 
   // Pick the voice for this study. Walking-bass studies get the synth
   // bass; melodic studies prefer the piano samples (fall back to epiano
@@ -1169,6 +1181,7 @@ async function playSong() {
   const sp = activeStudy ? getStudyPrefs(activeStudy.id) : null;
   const instrument = sp?.voiceId || DEFAULT_VOICE_BY_KIND[studyKind] || 'piano';
   if (instrument === 'piano') await ensureSamplesLoaded(ctx);
+  if (gen !== playGeneration) return;   // paused / superseded during sample load
 
   const beatDuration = 60 / lastBpm;
   const startAt = ctx.currentTime + 0.05;
@@ -1181,8 +1194,6 @@ async function playSong() {
   }
 
   const totalSec = lastSong.lengthBeats * beatDuration + 0.5;
-  const playBtn = document.getElementById('practice-play');
-  if (playBtn) playBtn.classList.add('is-playing');
   playbackTimer = setTimeout(() => stopPlayback(), totalSec * 1000);
 
   // Drive the OSMD cursor in lock-step with the audio. The cursor
@@ -1221,6 +1232,8 @@ async function playSong() {
 }
 
 function stopPlayback() {
+  isPlaying = false;
+  playGeneration++;   // aborts any playSong still awaiting init/samples
   if (playbackTimer) { clearTimeout(playbackTimer); playbackTimer = null; }
   for (const v of scheduledVoices) {
     try { v?.release?.(0.1); } catch { /* ignore */ }
@@ -1671,7 +1684,7 @@ export function initPracticeView({ audioApi } = {}) {
   document.getElementById('practice-stand-zoom-in')?.addEventListener('click', (e) => { e.stopPropagation(); standApplyZoom(1); });
   document.getElementById('practice-stand-play')?.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (playbackTimer) stopPlayback();
+    if (isPlaying) stopPlayback();
     else playSong();
   });
 
@@ -1767,7 +1780,7 @@ export function initPracticeView({ audioApi } = {}) {
     regenerate();
   });
   document.getElementById('practice-play')?.addEventListener('click', () => {
-    if (playbackTimer) stopPlayback();
+    if (isPlaying) stopPlayback();
     else playSong();
   });
 

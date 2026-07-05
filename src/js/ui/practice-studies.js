@@ -249,6 +249,31 @@ export function clampMidiToRange(midi, range) {
 
 export const STUDIES = [
   {
+    id: 'scale-etude',
+    kind: 'scale-etude',
+    category: 'technique',
+    // ADR 0008: single-act sandbox — the Pattern / Octaves / Note value
+    // dropdowns replaced the fixed exercise tabs.
+    title: 'Scale Etude',
+    summary: 'One configurable technique drill: pick the scale, the pattern (scale, pairs, threes, broken thirds/fourths/fifths), one or two octaves, and the note value — up and down in a single pass.',
+    eyebrow: 'Technique · sandbox',
+    clefPresets: [
+      { id: 'bass',   label: 'Bass clef (cello / bass)',  voices: ['bass'] },
+      { id: 'treble', label: 'Treble clef (violin / RH)', voices: ['treble'] },
+      { id: 'alto',   label: 'Alto clef (viola)',         voices: ['alto'] },
+    ],
+    keyOptions: [0, 2, 5, 7, 9],
+    acts: [
+      {
+        id: 'etude',
+        title: 'Etude',
+        keyShift: 0,
+        // bars are DERIVED from pattern length x note value (ADR 0008).
+        params: { tempo: 80, scale: 'major' },
+      },
+    ],
+  },
+  {
     id: 'two-voice-invention',
     kind: 'two-voice-counterpoint',
     category: 'counterpoint',
@@ -383,31 +408,6 @@ export const STUDIES = [
         keyShift: 0,
         progression: '12-bar-blues',
         params: { tempo: 130, scale: 'natural_minor' },
-      },
-    ],
-  },
-  {
-    id: 'scale-etude',
-    kind: 'scale-etude',
-    category: 'technique',
-    // ADR 0008: single-act sandbox — the Pattern / Octaves / Note value
-    // dropdowns replaced the fixed exercise tabs.
-    title: 'Scale Etude',
-    summary: 'One configurable technique drill: pick the scale, the pattern (scale, pairs, threes, broken thirds/fourths/fifths), one or two octaves, and the note value — up and down in a single pass.',
-    eyebrow: 'Technique · sandbox',
-    clefPresets: [
-      { id: 'bass',   label: 'Bass clef (cello / bass)',  voices: ['bass'] },
-      { id: 'treble', label: 'Treble clef (violin / RH)', voices: ['treble'] },
-      { id: 'alto',   label: 'Alto clef (viola)',         voices: ['alto'] },
-    ],
-    keyOptions: [0, 2, 5, 7, 9],
-    acts: [
-      {
-        id: 'etude',
-        title: 'Etude',
-        keyShift: 0,
-        // bars are DERIVED from pattern length x note value (ADR 0008).
-        params: { tempo: 80, scale: 'major' },
       },
     ],
   },
