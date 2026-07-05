@@ -11,7 +11,7 @@
 // workout, master slider, key picker, seed reroll, audio playback, print
 // stylesheet (no per-act overrides yet — those land in PR 2).
 
-import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, SCALE_PATTERNS, SCALE_SHAPES, VOICE_OPTIONS, clampMidiToRange, tonicMidiFor, RHYTHM_VOCAB, RHYTHM_VOCAB_DEFAULTS, PROGRESSION_OPTIONS, PART_VIEW_OPTIONS } from './practice-studies.js';
+import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, SCALE_SHAPES, VOICE_OPTIONS, clampMidiToRange, tonicMidiFor, ETUDE_PATTERNS, ETUDE_OCTAVE_OPTIONS, ETUDE_RHYTHMS, extendShapeOctaves, RHYTHM_VOCAB, RHYTHM_VOCAB_DEFAULTS, PROGRESSION_OPTIONS, PART_VIEW_OPTIONS } from './practice-studies.js';
 import { getStudyField } from './practice-translations.js';
 import { mulberry32, randomSeed } from '../generate/rng.js';
 import { generateMelody } from '../generate/melody.js';
@@ -101,6 +101,10 @@ function getStudyPrefs(studyId) {
       progressionId: study?.kind === 'duet-workshop' ? 'pop' : null,
       partView: study?.kind === 'duet-workshop' ? 'both' : null,
       actIdx: 0,               // ADR 0007: selected exercise for actMode 'exercises'
+      // ADR 0008: parametric scale etude.
+      etudePatternId: study?.kind === 'scale-etude' ? 'scale' : null,
+      etudeOctaves: study?.kind === 'scale-etude' ? 1 : null,
+      etudeRhythm: study?.kind === 'scale-etude' ? 'eighth' : null,
     };
   }
   // Backfill new fields for users who already have a saved prefs blob from a
@@ -121,6 +125,11 @@ function getStudyPrefs(studyId) {
   if (p.intensity == null) p.intensity = 100;
   if (p.voiceId == null) p.voiceId = null;   // null = use the kind's default
   if (!Number.isInteger(p.actIdx) || p.actIdx < 0) p.actIdx = 0;   // ADR 0007 backfill
+  if (study?.kind === 'scale-etude') {                             // ADR 0008 backfill
+    if (!ETUDE_PATTERNS.find(pt => pt.id === p.etudePatternId)) p.etudePatternId = 'scale';
+    if (!ETUDE_OCTAVE_OPTIONS.includes(p.etudeOctaves)) p.etudeOctaves = 1;
+    if (!ETUDE_RHYTHMS.find(r => r.id === p.etudeRhythm)) p.etudeRhythm = 'eighth';
+  }
   if (study?.kind === 'duet-workshop') {
     if (!Array.isArray(p.rhythmVocab) || p.rhythmVocab.length === 0) p.rhythmVocab = [...RHYTHM_VOCAB_DEFAULTS];
     if (!p.progressionId) p.progressionId = 'pop';
@@ -476,66 +485,61 @@ function buildSong(study, opts) {
 // notes (triplets for the threes patterns), one act after the next.
 
 function buildScaleEtudeSong(study, opts) {
-  const { keyPc, difficulty, clefVoices, scaleId, intensity: intensityPct } = opts;
+  // ADR 0008: single-act sandbox — pattern x octaves x note value.
+  const {
+    keyPc, difficulty, clefVoices, scaleId, intensity: intensityPct,
+    etudePatternId, etudeOctaves, etudeRhythm,
+  } = opts;
   const velocityScale = (intensityPct ?? 100) / 100;
   const beatsPerBar = 4;
   const events = [];
-  const doubleBarsBefore = [];
-  const keySignatures = [];    // per-act { bar, fifths } (PR Q)
-  let accumulatedBeats = 0;
-  let actBpm = null;
+
+  const act = study.acts[0];
+  const p = scaleParams(act.params, difficulty / 100);
 
   const [clef] = clefVoices || ['treble'];
   const anchor = CLEF_ANCHORS[clef] ?? 60;
   const range = CLEF_RANGES[clef] || [36, 84];
 
-  for (let i = 0; i < study.acts.length; i++) {
-    const act = study.acts[i];
-    const p = scaleParams(act.params, difficulty / 100);
-    const actTonic = tonicMidiFor(anchor, (keyPc + (act.keyShift || 0)) % 12);
-    const scaleName = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
-    keySignatures.push({ bar: accumulatedBeats / beatsPerBar, fifths: keyFifths((keyPc + (act.keyShift || 0)) % 12, scaleName) });
-    const shape = SCALE_SHAPES[scaleName] || SCALE_SHAPES.major;
+  const scaleName = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
+  const octaves = etudeOctaves === 2 ? 2 : 1;
+  const shape = extendShapeOctaves(SCALE_SHAPES[scaleName] || SCALE_SHAPES.major, octaves);
+  const pattern = ETUDE_PATTERNS.find(pt => pt.id === etudePatternId) || ETUDE_PATTERNS[0];
+  const rhythm = ETUDE_RHYTHMS.find(r => r.id === etudeRhythm) || ETUDE_RHYTHMS.find(r => r.id === 'eighth');
 
-    // Combine the act's primary pattern with the optional secondary (used
-    // for the threes act so each etude bar gets up + down). Both run
-    // against the same scale shape.
-    const patternIds = [act.patternId, act.patternIdSecond].filter(Boolean);
-    const isTriplet = patternIds.some(id => id?.startsWith('threes'));
-    const noteType = isTriplet ? 'et' : 'e';
-    const beatPerNote = isTriplet ? (1 / 3) : 0.5;
+  // Root the drill at the clef anchor; when a two-octave span would
+  // overflow the clef's playable ceiling, drop the tonic an octave
+  // first (alto clef) — per-note clamping stays as backstop.
+  let tonic = tonicMidiFor(anchor, ((keyPc % 12) + 12) % 12);
+  const maxOffset = shape[shape.length - 1];
+  if (tonic + maxOffset > range[1] && tonic - 12 >= range[0]) tonic -= 12;
 
-    const sequence = [];
-    for (const pid of patternIds) {
-      const groups = SCALE_PATTERNS[pid].build(shape.length);
-      for (const g of groups) for (const idx of g) sequence.push(shape[idx]);
-    }
-
-    for (let j = 0; j < sequence.length; j++) {
-      const midi = clampMidiToRange(actTonic + sequence[j], range);
-      events.push({
-        type: 'melody',
-        midi,
-        atBeat: accumulatedBeats + j * beatPerNote,
-        durationBeats: beatPerNote,
-        velocity: Math.min(1, 0.75 * velocityScale),
-        noteType,
-      });
-    }
-
-    accumulatedBeats += act.bars * beatsPerBar;
-    if (i < study.acts.length - 1) doubleBarsBefore.push(accumulatedBeats / beatsPerBar);
-    if (actBpm == null) actBpm = p.tempo || 90;
+  const sequence = pattern.build(shape.length);
+  for (let j = 0; j < sequence.length; j++) {
+    const midi = clampMidiToRange(tonic + shape[sequence[j]], range);
+    events.push({
+      type: 'melody',
+      midi,
+      atBeat: j * rhythm.beats,
+      durationBeats: rhythm.beats,
+      velocity: Math.min(1, 0.75 * velocityScale),
+      noteType: rhythm.noteType,
+    });
   }
 
+  // Bars derive from the sequence; the serializer pads the last bar
+  // with rests.
+  const totalBeats = sequence.length * rhythm.beats;
+  const bars = Math.max(1, Math.ceil(totalBeats / beatsPerBar - 1e-9));
+
   return {
-    bars: accumulatedBeats / beatsPerBar,
+    bars,
     beatsPerBar,
-    lengthBeats: accumulatedBeats,
+    lengthBeats: bars * beatsPerBar,
     events,
-    doubleBarsBefore,
-    keySignatures,
-    bpm: actBpm,
+    doubleBarsBefore: [],
+    keySignatures: [{ bar: 0, fifths: keyFifths(((keyPc % 12) + 12) % 12, scaleName) }],
+    bpm: p.tempo || 80,
   };
 }
 
@@ -931,6 +935,30 @@ function populateControls() {
     if (partField) partField.style.display = '';
   } else if (partField) {
     partField.style.display = 'none';
+  }
+
+  // ADR 0008: parametric scale-etude dropdowns.
+  const etudeIds = [
+    ['practice-etude-pattern', 'practice-etude-pattern-field', ETUDE_PATTERNS.map(pt => ({ id: pt.id, label: pt.label })), studyPrefs.etudePatternId],
+    ['practice-etude-octaves', 'practice-etude-octaves-field', ETUDE_OCTAVE_OPTIONS.map(o => ({ id: String(o), label: o === 1 ? '1 octave' : `${o} octaves` })), String(studyPrefs.etudeOctaves)],
+    ['practice-etude-rhythm', 'practice-etude-rhythm-field', ETUDE_RHYTHMS.map(r => ({ id: r.id, label: r.label })), studyPrefs.etudeRhythm],
+  ];
+  for (const [selId, fieldId, options, current] of etudeIds) {
+    const sel = document.getElementById(selId);
+    const field = document.getElementById(fieldId);
+    if (sel && activeStudy.kind === 'scale-etude') {
+      sel.innerHTML = '';
+      for (const opt of options) {
+        const o = document.createElement('option');
+        o.value = opt.id;
+        o.textContent = opt.label;
+        if (opt.id === current) o.selected = true;
+        sel.appendChild(o);
+      }
+      if (field) field.style.display = '';
+    } else if (field) {
+      field.style.display = 'none';
+    }
   }
 
   // Swing slider — only meaningful for melodic studies.
@@ -1378,6 +1406,10 @@ export function buildShareUrl(studyId, sp) {
   if (sp.difficulty != null) params.set('diff', String(sp.difficulty));
   // ADR 0007: selected exercise for exercises-mode studies.
   if (sp.actIdx) params.set('act', String(sp.actIdx));
+  // ADR 0008: parametric scale etude.
+  if (sp.etudePatternId && sp.etudePatternId !== 'scale') params.set('pattern', sp.etudePatternId);
+  if (sp.etudeOctaves && sp.etudeOctaves !== 1) params.set('oct', String(sp.etudeOctaves));
+  if (sp.etudeRhythm && sp.etudeRhythm !== 'eighth') params.set('rhy', sp.etudeRhythm);
   // ADR 0004: duet-workshop extras.
   if (Array.isArray(sp.rhythmVocab) && sp.rhythmVocab.length) params.set('vocab', sp.rhythmVocab.join(','));
   if (sp.progressionId) params.set('prog', sp.progressionId);
@@ -1449,6 +1481,10 @@ export function applyShareParams() {
   if (params.get('prog')) sp.progressionId = params.get('prog');
   if (params.get('part')) sp.partView = params.get('part');
   if (n('act') != null && Number.isFinite(n('act'))) sp.actIdx = Math.max(0, n('act') | 0);
+  // ADR 0008
+  if (params.get('pattern') && ETUDE_PATTERNS.find(pt => pt.id === params.get('pattern'))) sp.etudePatternId = params.get('pattern');
+  if (n('oct') != null) sp.etudeOctaves = n('oct') === 2 ? 2 : 1;
+  if (params.get('rhy') && ETUDE_RHYTHMS.find(r => r.id === params.get('rhy'))) sp.etudeRhythm = params.get('rhy');
   savePrefs();
   return studyId;
 }
@@ -1459,7 +1495,7 @@ export function applyShareParams() {
 function favoriteIdFor(studyId, sp) {
   // Stable id from the parameter set — same study + same prefs produces the
   // same key, so re-saving doesn't duplicate.
-  return `${studyId}|${sp.seed}|${sp.keyPc}|${sp.clefPresetId || ''}|${sp.rhythmPresetId || ''}|${sp.duetStyleId || ''}|${sp.difficulty}|${sp.actIdx || 0}`;
+  return `${studyId}|${sp.seed}|${sp.keyPc}|${sp.clefPresetId || ''}|${sp.rhythmPresetId || ''}|${sp.duetStyleId || ''}|${sp.difficulty}|${sp.actIdx || 0}|${sp.etudePatternId || ''}|${sp.etudeOctaves || ''}|${sp.etudeRhythm || ''}`;
 }
 
 function isFavorited(studyId, sp) {
@@ -1485,6 +1521,9 @@ function toggleFavorite() {
       rhythmPresetId: sp.rhythmPresetId,
       duetStyleId: sp.duetStyleId,
       actIdx: sp.actIdx || 0,   // ADR 0007: which exercise was favorited
+      etudePatternId: sp.etudePatternId || null,   // ADR 0008
+      etudeOctaves: sp.etudeOctaves || null,
+      etudeRhythm: sp.etudeRhythm || null,
       savedAt: Date.now(),
     });
     // Cap to a sane number so localStorage doesn't grow unbounded.
@@ -1570,6 +1609,9 @@ function openFavorite(fav) {
   sp.rhythmPresetId = fav.rhythmPresetId;
   sp.duetStyleId = fav.duetStyleId;
   sp.actIdx = fav.actIdx || 0;   // ADR 0007
+  if (fav.etudePatternId) sp.etudePatternId = fav.etudePatternId;   // ADR 0008
+  if (fav.etudeOctaves) sp.etudeOctaves = fav.etudeOctaves;
+  if (fav.etudeRhythm) sp.etudeRhythm = fav.etudeRhythm;
   savePrefs();
   openStudy(fav.studyId);
 }
@@ -1748,6 +1790,29 @@ export function initPracticeView({ audioApi } = {}) {
     if (!activeStudy || activeStudy.kind !== 'duet-workshop') return;
     const sp = getStudyPrefs(activeStudy.id);
     sp.progressionId = e.target.value;
+    savePrefs();
+    regenerate();
+  });
+
+  // ADR 0008: parametric scale-etude dropdowns.
+  document.getElementById('practice-etude-pattern')?.addEventListener('change', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'scale-etude') return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.etudePatternId = e.target.value;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-etude-octaves')?.addEventListener('change', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'scale-etude') return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.etudeOctaves = Number(e.target.value) === 2 ? 2 : 1;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-etude-rhythm')?.addEventListener('change', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'scale-etude') return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.etudeRhythm = e.target.value;
     savePrefs();
     regenerate();
   });

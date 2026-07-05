@@ -78,7 +78,9 @@ describe('Catalog — actMode declarations', () => {
   it('drill bundles are exercises; pieces stay movements (default)', () => {
     const modes = Object.fromEntries(STUDIES.map(s => [s.id, s.actMode]));
     expect(modes['walking-bass-workout']).toBe('exercises');
-    expect(modes['scale-etude']).toBe('exercises');
+    // ADR 0008: scale-etude became a single-act parametric sandbox —
+    // the pattern dropdown replaced the exercise tabs.
+    expect(modes['scale-etude']).toBeUndefined();
     expect(modes['modal-vamp']).toBe('exercises');
     expect(modes['two-voice-invention']).toBeUndefined();
     expect(modes['solo-etude']).toBeUndefined();
