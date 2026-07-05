@@ -1,13 +1,13 @@
 describe('Compose view — section management', () => {
   beforeEach(() => {
     cy.clearLocalStorage();
-    cy.visit('/app.html', {
+    // ADR 0005: Compose left the nav — reached via its (kept) deep link.
+    cy.visit('/app.html#/compose', {
       onBeforeLoad(win) {
         win.localStorage.setItem('seedsong-onboarding-done', '1');
       },
     });
-    cy.get('.sidebar-link[data-view="compose"]', { timeout: 8000 }).click();
-    cy.get('#view-compose').should('not.have.class', 'hidden');
+    cy.get('#view-compose', { timeout: 8000 }).should('not.have.class', 'hidden');
   });
 
   it('starts empty and shows the empty hint', () => {
@@ -72,8 +72,8 @@ describe('Compose view — section management', () => {
       win.localStorage.setItem('seedsong-onboarding-done', '1');
     });
     cy.reload();
-    cy.get('.sidebar-link[data-view="compose"]', { timeout: 8000 }).click();
-    cy.get('#view-compose').should('not.have.class', 'hidden');
+    // The compose deep link survives the reload (hash is preserved).
+    cy.get('#view-compose', { timeout: 8000 }).should('not.have.class', 'hidden');
     cy.get('.section-block').should('have.length', 2);
   });
 

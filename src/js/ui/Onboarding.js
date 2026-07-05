@@ -4,15 +4,15 @@ const STORAGE_KEY = 'seedsong-onboarding-done';
 
 // Each step's title/text live in i18n keys onboarding.<key>.title / .text.
 // Updated to cover the current sidebar-based app instead of the old tabs flow.
+// ADR 0005 (practice-first): the tour starts at Practice (the home view),
+// walks through Learn, then presents the Generator as the engine playground.
 const STEPS = [
   { key: 'welcome',   target: null,                                       position: 'center' },
   { key: 'sidebar',   target: '#sidebar-toggle',                          position: 'right' },
+  { key: 'practice',  target: '.sidebar-link[data-view="practice"]',      position: 'right',  activateView: 'practice' },
+  { key: 'learn',     target: '.sidebar-link[data-view="learn"]',         position: 'right',  activateView: 'learn' },
   { key: 'generator', target: '#presets-row',                             position: 'bottom', activateView: 'generator' },
   { key: 'score',     target: '#score-section',                           position: 'bottom', activateView: 'generator' },
-  { key: 'explore',   target: '.sidebar-link[data-view="explore"]',       position: 'right',  activateView: 'explore' },
-  { key: 'radio',     target: '.sidebar-link[data-view="radio"]',         position: 'right',  activateView: 'radio' },
-  { key: 'learn',     target: '.sidebar-link[data-view="learn"]',         position: 'right',  activateView: 'learn' },
-  { key: 'compose',   target: '.sidebar-link[data-view="compose"]',       position: 'right',  activateView: 'compose' },
   { key: 'settings',  target: '.sidebar-link[data-view="settings"]',      position: 'right',  activateView: 'settings' },
 ];
 
@@ -167,7 +167,7 @@ function prev() {
 
 function finish() {
   cleanup();
-  activateView('generator');
+  activateView('practice');
   window.removeEventListener('keydown', handleKeydown);
   backdropEl.remove();
   cardEl.remove();

@@ -1,7 +1,9 @@
 describe('Generator view — core flow', () => {
   beforeEach(() => {
     cy.clearLocalStorage();
-    cy.visit('/app.html', {
+    // ADR 0005: Practice is the default view — the Generator is reached
+    // via its own route.
+    cy.visit('/app.html#/generator', {
       onBeforeLoad(win) {
         win.localStorage.setItem('seedsong-onboarding-done', '1');
       },
@@ -9,7 +11,7 @@ describe('Generator view — core flow', () => {
     cy.get('#hero', { timeout: 8000 }).should('be.visible');
   });
 
-  it('loads the Generator view by default', () => {
+  it('loads the Generator view via its route', () => {
     cy.get('#view-generator').should('not.have.class', 'hidden');
     cy.get('#score-canvas').should('be.visible');
   });

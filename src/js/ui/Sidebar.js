@@ -1,5 +1,8 @@
+// ADR 0005 (practice-first): Practice is the home view. Explore, Radio and
+// Compose left the navigation but their routes stay registered so deep
+// links and bookmarks keep working.
 const VIEWS = ['generator', 'explore', 'radio', 'compose', 'learn', 'practice', 'settings'];
-const DEFAULT_VIEW = 'generator';
+const DEFAULT_VIEW = 'practice';
 
 const listeners = [];
 

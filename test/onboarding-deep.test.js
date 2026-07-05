@@ -27,10 +27,8 @@ function scaffoldDom() {
     <div id="sidebar-toggle"></div>
     <div id="presets-row"></div>
     <div id="score-section"></div>
-    <a class="sidebar-link" data-view="explore"></a>
-    <a class="sidebar-link" data-view="radio"></a>
+    <a class="sidebar-link" data-view="practice"></a>
     <a class="sidebar-link" data-view="learn"></a>
-    <a class="sidebar-link" data-view="compose"></a>
     <a class="sidebar-link" data-view="settings"></a>
   `;
 }

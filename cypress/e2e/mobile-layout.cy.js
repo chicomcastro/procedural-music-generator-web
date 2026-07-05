@@ -13,7 +13,7 @@ describe('Mobile layout', () => {
     });
   });
 
-  it('Generator view renders without horizontal overflow', () => {
+  it('Default (Practice) view renders without horizontal overflow', () => {
     cy.get('#daw-main').should('exist');
     cy.document().then((doc) => {
       expect(doc.documentElement.scrollWidth).to.be.lte(doc.documentElement.clientWidth + 1);
