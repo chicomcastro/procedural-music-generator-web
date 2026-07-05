@@ -24,8 +24,24 @@ describe('Walking-bass workout (Practice)', () => {
     cy.get('#practice-play').should('exist');
   });
 
-  it('shows the 3 acts in the rail', () => {
+  it('shows the 3 exercises as rail tabs (ADR 0007)', () => {
     cy.get('.practice-act-rail-item').should('have.length', 3);
+    // Exercises mode: rail items are buttons, first active by default.
+    cy.get('button.practice-act-rail-tab').should('have.length', 3);
+    cy.get('button.practice-act-rail-tab').eq(0).should('have.class', 'is-active');
+  });
+
+  it('clicking an exercise tab switches the active drill and re-renders the sheet', () => {
+    cy.get('button.practice-act-rail-tab').eq(2).click();
+    cy.get('button.practice-act-rail-tab').eq(2).should('have.class', 'is-active');
+    cy.get('button.practice-act-rail-tab').eq(0).should('not.have.class', 'is-active');
+    // The 12-bar-blues exercise renders its own (single-exercise) sheet.
+    cy.get('#practice-sheet svg, #practice-sheet .practice-sheet-fallback', { timeout: 15000 }).should('exist');
+    // Selection persisted.
+    cy.window().then((win) => {
+      const prefs = JSON.parse(win.localStorage.getItem('seedsong-practice-prefs-v1'));
+      expect(prefs.byStudy['walking-bass-workout'].actIdx).to.equal(2);
+    });
   });
 
   it('Play button toggles into the playing state on click', () => {
