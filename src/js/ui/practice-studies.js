@@ -182,9 +182,11 @@ export const ETUDE_PATTERNS = [
       return seq;
     },
   },
-  { id: 'thirds',  label: 'Broken thirds',  build: brokenInterval(2) },
-  { id: 'fourths', label: 'Broken fourths', build: brokenInterval(3) },
-  { id: 'fifths',  label: 'Broken fifths',  build: brokenInterval(4) },
+  { id: 'thirds',   label: 'Broken thirds',   build: brokenInterval(2) },
+  { id: 'fourths',  label: 'Broken fourths',  build: brokenInterval(3) },
+  { id: 'fifths',   label: 'Broken fifths',   build: brokenInterval(4) },
+  { id: 'sixths',   label: 'Broken sixths',   build: brokenInterval(5) },
+  { id: 'sevenths', label: 'Broken sevenths', build: brokenInterval(6) },
 ];
 
 // Octave range for the etude. Two octaves stack a second copy of the
@@ -197,13 +199,33 @@ export function extendShapeOctaves(shape, octaves) {
   return [...shape, ...shape.slice(1).map(o => o + top)];
 }
 
-// Note-value choices — `beats` drives both playback timing and the
-// engraved duration (triplets currently engrave approximated, ADR 0008).
+// Note-value choices (ADR 0010). Each rhythm is a repeating CELL pattern
+// applied across the note sequence: note j takes cells[j % cells.length].
+// `beats` drives playback timing + the engraved duration (via the
+// serializer's duration→type map). Simple values are one-cell patterns;
+// the composite figures below are dotted / subdivided cells that each
+// sum to one beat, so they stay bar-aligned.
 export const ETUDE_RHYTHMS = [
-  { id: 'quarter',   label: 'Quarter notes',   beats: 1,     noteType: 'q'  },
-  { id: 'eighth',    label: 'Eighth notes',    beats: 0.5,   noteType: 'e'  },
-  { id: 'triplet',   label: 'Triplet eighths', beats: 1 / 3, noteType: 'et' },
-  { id: 'sixteenth', label: 'Sixteenth notes', beats: 0.25,  noteType: 's'  },
+  { id: 'quarter',   label: 'Quarter notes',   cells: [{ beats: 1,     noteType: 'q'  }] },
+  { id: 'eighth',    label: 'Eighth notes',    cells: [{ beats: 0.5,   noteType: 'e'  }] },
+  { id: 'triplet',   label: 'Triplet eighths', cells: [{ beats: 1 / 3, noteType: 'et' }] },
+  { id: 'sixteenth', label: 'Sixteenth notes', cells: [{ beats: 0.25,  noteType: 's'  }] },
+  // Dotted eighth + sixteenth  (♪. ♬)
+  { id: 'dotted8-16', label: 'Dotted 8th + 16th', cells: [
+    { beats: 0.75, noteType: 'ed' }, { beats: 0.25, noteType: 's' },
+  ] },
+  // Sixteenth + eighth + sixteenth  (♬ ♪ ♬) — one beat
+  { id: '16-8-16', label: '16th + 8th + 16th', cells: [
+    { beats: 0.25, noteType: 's' }, { beats: 0.5, noteType: 'e' }, { beats: 0.25, noteType: 's' },
+  ] },
+  // Sixteenth + sixteenth + eighth  (♬♬ ♪) — one beat
+  { id: '16-16-8', label: '16th + 16th + 8th', cells: [
+    { beats: 0.25, noteType: 's' }, { beats: 0.25, noteType: 's' }, { beats: 0.5, noteType: 'e' },
+  ] },
+  // Eighth + sixteenth + sixteenth  (♪ ♬♬) — one beat
+  { id: '8-16-16', label: '8th + 16th + 16th', cells: [
+    { beats: 0.5, noteType: 'e' }, { beats: 0.25, noteType: 's' }, { beats: 0.25, noteType: 's' },
+  ] },
 ];
 
 // ADR 0009: lowest note the scale etude may start on, per clef — the
@@ -276,7 +298,7 @@ export const STUDIES = [
     // ADR 0008: single-act sandbox — the Pattern / Octaves / Note value
     // dropdowns replaced the fixed exercise tabs.
     title: 'Scale Etude',
-    summary: 'One configurable technique drill: pick the scale, the pattern (scale, pairs, threes, broken thirds/fourths/fifths), one or two octaves, and the note value — up and down in a single pass.',
+    summary: 'One configurable technique drill: pick the scale, the pattern (scale, pairs, threes, broken thirds through sevenths), one or two octaves, and the note value (incl. composite figures) — up and down in a single pass.',
     eyebrow: 'Technique · sandbox',
     clefPresets: [
       { id: 'bass',   label: 'Bass clef (cello / bass)',  voices: ['bass'] },
