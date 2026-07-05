@@ -1096,6 +1096,9 @@
                             <button id="practice-study-print" type="button" class="practice-nav-btn" aria-label="Print or save PDF" title="Print or save PDF">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
                             </button>
+                            <button id="practice-study-stand" type="button" class="practice-nav-btn" aria-label="Music stand mode" title="Music stand mode (fullscreen score)">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                            </button>
                         </header>
                         <span id="practice-share-toast" class="practice-share-toast" role="status" aria-live="polite" hidden></span>
 
@@ -1104,6 +1107,22 @@
                         <div id="practice-act-rail" class="practice-act-rail" aria-label="Act navigation"></div>
 
                         <div id="practice-sheet" class="practice-sheet" aria-live="polite" aria-busy="false"></div>
+
+                        <!-- ADR 0006: music-stand mode toolbar. Hidden unless
+                             body.practice-stand-mode is set. -->
+                        <div id="practice-stand-toolbar" class="practice-stand-toolbar" role="toolbar" aria-label="Music stand controls">
+                            <button id="practice-stand-prev" type="button" class="practice-stand-btn" aria-label="Previous page">‹</button>
+                            <span id="practice-stand-page" class="practice-stand-page">1 / 1</span>
+                            <button id="practice-stand-next" type="button" class="practice-stand-btn" aria-label="Next page">›</button>
+                            <span class="practice-stand-sep"></span>
+                            <button id="practice-stand-zoom-out" type="button" class="practice-stand-btn" aria-label="Zoom out">−</button>
+                            <button id="practice-stand-zoom-in" type="button" class="practice-stand-btn" aria-label="Zoom in">+</button>
+                            <span class="practice-stand-sep"></span>
+                            <button id="practice-stand-play" type="button" class="practice-stand-btn" aria-label="Play / stop">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                            </button>
+                            <button id="practice-stand-exit" type="button" class="practice-stand-btn practice-stand-exit" aria-label="Exit music stand mode">✕</button>
+                        </div>
 
                         <details id="practice-controls" class="practice-controls">
                             <summary class="practice-controls-summary">

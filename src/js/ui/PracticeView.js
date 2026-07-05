@@ -70,6 +70,9 @@ function loadPrefs() {
         studyId: parsed.studyId || null,
         byStudy: parsed.byStudy || {},
         favorites: Array.isArray(parsed.favorites) ? parsed.favorites : [],
+        // ADR 0006: stand-mode zoom is global — the right size for a given
+        // music-stand distance doesn't change per study.
+        standZoom: typeof parsed.standZoom === 'number' ? parsed.standZoom : 1.3,
       };
     }
   } catch { /* ignore */ }
@@ -745,6 +748,7 @@ function openStudy(studyId) {
 }
 
 function closeStudy() {
+  exitStandMode();   // ADR 0006: never leave the body stuck in stand mode
   stopPlayback();
   document.getElementById('practice-study-overlay').classList.add('hidden');
   document.body.classList.remove('practice-overlay-open');
@@ -1166,6 +1170,150 @@ function openPrintView() {
 }
 
 // =============================================================================
+// Music-stand mode (ADR 0006) — fullscreen score reading with page turning,
+// zoom, and a screen wake lock. Fullscreen is a CSS state (body class pins
+// #practice-sheet to the viewport); page turning steps scrollTop by one
+// viewport height. OSMD's autoResize re-renders on the container resize.
+
+let standActive = false;
+let standWakeLock = null;
+
+function standSheet() { return document.getElementById('practice-sheet'); }
+
+function standPageInfo() {
+  const el = standSheet();
+  if (!el) return { page: 1, total: 1 };
+  const pageH = el.clientHeight || 1;
+  const total = Math.max(1, Math.ceil(el.scrollHeight / pageH));
+  const page = Math.min(total, Math.floor(el.scrollTop / pageH) + 1);
+  return { page, total };
+}
+
+function standUpdatePageIndicator() {
+  const disp = document.getElementById('practice-stand-page');
+  if (!disp) return;
+  const { page, total } = standPageInfo();
+  disp.textContent = `${page} / ${total}`;
+  const prev = document.getElementById('practice-stand-prev');
+  const next = document.getElementById('practice-stand-next');
+  if (prev) prev.disabled = page <= 1;
+  if (next) next.disabled = page >= total;
+}
+
+function standTurnPage(delta) {
+  const el = standSheet();
+  if (!el) return;
+  const pageH = el.clientHeight || 1;
+  const maxTop = Math.max(0, el.scrollHeight - pageH);
+  el.scrollTop = Math.max(0, Math.min(maxTop, el.scrollTop + delta * pageH));
+  standUpdatePageIndicator();
+}
+
+function standApplyZoom(deltaSteps) {
+  if (deltaSteps) {
+    const z = prefs.standZoom ?? 1.3;
+    prefs.standZoom = Math.max(0.5, Math.min(2.5, Math.round((z + deltaSteps * 0.1) * 10) / 10));
+    savePrefs();
+  }
+  if (practiceOSMD) {
+    try {
+      practiceOSMD.zoom = prefs.standZoom ?? 1.3;
+      practiceOSMD.render();
+    } catch { /* OSMD may not be loaded (offline) — page math still works */ }
+  }
+  const el = standSheet();
+  if (el) el.scrollTop = 0;
+  standUpdatePageIndicator();
+}
+
+async function standAcquireWakeLock() {
+  try {
+    standWakeLock = await navigator.wakeLock?.request?.('screen');
+  } catch { standWakeLock = null; }
+}
+
+function standReleaseWakeLock() {
+  try { standWakeLock?.release?.(); } catch { /* already released */ }
+  standWakeLock = null;
+}
+
+// Re-acquire the wake lock when the tab becomes visible again — the
+// browser silently releases it on backgrounding.
+function standVisibilityHandler() {
+  if (standActive && document.visibilityState === 'visible') standAcquireWakeLock();
+}
+
+function standKeyHandler(e) {
+  if (!standActive) return;
+  if (e.key === 'Escape') { exitStandMode(); e.preventDefault(); return; }
+  // ArrowRight / PageDown / Space turn forward; ArrowLeft / PageUp back.
+  // PageUp/PageDown + arrows are what Bluetooth page-turn pedals emit,
+  // so pedal support comes for free (ADR 0006).
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+    standTurnPage(1); e.preventDefault();
+  } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+    standTurnPage(-1); e.preventDefault();
+  }
+}
+
+// Tap zones: right third = next page, left third = previous.
+function standTapHandler(e) {
+  if (!standActive) return;
+  const w = window.innerWidth || 1;
+  if (e.clientX > (w * 2) / 3) standTurnPage(1);
+  else if (e.clientX < w / 3) standTurnPage(-1);
+}
+
+function standFullscreenChangeHandler() {
+  // Leaving browser fullscreen (Esc or system UI) exits stand mode too,
+  // so the two states never desync.
+  if (standActive && !document.fullscreenElement) exitStandMode();
+}
+
+function enterStandMode() {
+  if (!activeStudy || standActive) return;
+  standActive = true;
+  document.body.classList.add('practice-stand-mode');
+  const el = standSheet();
+  if (el) {
+    el.scrollTop = 0;
+    el.addEventListener('click', standTapHandler);
+  }
+  document.addEventListener('keydown', standKeyHandler);
+  document.addEventListener('visibilitychange', standVisibilityHandler);
+  document.addEventListener('fullscreenchange', standFullscreenChangeHandler);
+  standApplyZoom(0);           // apply persisted stand zoom + reset page
+  standAcquireWakeLock();
+  // Browser fullscreen is progressive enhancement — the CSS overlay is
+  // the real mechanism.
+  try { document.documentElement.requestFullscreen?.()?.catch?.(() => {}); } catch { /* unsupported */ }
+}
+
+function exitStandMode() {
+  if (!standActive) return;
+  standActive = false;
+  document.body.classList.remove('practice-stand-mode');
+  const el = standSheet();
+  if (el) {
+    el.scrollTop = 0;
+    el.removeEventListener('click', standTapHandler);
+  }
+  document.removeEventListener('keydown', standKeyHandler);
+  document.removeEventListener('visibilitychange', standVisibilityHandler);
+  document.removeEventListener('fullscreenchange', standFullscreenChangeHandler);
+  standReleaseWakeLock();
+  try { if (document.fullscreenElement) document.exitFullscreen?.()?.catch?.(() => {}); } catch { /* ignore */ }
+  // Restore the regular width-based zoom heuristic.
+  if (practiceOSMD) {
+    try {
+      const w = standSheet()?.clientWidth || 720;
+      practiceOSMD.zoom = w < 500 ? 0.7 : w < 720 ? 0.85 : 1.0;
+      practiceOSMD.render();
+    } catch { /* ignore */ }
+  }
+}
+
+// =============================================================================
 // Share — Web Share API with clipboard fallback. The URL encodes the
 // current study + every prefs field so the recipient lands on the exact
 // same generated piece (seed + key + clef + rhythm + duet + difficulty).
@@ -1415,6 +1563,19 @@ export function initPracticeView({ audioApi } = {}) {
   document.getElementById('practice-study-print')?.addEventListener('click', openPrintView);
   document.getElementById('practice-study-favorite')?.addEventListener('click', toggleFavorite);
   document.getElementById('practice-study-share')?.addEventListener('click', shareCurrentStudy);
+
+  // ADR 0006: music-stand mode.
+  document.getElementById('practice-study-stand')?.addEventListener('click', enterStandMode);
+  document.getElementById('practice-stand-exit')?.addEventListener('click', exitStandMode);
+  document.getElementById('practice-stand-prev')?.addEventListener('click', (e) => { e.stopPropagation(); standTurnPage(-1); });
+  document.getElementById('practice-stand-next')?.addEventListener('click', (e) => { e.stopPropagation(); standTurnPage(1); });
+  document.getElementById('practice-stand-zoom-out')?.addEventListener('click', (e) => { e.stopPropagation(); standApplyZoom(-1); });
+  document.getElementById('practice-stand-zoom-in')?.addEventListener('click', (e) => { e.stopPropagation(); standApplyZoom(1); });
+  document.getElementById('practice-stand-play')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (playbackTimer) stopPlayback();
+    else playSong();
+  });
 
   document.getElementById('practice-key')?.addEventListener('change', (e) => {
     if (!activeStudy) return;
