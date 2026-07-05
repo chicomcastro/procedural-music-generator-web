@@ -6458,6 +6458,31 @@ body.sidebar-open .practice-stage { padding-left: 240px; }
   font-size: 13px;
   color: var(--text-secondary);
 }
+/* ADR 0007: in 'exercises' mode the rail items are tabs — one drill
+ * renders at a time. */
+button.practice-act-rail-tab {
+  font: inherit;
+  font-size: 13px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 4px 12px 4px 6px;
+  cursor: pointer;
+  transition: color 140ms, border-color 140ms, background-color 140ms;
+}
+button.practice-act-rail-tab:hover {
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+}
+button.practice-act-rail-tab.is-active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+button.practice-act-rail-tab.is-active .practice-act-rail-dot {
+  background: var(--accent);
+  color: #08110d;
+}
 .practice-act-rail-dot {
   width: 22px;
   height: 22px;

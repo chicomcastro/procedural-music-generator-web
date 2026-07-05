@@ -100,6 +100,7 @@ function getStudyPrefs(studyId) {
       rhythmVocab: study?.kind === 'duet-workshop' ? [...RHYTHM_VOCAB_DEFAULTS] : null,
       progressionId: study?.kind === 'duet-workshop' ? 'pop' : null,
       partView: study?.kind === 'duet-workshop' ? 'both' : null,
+      actIdx: 0,               // ADR 0007: selected exercise for actMode 'exercises'
     };
   }
   // Backfill new fields for users who already have a saved prefs blob from a
@@ -119,6 +120,7 @@ function getStudyPrefs(studyId) {
   if (p.swing == null) p.swing = 0;
   if (p.intensity == null) p.intensity = 100;
   if (p.voiceId == null) p.voiceId = null;   // null = use the kind's default
+  if (!Number.isInteger(p.actIdx) || p.actIdx < 0) p.actIdx = 0;   // ADR 0007 backfill
   if (study?.kind === 'duet-workshop') {
     if (!Array.isArray(p.rhythmVocab) || p.rhythmVocab.length === 0) p.rhythmVocab = [...RHYTHM_VOCAB_DEFAULTS];
     if (!p.progressionId) p.progressionId = 'pop';
@@ -451,6 +453,12 @@ function buildWalkingBassSong(study, opts) {
 }
 
 function buildSong(study, opts) {
+  // ADR 0007: in 'exercises' mode only the selected act is generated —
+  // the builders all iterate study.acts, so a filtered copy is enough.
+  if (study.actMode === 'exercises' && Array.isArray(study.acts) && study.acts.length > 1) {
+    const idx = Math.max(0, Math.min(study.acts.length - 1, opts.actIdx | 0));
+    study = { ...study, acts: [study.acts[idx]] };
+  }
   if (study.kind === 'two-voice-counterpoint') return buildTwoVoiceSong(study, opts);
   if (study.kind === 'duet-workshop')          return buildTwoVoiceSong(study, opts);
   if (study.kind === 'walking-bass-workout') return buildWalkingBassSong(study, opts);
@@ -999,9 +1007,29 @@ function renderActRail() {
   if (!activeStudy) return;
   const rail = document.getElementById('practice-act-rail');
   rail.innerHTML = '';
+  // ADR 0007: 'exercises' mode renders the rail as tabs — one drill at a
+  // time. 'movements' mode keeps the passive rail (the score is one piece).
+  const isTabs = activeStudy.actMode === 'exercises';
+  const sp = isTabs ? getStudyPrefs(activeStudy.id) : null;
   activeStudy.acts.forEach((act, idx) => {
-    const item = document.createElement('div');
+    const item = document.createElement(isTabs ? 'button' : 'div');
     item.className = 'practice-act-rail-item';
+    if (isTabs) {
+      item.type = 'button';
+      item.classList.add('practice-act-rail-tab');
+      const active = idx === (sp.actIdx | 0);
+      item.classList.toggle('is-active', active);
+      item.setAttribute('aria-pressed', active ? 'true' : 'false');
+      item.addEventListener('click', () => {
+        const p = getStudyPrefs(activeStudy.id);
+        if ((p.actIdx | 0) === idx) return;
+        p.actIdx = idx;
+        savePrefs();
+        stopPlayback();
+        renderActRail();
+        regenerate();
+      });
+    }
     const dot = document.createElement('span');
     dot.className = 'practice-act-rail-dot';
     dot.textContent = String(idx + 1);
@@ -1348,6 +1376,8 @@ export function buildShareUrl(studyId, sp) {
   if (sp.swing) params.set('swing', String(sp.swing));
   if (sp.intensity != null && sp.intensity !== 100) params.set('intensity', String(sp.intensity));
   if (sp.difficulty != null) params.set('diff', String(sp.difficulty));
+  // ADR 0007: selected exercise for exercises-mode studies.
+  if (sp.actIdx) params.set('act', String(sp.actIdx));
   // ADR 0004: duet-workshop extras.
   if (Array.isArray(sp.rhythmVocab) && sp.rhythmVocab.length) params.set('vocab', sp.rhythmVocab.join(','));
   if (sp.progressionId) params.set('prog', sp.progressionId);
@@ -1418,6 +1448,7 @@ export function applyShareParams() {
   }
   if (params.get('prog')) sp.progressionId = params.get('prog');
   if (params.get('part')) sp.partView = params.get('part');
+  if (n('act') != null && Number.isFinite(n('act'))) sp.actIdx = Math.max(0, n('act') | 0);
   savePrefs();
   return studyId;
 }
@@ -1428,7 +1459,7 @@ export function applyShareParams() {
 function favoriteIdFor(studyId, sp) {
   // Stable id from the parameter set — same study + same prefs produces the
   // same key, so re-saving doesn't duplicate.
-  return `${studyId}|${sp.seed}|${sp.keyPc}|${sp.clefPresetId || ''}|${sp.rhythmPresetId || ''}|${sp.duetStyleId || ''}|${sp.difficulty}`;
+  return `${studyId}|${sp.seed}|${sp.keyPc}|${sp.clefPresetId || ''}|${sp.rhythmPresetId || ''}|${sp.duetStyleId || ''}|${sp.difficulty}|${sp.actIdx || 0}`;
 }
 
 function isFavorited(studyId, sp) {
@@ -1453,6 +1484,7 @@ function toggleFavorite() {
       clefPresetId: sp.clefPresetId,
       rhythmPresetId: sp.rhythmPresetId,
       duetStyleId: sp.duetStyleId,
+      actIdx: sp.actIdx || 0,   // ADR 0007: which exercise was favorited
       savedAt: Date.now(),
     });
     // Cap to a sane number so localStorage doesn't grow unbounded.
@@ -1537,6 +1569,7 @@ function openFavorite(fav) {
   sp.clefPresetId = fav.clefPresetId;
   sp.rhythmPresetId = fav.rhythmPresetId;
   sp.duetStyleId = fav.duetStyleId;
+  sp.actIdx = fav.actIdx || 0;   // ADR 0007
   savePrefs();
   openStudy(fav.studyId);
 }

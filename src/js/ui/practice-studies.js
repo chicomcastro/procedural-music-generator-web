@@ -284,9 +284,12 @@ export const STUDIES = [
     id: 'walking-bass-workout',
     kind: 'walking-bass-workout',
     category: 'bass',
+    // ADR 0007: the three "acts" are independent drills, not movements —
+    // the rail renders as tabs and one exercise plays at a time.
+    actMode: 'exercises',
     title: 'Walking-Bass Workout',
-    summary: 'Three acts of walking-bass over real changes — escalating tempo and harmonic density. Same study, infinite variations.',
-    eyebrow: 'Bass · 3 acts',
+    summary: 'Three walking-bass exercises over real changes — pick one, drill it at its own tempo. Same study, infinite variations.',
+    eyebrow: 'Bass · 3 exercises',
     clefPresets: [
       { id: 'bass',   label: 'Bass clef (default)', voices: ['bass'] },
       { id: 'treble', label: 'Treble clef (octave-up)', voices: ['treble'] },
@@ -323,9 +326,11 @@ export const STUDIES = [
     id: 'scale-etude',
     kind: 'scale-etude',
     category: 'technique',
+    // ADR 0007: each pattern is its own drill.
+    actMode: 'exercises',
     title: 'Scale Etude',
-    summary: 'Method-book patterns (pairs and threes, asc + desc) built into one continuous piece per act. Pick the scale, get the etude.',
-    eyebrow: 'Technique · 3 acts',
+    summary: 'Method-book pattern exercises (pairs and threes, asc + desc). Pick the scale and the pattern, drill it.',
+    eyebrow: 'Technique · 3 exercises',
     clefPresets: [
       { id: 'bass',   label: 'Bass clef (cello / bass)',  voices: ['bass'] },
       { id: 'treble', label: 'Treble clef (violin / RH)', voices: ['treble'] },
@@ -405,9 +410,11 @@ export const STUDIES = [
     id: 'modal-vamp',
     kind: 'modal-vamp',
     category: 'modal',
+    // ADR 0007: one mode per exercise — you drill one mode at a time.
+    actMode: 'exercises',
     title: 'Modal Vamp',
-    summary: 'A repeating two-chord vamp under a melodic exploration — one mode per act. Builds your ear for modal colour.',
-    eyebrow: 'Modal · 3 acts',
+    summary: 'A repeating two-chord vamp under a melodic exploration — one mode per exercise. Builds your ear for modal colour.',
+    eyebrow: 'Modal · 3 exercises',
     clefPresets: [
       { id: 'treble', label: 'Treble clef',              voices: ['treble'] },
       { id: 'bass',   label: 'Bass clef (cello / bass)', voices: ['bass'] },

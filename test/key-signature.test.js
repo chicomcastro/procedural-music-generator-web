@@ -160,14 +160,15 @@ describe('Practice builders attach keySignatures', () => {
     }
   });
 
-  it('walking-bass workout carries signatures for its acts', async () => {
+  it('walking-bass workout carries a signature for the selected exercise (ADR 0007)', async () => {
     const { __test } = await import('../src/js/ui/PracticeView.js');
     const { STUDIES } = await import('../src/js/ui/practice-studies.js');
     const study = STUDIES.find(s => s.id === 'walking-bass-workout');
     const song = __test.buildSong(study, {
-      keyPc: 0, seed: 7, difficulty: 50, clefVoices: ['bass'],
+      keyPc: 0, seed: 7, difficulty: 50, clefVoices: ['bass'], actIdx: 0,
     });
-    expect(song.keySignatures.length).toBe(study.acts.length);
+    // Exercises mode builds a single act → a single signature.
+    expect(song.keySignatures.length).toBe(1);
     // Act I is C major → 0.
     expect(song.keySignatures[0].fifths).toBe(0);
   });

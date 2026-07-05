@@ -109,10 +109,12 @@ describe('buildSong — two-voice-invention', () => {
 describe('buildSong — walking-bass-workout', () => {
   const study = STUDIES.find(s => s.id === 'walking-bass-workout');
 
-  it('emits one bass event per beat', () => {
-    const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50 });
-    const expected = study.acts.reduce((s, a) => s + a.bars * 4, 0);
-    expect(song.events.filter(e => e.type === 'bass')).toHaveLength(expected);
+  it('emits one bass event per beat of the selected exercise (ADR 0007)', () => {
+    // Exercises mode: only the selected act builds. Check each exercise.
+    for (let i = 0; i < study.acts.length; i++) {
+      const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, actIdx: i });
+      expect(song.events.filter(e => e.type === 'bass')).toHaveLength(study.acts[i].bars * 4);
+    }
   });
 
   it('is deterministic across calls with the same inputs', () => {
@@ -128,11 +130,10 @@ describe('buildSong — walking-bass-workout', () => {
     expect(((songF.events[0].midi % 12) + 12) % 12).toBe(5);
   });
 
-  it('emits one chord symbol per bar (for staff harmony rendering)', () => {
-    const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50 });
+  it('emits one chord symbol per bar of the selected exercise (ADR 0007)', () => {
+    const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, actIdx: 0 });
     expect(Array.isArray(song.chordSymbols)).toBe(true);
-    const expected = study.acts.reduce((s, a) => s + a.bars, 0);
-    expect(song.chordSymbols).toHaveLength(expected);
+    expect(song.chordSymbols).toHaveLength(study.acts[0].bars);
     expect(song.chordSymbols.every(s => typeof s === 'string' && s.length > 0)).toBe(true);
   });
 
@@ -485,17 +486,16 @@ describe('new study kinds — scale-etude / solo-etude / modal-vamp', () => {
     expect(STUDIES.find(s => s.id === 'modal-vamp')).toBeTruthy();
   });
 
-  it('scale-etude builds a single-voice song with eighths/triplets per act', () => {
+  it('scale-etude builds a single-voice exercise; the threes drill is triplets (ADR 0007)', () => {
     const study = STUDIES.find(s => s.id === 'scale-etude');
-    const song = buildSong(study, {
-      keyPc: 0, seed: 1, difficulty: 50,
-      clefVoices: ['bass'],
-    });
-    expect(song.events.every(e => e.type === 'melody')).toBe(true);
-    // Act 3 chains threes_asc + threes_desc; every event in that range
-    // should be a triplet eighth.
-    const tripletEvents = song.events.filter(e => e.noteType === 'et');
-    expect(tripletEvents.length).toBeGreaterThan(0);
+    // Exercise 1 (default): straight eighths.
+    const ex0 = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass'], actIdx: 0 });
+    expect(ex0.events.every(e => e.type === 'melody')).toBe(true);
+    expect(ex0.events.every(e => e.noteType === 'e')).toBe(true);
+    // Exercise 3 chains threes_asc + threes_desc — all triplet eighths.
+    const ex2 = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass'], actIdx: 2 });
+    expect(ex2.events.length).toBeGreaterThan(0);
+    expect(ex2.events.every(e => e.noteType === 'et')).toBe(true);
   });
 
   it('scale-etude is deterministic with the same inputs', () => {
@@ -520,16 +520,16 @@ describe('new study kinds — scale-etude / solo-etude / modal-vamp', () => {
     }
   });
 
-  it('modal-vamp respects the per-act mode (dorian, mixolydian, lydian)', () => {
+  it('modal-vamp builds one mode per exercise (ADR 0007)', () => {
     const study = STUDIES.find(s => s.id === 'modal-vamp');
-    const song = buildSong(study, {
-      keyPc: 0, seed: 7, difficulty: 50,
-      clefVoices: ['treble'], rhythmPresetId: 'flowing',
-    });
-    expect(song.events.every(e => e.type === 'melody')).toBe(true);
-    // Bar count = sum of act bars.
-    const expectedBars = study.acts.reduce((s, a) => s + a.bars, 0);
-    expect(song.bars).toBe(expectedBars);
+    for (let i = 0; i < study.acts.length; i++) {
+      const song = buildSong(study, {
+        keyPc: 0, seed: 7, difficulty: 50,
+        clefVoices: ['treble'], rhythmPresetId: 'flowing', actIdx: i,
+      });
+      expect(song.events.every(e => e.type === 'melody')).toBe(true);
+      expect(song.bars).toBe(study.acts[i].bars);
+    }
   });
 
   it('scale-etude lower bound respects the cello E2 floor (bass clef)', () => {
@@ -564,9 +564,14 @@ describe('chord symbols + double bars on Practice studies', () => {
     }
   });
 
-  it('every multi-act study marks the act boundaries with doubleBarsBefore', () => {
+  it('movements studies mark act boundaries; exercises render one act, no dividers (ADR 0007)', () => {
     for (const study of STUDIES) {
       const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: study.clefPresets[0].voices });
+      if (study.actMode === 'exercises') {
+        // One drill at a time → no act dividers in the score.
+        expect(song.doubleBarsBefore).toHaveLength(0);
+        continue;
+      }
       // Acts−1 boundaries (no boundary AFTER the last act).
       expect(song.doubleBarsBefore).toHaveLength(study.acts.length - 1);
       // Each entry is the bar index where the boundary sits.

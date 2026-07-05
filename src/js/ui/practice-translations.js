@@ -32,25 +32,25 @@ export const TR = {
   'walking-bass-workout': {
     pt: {
       title: 'Treino de Walking-Bass',
-      summary: 'Três atos de walking-bass sobre acordes reais — tempo e densidade harmônica progressivos. Mesmo estudo, variações infinitas.',
-      eyebrow: 'Baixo · 3 atos',
+      summary: 'Três exercícios de walking-bass sobre acordes reais — escolha um e treine no tempo dele. Mesmo estudo, variações infinitas.',
+      eyebrow: 'Baixo · 3 exercícios',
     },
     es: {
       title: 'Entrenamiento de Walking-Bass',
-      summary: 'Tres actos de walking-bass sobre cambios reales — tempo y densidad armónica progresivos. Mismo estudio, variaciones infinitas.',
-      eyebrow: 'Bajo · 3 actos',
+      summary: 'Tres ejercicios de walking-bass sobre cambios reales — elige uno y practícalo a su propio tempo. Mismo estudio, variaciones infinitas.',
+      eyebrow: 'Bajo · 3 ejercicios',
     },
   },
   'scale-etude': {
     pt: {
       title: 'Estudo de Escala',
-      summary: 'Padrões de método (pares e tríades, sub. + desc.) montados como uma peça contínua por ato. Escolha a escala, leve o estudo.',
-      eyebrow: 'Técnica · 3 atos',
+      summary: 'Exercícios de padrões de método (pares e tríades, asc. + desc.). Escolha a escala e o padrão, e treine.',
+      eyebrow: 'Técnica · 3 exercícios',
     },
     es: {
       title: 'Estudio de Escala',
-      summary: 'Patrones de método (pares y tríadas, asc. + desc.) montados como una pieza continua por acto. Elige la escala, recibe el estudio.',
-      eyebrow: 'Técnica · 3 actos',
+      summary: 'Ejercicios de patrones de método (pares y tríadas, asc. + desc.). Elige la escala y el patrón, y practica.',
+      eyebrow: 'Técnica · 3 ejercicios',
     },
   },
   'solo-etude': {
@@ -68,13 +68,13 @@ export const TR = {
   'modal-vamp': {
     pt: {
       title: 'Vamp Modal',
-      summary: 'Um vamp de dois acordes embaixo de uma exploração melódica — um modo por ato. Treina o ouvido pra cor modal.',
-      eyebrow: 'Modal · 3 atos',
+      summary: 'Um vamp de dois acordes embaixo de uma exploração melódica — um modo por exercício. Treina o ouvido pra cor modal.',
+      eyebrow: 'Modal · 3 exercícios',
     },
     es: {
       title: 'Vamp Modal',
-      summary: 'Un vamp de dos acordes bajo una exploración melódica — un modo por acto. Entrena el oído para el color modal.',
-      eyebrow: 'Modal · 3 actos',
+      summary: 'Un vamp de dos acordes bajo una exploración melódica — un modo por ejercicio. Entrena el oído para el color modal.',
+      eyebrow: 'Modal · 3 ejercicios',
     },
   },
 };
