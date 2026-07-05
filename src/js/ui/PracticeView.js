@@ -11,7 +11,7 @@
 // workout, master slider, key picker, seed reroll, audio playback, print
 // stylesheet (no per-act overrides yet — those land in PR 2).
 
-import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, SCALE_SHAPES, VOICE_OPTIONS, clampMidiToRange, tonicMidiFor, ETUDE_PATTERNS, ETUDE_OCTAVE_OPTIONS, ETUDE_RHYTHMS, extendShapeOctaves, RHYTHM_VOCAB, RHYTHM_VOCAB_DEFAULTS, PROGRESSION_OPTIONS, PART_VIEW_OPTIONS } from './practice-studies.js';
+import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, SCALE_SHAPES, VOICE_OPTIONS, clampMidiToRange, tonicMidiFor, ETUDE_PATTERNS, ETUDE_OCTAVE_OPTIONS, ETUDE_RHYTHMS, extendShapeOctaves, etudeStartOptions, RHYTHM_VOCAB, RHYTHM_VOCAB_DEFAULTS, PROGRESSION_OPTIONS, PART_VIEW_OPTIONS } from './practice-studies.js';
 import { getStudyField } from './practice-translations.js';
 import { mulberry32, randomSeed } from '../generate/rng.js';
 import { generateMelody } from '../generate/melody.js';
@@ -112,6 +112,7 @@ function getStudyPrefs(studyId) {
       etudePatternId: study?.kind === 'scale-etude' ? 'scale' : null,
       etudeOctaves: study?.kind === 'scale-etude' ? 1 : null,
       etudeRhythm: study?.kind === 'scale-etude' ? 'eighth' : null,
+      etudeStartMidi: null,   // ADR 0009: null = default register
     };
   }
   // Backfill new fields for users who already have a saved prefs blob from a
@@ -136,6 +137,7 @@ function getStudyPrefs(studyId) {
     if (!ETUDE_PATTERNS.find(pt => pt.id === p.etudePatternId)) p.etudePatternId = 'scale';
     if (!ETUDE_OCTAVE_OPTIONS.includes(p.etudeOctaves)) p.etudeOctaves = 1;
     if (!ETUDE_RHYTHMS.find(r => r.id === p.etudeRhythm)) p.etudeRhythm = 'eighth';
+    if (!Number.isInteger(p.etudeStartMidi)) p.etudeStartMidi = null;
   }
   if (study?.kind === 'duet-workshop') {
     if (!Array.isArray(p.rhythmVocab) || p.rhythmVocab.length === 0) p.rhythmVocab = [...RHYTHM_VOCAB_DEFAULTS];
@@ -494,10 +496,9 @@ function buildSong(study, opts) {
 function buildScaleEtudeSong(study, opts) {
   // ADR 0008: single-act sandbox — pattern x octaves x note value.
   const {
-    keyPc, difficulty, clefVoices, scaleId, intensity: intensityPct,
-    etudePatternId, etudeOctaves, etudeRhythm,
+    keyPc, difficulty, clefVoices, scaleId,
+    etudePatternId, etudeOctaves, etudeRhythm, etudeStartMidi,
   } = opts;
-  const velocityScale = (intensityPct ?? 100) / 100;
   const beatsPerBar = 4;
   const events = [];
 
@@ -513,23 +514,33 @@ function buildScaleEtudeSong(study, opts) {
   const shape = extendShapeOctaves(SCALE_SHAPES[scaleName] || SCALE_SHAPES.major, octaves);
   const pattern = ETUDE_PATTERNS.find(pt => pt.id === etudePatternId) || ETUDE_PATTERNS[0];
   const rhythm = ETUDE_RHYTHMS.find(r => r.id === etudeRhythm) || ETUDE_RHYTHMS.find(r => r.id === 'eighth');
-
-  // Root the drill at the clef anchor; when a two-octave span would
-  // overflow the clef's playable ceiling, drop the tonic an octave
-  // first (alto clef) — per-note clamping stays as backstop.
-  let tonic = tonicMidiFor(anchor, ((keyPc % 12) + 12) % 12);
   const maxOffset = shape[shape.length - 1];
-  if (tonic + maxOffset > range[1] && tonic - 12 >= range[0]) tonic -= 12;
+
+  // ADR 0009: the Start-note dropdown picks the tonic register directly
+  // (down to the instrument's low open string). Falls back to the
+  // lowest tonic at/above the clef anchor when unset or invalid — the
+  // pre-0009 behaviour.
+  const startOpts = etudeStartOptions(clef, keyPc);
+  let tonic;
+  if (Number.isInteger(etudeStartMidi) && startOpts.some(o => o.midi === etudeStartMidi)) {
+    tonic = etudeStartMidi;
+  } else {
+    tonic = tonicMidiFor(anchor, ((keyPc % 12) + 12) % 12);
+    if (tonic + maxOffset > range[1] && tonic - 12 >= range[0]) tonic -= 12;
+  }
+  // Widen the clamp range so a low-string start (or a high one) isn't
+  // pulled back toward the clef's default reading band.
+  const etudeRange = [Math.min(range[0], tonic), Math.max(range[1], tonic + maxOffset)];
 
   const sequence = pattern.build(shape.length);
   for (let j = 0; j < sequence.length; j++) {
-    const midi = clampMidiToRange(tonic + shape[sequence[j]], range);
+    const midi = clampMidiToRange(tonic + shape[sequence[j]], etudeRange);
     events.push({
       type: 'melody',
       midi,
       atBeat: j * rhythm.beats,
       durationBeats: rhythm.beats,
-      velocity: Math.min(1, 0.75 * velocityScale),
+      velocity: 0.75,
       noteType: rhythm.noteType,
     });
   }
@@ -971,6 +982,36 @@ function populateControls() {
     }
   }
 
+  // ADR 0009: start-note dropdown — options depend on key + clef, so it
+  // rebuilds every render. The stored midi selects when still valid;
+  // otherwise the first (lowest) option shows and the pref resets to
+  // null (= default register) so the builder picks the anchor tonic.
+  const startSel = document.getElementById('practice-etude-start');
+  const startField = document.getElementById('practice-etude-start-field');
+  if (startSel && activeStudy.kind === 'scale-etude') {
+    const clef = activeClefVoices(activeStudy, studyPrefs)[0] || 'treble';
+    const opts = etudeStartOptions(clef, studyPrefs.keyPc);
+    startSel.innerHTML = '';
+    for (const opt of opts) {
+      const o = document.createElement('option');
+      o.value = String(opt.midi);
+      o.textContent = `${tonicName(studyPrefs.keyPc)}${opt.octave}`;
+      if (opt.midi === studyPrefs.etudeStartMidi) o.selected = true;
+      startSel.appendChild(o);
+    }
+    if (startField) startField.style.display = '';
+  } else if (startField) {
+    startField.style.display = 'none';
+  }
+
+  // ADR 0009: seed + intensity carry no meaning in the (deterministic,
+  // self-played) scale etude — hide them there.
+  const noiseFor = activeStudy.kind === 'scale-etude';
+  const intensityField = document.getElementById('practice-intensity-field');
+  const seedField = document.getElementById('practice-seed-field');
+  if (intensityField) intensityField.style.display = noiseFor ? 'none' : '';
+  if (seedField) seedField.style.display = noiseFor ? 'none' : '';
+
   // Swing slider — only meaningful for melodic studies.
   const swingInput = document.getElementById('practice-swing');
   const swingField = document.getElementById('practice-swing-field');
@@ -1036,7 +1077,8 @@ function updateControlsInfo() {
   if (sp.contourId && sp.contourId !== 'auto' && activeStudy.kind === 'two-voice-counterpoint') {
     pieces.push(CONTOUR_OPTIONS.find(c => c.id === sp.contourId)?.label || sp.contourId);
   }
-  pieces.push(`seed ${sp.seed}`);
+  // ADR 0009: seed is meaningless for the deterministic scale etude.
+  if (activeStudy.kind !== 'scale-etude') pieces.push(`seed ${sp.seed}`);
   info.textContent = pieces.join(' · ');
   updateFavoriteButton();
 }
@@ -1429,6 +1471,7 @@ export function buildShareUrl(studyId, sp) {
   if (sp.etudePatternId && sp.etudePatternId !== 'scale') params.set('pattern', sp.etudePatternId);
   if (sp.etudeOctaves && sp.etudeOctaves !== 1) params.set('oct', String(sp.etudeOctaves));
   if (sp.etudeRhythm && sp.etudeRhythm !== 'eighth') params.set('rhy', sp.etudeRhythm);
+  if (Number.isInteger(sp.etudeStartMidi)) params.set('start', String(sp.etudeStartMidi));
   // ADR 0004: duet-workshop extras.
   if (Array.isArray(sp.rhythmVocab) && sp.rhythmVocab.length) params.set('vocab', sp.rhythmVocab.join(','));
   if (sp.progressionId) params.set('prog', sp.progressionId);
@@ -1504,6 +1547,7 @@ export function applyShareParams() {
   if (params.get('pattern') && ETUDE_PATTERNS.find(pt => pt.id === params.get('pattern'))) sp.etudePatternId = params.get('pattern');
   if (n('oct') != null) sp.etudeOctaves = n('oct') === 2 ? 2 : 1;
   if (params.get('rhy') && ETUDE_RHYTHMS.find(r => r.id === params.get('rhy'))) sp.etudeRhythm = params.get('rhy');
+  if (n('start') != null && Number.isFinite(n('start'))) sp.etudeStartMidi = n('start') | 0;
   savePrefs();
   return studyId;
 }
@@ -1514,7 +1558,7 @@ export function applyShareParams() {
 function favoriteIdFor(studyId, sp) {
   // Stable id from the parameter set — same study + same prefs produces the
   // same key, so re-saving doesn't duplicate.
-  return `${studyId}|${sp.seed}|${sp.keyPc}|${sp.clefPresetId || ''}|${sp.rhythmPresetId || ''}|${sp.duetStyleId || ''}|${sp.difficulty}|${sp.actIdx || 0}|${sp.etudePatternId || ''}|${sp.etudeOctaves || ''}|${sp.etudeRhythm || ''}`;
+  return `${studyId}|${sp.seed}|${sp.keyPc}|${sp.clefPresetId || ''}|${sp.rhythmPresetId || ''}|${sp.duetStyleId || ''}|${sp.difficulty}|${sp.actIdx || 0}|${sp.etudePatternId || ''}|${sp.etudeOctaves || ''}|${sp.etudeRhythm || ''}|${sp.etudeStartMidi ?? ''}`;
 }
 
 function isFavorited(studyId, sp) {
@@ -1543,6 +1587,7 @@ function toggleFavorite() {
       etudePatternId: sp.etudePatternId || null,   // ADR 0008
       etudeOctaves: sp.etudeOctaves || null,
       etudeRhythm: sp.etudeRhythm || null,
+      etudeStartMidi: Number.isInteger(sp.etudeStartMidi) ? sp.etudeStartMidi : null,
       savedAt: Date.now(),
     });
     // Cap to a sane number so localStorage doesn't grow unbounded.
@@ -1631,6 +1676,7 @@ function openFavorite(fav) {
   if (fav.etudePatternId) sp.etudePatternId = fav.etudePatternId;   // ADR 0008
   if (fav.etudeOctaves) sp.etudeOctaves = fav.etudeOctaves;
   if (fav.etudeRhythm) sp.etudeRhythm = fav.etudeRhythm;
+  sp.etudeStartMidi = Number.isInteger(fav.etudeStartMidi) ? fav.etudeStartMidi : null;
   savePrefs();
   openStudy(fav.studyId);
 }
@@ -1692,14 +1738,18 @@ export function initPracticeView({ audioApi } = {}) {
     if (!activeStudy) return;
     const sp = getStudyPrefs(activeStudy.id);
     sp.keyPc = Number(e.target.value);
+    sp.etudeStartMidi = null;   // ADR 0009: register options shifted — reset to default
     savePrefs();
+    populateControls();         // rebuild the start-note options for the new key
     regenerate();
   });
   document.getElementById('practice-clef')?.addEventListener('change', (e) => {
     if (!activeStudy) return;
     const sp = getStudyPrefs(activeStudy.id);
     sp.clefPresetId = e.target.value;
+    sp.etudeStartMidi = null;   // ADR 0009: clef floor shifted — reset to default
     savePrefs();
+    populateControls();         // rebuild the start-note options for the new clef
     regenerate();
   });
   document.getElementById('practice-rhythm')?.addEventListener('change', (e) => {
@@ -1832,6 +1882,14 @@ export function initPracticeView({ audioApi } = {}) {
     if (!activeStudy || activeStudy.kind !== 'scale-etude') return;
     const sp = getStudyPrefs(activeStudy.id);
     sp.etudeRhythm = e.target.value;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-etude-start')?.addEventListener('change', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'scale-etude') return;
+    const sp = getStudyPrefs(activeStudy.id);
+    const v = Number(e.target.value);
+    sp.etudeStartMidi = Number.isInteger(v) ? v : null;
     savePrefs();
     regenerate();
   });

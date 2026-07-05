@@ -1,6 +1,6 @@
 // Tests for the parametric Scale Etude (ADR 0008, PR T).
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { STUDIES, ETUDE_PATTERNS, ETUDE_RHYTHMS, ETUDE_OCTAVE_OPTIONS, extendShapeOctaves, SCALE_SHAPES } from '../src/js/ui/practice-studies.js';
+import { STUDIES, ETUDE_PATTERNS, ETUDE_RHYTHMS, ETUDE_OCTAVE_OPTIONS, extendShapeOctaves, SCALE_SHAPES, etudeStartOptions, ETUDE_CLEF_FLOOR } from '../src/js/ui/practice-studies.js';
 import { __test } from '../src/js/ui/PracticeView.js';
 
 const { buildSong } = __test;
@@ -175,6 +175,7 @@ describe('Scale etude UI — dropdowns', () => {
             <div id="practice-etude-pattern-field"><select id="practice-etude-pattern"></select></div>
             <div id="practice-etude-octaves-field"><select id="practice-etude-octaves"></select></div>
             <div id="practice-etude-rhythm-field"><select id="practice-etude-rhythm"></select></div>
+            <div id="practice-etude-start-field"><select id="practice-etude-start"></select></div>
           </div>
           <div id="practice-rhythm-vocab-field" style="display:none"><div id="practice-rhythm-vocab-chips"></div></div>
           <div id="practice-progression-field" style="display:none"><select id="practice-progression"></select></div>
@@ -182,10 +183,8 @@ describe('Scale etude UI — dropdowns', () => {
           <div id="practice-swing-field"><input id="practice-swing" type="range" value="0" /><span id="practice-swing-display"></span></div>
           <div id="practice-intensity-field"><input id="practice-intensity" type="range" value="100" /><span id="practice-intensity-display"></span></div>
           <select id="practice-voice"></select>
-          <input id="practice-difficulty" type="range" value="50" />
-          <span id="practice-difficulty-display"></span>
-          <input id="practice-seed" type="number" />
-          <button id="practice-reroll"></button>
+          <div id="practice-difficulty-wrap"><input id="practice-difficulty" type="range" value="50" /><span id="practice-difficulty-display"></span></div>
+          <div id="practice-seed-field"><input id="practice-seed" type="number" /><button id="practice-reroll"></button></div>
         </details>
         <button id="practice-play"></button>
         <span id="practice-playback-time"></span>
@@ -220,6 +219,51 @@ describe('Scale etude UI — dropdowns', () => {
     document.querySelector('.practice-card[data-id="two-voice-invention"]').click();
     expect(document.getElementById('practice-etude-pattern-field').style.display).toBe('none');
     expect(document.getElementById('practice-etude-bar').style.display).toBe('none');
+  });
+
+  it('start-note dropdown lists octaves; seed + intensity hidden for the etude (ADR 0009)', async () => {
+    const { initPracticeView } = await import('../src/js/ui/PracticeView.js');
+    initPracticeView({ audioApi: audioMock() });
+    document.querySelector('.practice-card[data-id="scale-etude"]').click();
+    // Start-note options present + labelled (default key C, bass clef → C2/C3/C4).
+    const startOpts = Array.from(document.querySelectorAll('#practice-etude-start option')).map(o => o.textContent);
+    expect(startOpts.length).toBeGreaterThanOrEqual(2);
+    expect(startOpts).toContain('C2');
+    // Seed + intensity hidden here; other studies show them.
+    expect(document.getElementById('practice-seed-field').style.display).toBe('none');
+    expect(document.getElementById('practice-intensity-field').style.display).toBe('none');
+    document.getElementById('practice-study-close').click();
+    document.querySelector('.practice-card[data-id="walking-bass-workout"]').click();
+    expect(document.getElementById('practice-seed-field').style.display).toBe('');
+    expect(document.getElementById('practice-intensity-field').style.display).toBe('');
+  });
+
+  it('picking a start note persists + rides the share URL', async () => {
+    const mod = await import('../src/js/ui/PracticeView.js');
+    mod.initPracticeView({ audioApi: audioMock() });
+    document.querySelector('.practice-card[data-id="scale-etude"]').click();
+    const sel = document.getElementById('practice-etude-start');
+    sel.value = '36';   // C2
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    const prefs = JSON.parse(localStorage.getItem('seedsong-practice-prefs-v1'));
+    expect(prefs.byStudy['scale-etude'].etudeStartMidi).toBe(36);
+    const url = mod.buildShareUrl('scale-etude', prefs.byStudy['scale-etude']);
+    expect(url).toContain('start=36');
+  });
+
+  it('changing the key resets the start note to default', async () => {
+    const { initPracticeView } = await import('../src/js/ui/PracticeView.js');
+    initPracticeView({ audioApi: audioMock() });
+    document.querySelector('.practice-card[data-id="scale-etude"]').click();
+    const start = document.getElementById('practice-etude-start');
+    start.value = '36';
+    start.dispatchEvent(new Event('change', { bubbles: true }));
+    // Change key — C2 is no longer a valid tonic for the new key.
+    const key = document.getElementById('practice-key');
+    key.value = String(key.options[1]?.value ?? '2');
+    key.dispatchEvent(new Event('change', { bubbles: true }));
+    const prefs = JSON.parse(localStorage.getItem('seedsong-practice-prefs-v1'));
+    expect(prefs.byStudy['scale-etude'].etudeStartMidi).toBeNull();
   });
 
   it('the etude bar takes the rail slot: bar shown, act rail hidden', async () => {
@@ -272,5 +316,64 @@ describe('Scale etude UI — dropdowns', () => {
     expect(document.getElementById('practice-etude-pattern').value).toBe('scale');
     // Single act now — no tabs.
     expect(document.querySelectorAll('#practice-act-rail button').length).toBe(0);
+  });
+});
+
+describe('etudeStartOptions — start-note candidates (ADR 0009)', () => {
+  it('bass clef key C offers C2 (cello low string) up through two octaves', () => {
+    const opts = etudeStartOptions('bass', 0);
+    expect(opts[0]).toEqual({ midi: 36, octave: 2 });   // C2 = cello C string
+    expect(opts.map(o => o.midi)).toEqual([36, 48, 60]);
+  });
+
+  it('treble clef key C starts at C4 (violin floor is G3, first C above)', () => {
+    const opts = etudeStartOptions('treble', 0);
+    // floor 55 (G3); first C at/above is C4 = 60.
+    expect(opts[0].midi).toBe(60);
+    expect(opts.every(o => o.midi >= ETUDE_CLEF_FLOOR.treble)).toBe(true);
+  });
+
+  it('alto clef key D offers D3 first (viola floor C3)', () => {
+    const opts = etudeStartOptions('alto', 2);
+    expect(opts[0]).toEqual({ midi: 50, octave: 3 });    // D3
+  });
+
+  it('every option matches the requested pitch class', () => {
+    for (const clef of ['bass', 'alto', 'treble']) {
+      for (let pc = 0; pc < 12; pc++) {
+        for (const o of etudeStartOptions(clef, pc)) {
+          expect(((o.midi % 12) + 12) % 12).toBe(pc);
+          expect(o.midi).toBeGreaterThanOrEqual(ETUDE_CLEF_FLOOR[clef]);
+        }
+      }
+    }
+  });
+});
+
+describe('buildScaleEtudeSong — start note (ADR 0009)', () => {
+  const base = { keyPc: 0, seed: 1, difficulty: 50, clefVoices: ['bass'], scaleId: 'major' };
+
+  it('honours etudeStartMidi: C2 drill starts on the cello low string', () => {
+    const song = buildSong(study, { ...base, etudeStartMidi: 36 });
+    expect(song.events[0].midi).toBe(36);   // C2, not the default C3
+  });
+
+  it('a low start + two octaves is not clamped back up', () => {
+    const song = buildSong(study, { ...base, etudeStartMidi: 36, etudeOctaves: 2 });
+    const lo = Math.min(...song.events.map(e => e.midi));
+    const hi = Math.max(...song.events.map(e => e.midi));
+    expect(lo).toBe(36);          // C2
+    expect(hi).toBe(60);          // C4 — full two octaves, nothing pulled in
+  });
+
+  it('an invalid start midi falls back to the default register', () => {
+    const dflt = buildSong(study, base);
+    const bogus = buildSong(study, { ...base, etudeStartMidi: 999 });
+    expect(bogus.events[0].midi).toBe(dflt.events[0].midi);
+  });
+
+  it('default (no start) is unchanged from pre-0009 behaviour: C3 in bass clef', () => {
+    const song = buildSong(study, base);
+    expect(song.events[0].midi).toBe(48);   // C3
   });
 });
