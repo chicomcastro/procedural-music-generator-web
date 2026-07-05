@@ -171,9 +171,11 @@ describe('Scale etude UI — dropdowns', () => {
           <div id="practice-duet-field"><select id="practice-duet"></select></div>
           <div id="practice-scale-field"><select id="practice-scale"></select></div>
           <div id="practice-contour-field"><select id="practice-contour"></select></div>
-          <div id="practice-etude-pattern-field" style="display:none"><select id="practice-etude-pattern"></select></div>
-          <div id="practice-etude-octaves-field" style="display:none"><select id="practice-etude-octaves"></select></div>
-          <div id="practice-etude-rhythm-field" style="display:none"><select id="practice-etude-rhythm"></select></div>
+          <div id="practice-etude-bar" style="display:none">
+            <div id="practice-etude-pattern-field"><select id="practice-etude-pattern"></select></div>
+            <div id="practice-etude-octaves-field"><select id="practice-etude-octaves"></select></div>
+            <div id="practice-etude-rhythm-field"><select id="practice-etude-rhythm"></select></div>
+          </div>
           <div id="practice-rhythm-vocab-field" style="display:none"><div id="practice-rhythm-vocab-chips"></div></div>
           <div id="practice-progression-field" style="display:none"><select id="practice-progression"></select></div>
           <div id="practice-part-view-field" style="display:none"><div id="practice-part-view-chips"></div></div>
@@ -217,6 +219,20 @@ describe('Scale etude UI — dropdowns', () => {
     initPracticeView({ audioApi: audioMock() });
     document.querySelector('.practice-card[data-id="two-voice-invention"]').click();
     expect(document.getElementById('practice-etude-pattern-field').style.display).toBe('none');
+    expect(document.getElementById('practice-etude-bar').style.display).toBe('none');
+  });
+
+  it('the etude bar takes the rail slot: bar shown, act rail hidden', async () => {
+    const { initPracticeView } = await import('../src/js/ui/PracticeView.js');
+    initPracticeView({ audioApi: audioMock() });
+    document.querySelector('.practice-card[data-id="scale-etude"]').click();
+    expect(document.getElementById('practice-etude-bar').style.display).toBe('');
+    expect(document.getElementById('practice-act-rail').style.display).toBe('none');
+    // Other studies get the rail back.
+    document.getElementById('practice-study-close').click();
+    document.querySelector('.practice-card[data-id="walking-bass-workout"]').click();
+    expect(document.getElementById('practice-act-rail').style.display).toBe('');
+    expect(document.getElementById('practice-etude-bar').style.display).toBe('none');
   });
 
   it('changing the pattern persists + survives reopen', async () => {

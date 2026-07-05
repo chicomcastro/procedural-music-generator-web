@@ -937,7 +937,10 @@ function populateControls() {
     partField.style.display = 'none';
   }
 
-  // ADR 0008: parametric scale-etude dropdowns.
+  // ADR 0008: parametric scale-etude dropdowns — the bar sits above the
+  // score (the pattern IS the exercise, not a fine-tuning knob).
+  const etudeBar = document.getElementById('practice-etude-bar');
+  if (etudeBar) etudeBar.style.display = activeStudy.kind === 'scale-etude' ? '' : 'none';
   const etudeIds = [
     ['practice-etude-pattern', 'practice-etude-pattern-field', ETUDE_PATTERNS.map(pt => ({ id: pt.id, label: pt.label })), studyPrefs.etudePatternId],
     ['practice-etude-octaves', 'practice-etude-octaves-field', ETUDE_OCTAVE_OPTIONS.map(o => ({ id: String(o), label: o === 1 ? '1 octave' : `${o} octaves` })), String(studyPrefs.etudeOctaves)],
@@ -1035,6 +1038,9 @@ function renderActRail() {
   if (!activeStudy) return;
   const rail = document.getElementById('practice-act-rail');
   rail.innerHTML = '';
+  // Scale etude: the etude bar replaces the rail slot entirely.
+  rail.style.display = activeStudy.kind === 'scale-etude' ? 'none' : '';
+  if (activeStudy.kind === 'scale-etude') return;
   // ADR 0007: 'exercises' mode renders the rail as tabs — one drill at a
   // time. 'movements' mode keeps the passive rail (the score is one piece).
   const isTabs = activeStudy.actMode === 'exercises';

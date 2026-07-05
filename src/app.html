@@ -1106,6 +1106,29 @@
 
                         <div id="practice-act-rail" class="practice-act-rail" aria-label="Act navigation"></div>
 
+                        <!-- ADR 0008 follow-up: the etude's defining choices live
+                             front-and-center, above the score, not inside Adjust. -->
+                        <div id="practice-etude-bar" class="practice-etude-bar" style="display:none" aria-label="Etude configuration">
+                            <div class="practice-etude-bar-group" id="practice-etude-pattern-field">
+                                <label class="practice-etude-bar-label" for="practice-etude-pattern">
+                                    <span data-i18n="practice.pattern">Pattern</span>
+                                </label>
+                                <select id="practice-etude-pattern" class="practice-select"></select>
+                            </div>
+                            <div class="practice-etude-bar-group" id="practice-etude-octaves-field">
+                                <label class="practice-etude-bar-label" for="practice-etude-octaves">
+                                    <span data-i18n="practice.octaves">Octaves</span>
+                                </label>
+                                <select id="practice-etude-octaves" class="practice-select"></select>
+                            </div>
+                            <div class="practice-etude-bar-group" id="practice-etude-rhythm-field">
+                                <label class="practice-etude-bar-label" for="practice-etude-rhythm">
+                                    <span data-i18n="practice.note_value">Note value</span>
+                                </label>
+                                <select id="practice-etude-rhythm" class="practice-select"></select>
+                            </div>
+                        </div>
+
                         <div id="practice-sheet" class="practice-sheet" aria-live="polite" aria-busy="false"></div>
 
                         <!-- ADR 0006: music-stand mode toolbar. Hidden unless
@@ -1180,24 +1203,6 @@
                                         <span data-i18n="practice.progression">Progression</span>
                                     </label>
                                     <select id="practice-progression" class="practice-select"></select>
-                                </div>
-                                <div class="practice-control" id="practice-etude-pattern-field" style="display:none">
-                                    <label class="practice-control-label" for="practice-etude-pattern">
-                                        <span data-i18n="practice.pattern">Pattern</span>
-                                    </label>
-                                    <select id="practice-etude-pattern" class="practice-select"></select>
-                                </div>
-                                <div class="practice-control" id="practice-etude-octaves-field" style="display:none">
-                                    <label class="practice-control-label" for="practice-etude-octaves">
-                                        <span data-i18n="practice.octaves">Octaves</span>
-                                    </label>
-                                    <select id="practice-etude-octaves" class="practice-select"></select>
-                                </div>
-                                <div class="practice-control" id="practice-etude-rhythm-field" style="display:none">
-                                    <label class="practice-control-label" for="practice-etude-rhythm">
-                                        <span data-i18n="practice.note_value">Note value</span>
-                                    </label>
-                                    <select id="practice-etude-rhythm" class="practice-select"></select>
                                 </div>
                                 <div class="practice-control practice-control-wide" id="practice-part-view-field" style="display:none">
                                     <label class="practice-control-label">
