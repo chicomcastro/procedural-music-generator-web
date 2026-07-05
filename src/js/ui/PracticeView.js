@@ -11,7 +11,7 @@
 // workout, master slider, key picker, seed reroll, audio playback, print
 // stylesheet (no per-act overrides yet — those land in PR 2).
 
-import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, SCALE_PATTERNS, SCALE_SHAPES, VOICE_OPTIONS, clampMidiToRange, RHYTHM_VOCAB, RHYTHM_VOCAB_DEFAULTS, PROGRESSION_OPTIONS, PART_VIEW_OPTIONS } from './practice-studies.js';
+import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, SCALE_PATTERNS, SCALE_SHAPES, VOICE_OPTIONS, clampMidiToRange, tonicMidiFor, RHYTHM_VOCAB, RHYTHM_VOCAB_DEFAULTS, PROGRESSION_OPTIONS, PART_VIEW_OPTIONS } from './practice-studies.js';
 import { getStudyField } from './practice-translations.js';
 import { mulberry32, randomSeed } from '../generate/rng.js';
 import { generateMelody } from '../generate/melody.js';
@@ -260,8 +260,8 @@ function buildTwoVoiceSong(study, opts) {
     const rng = mulberry32(actSeed);
 
     const actTonicPc = (keyPc + (act.keyShift || 0)) % 12;
-    const tonicMidi1 = anchor1 + actTonicPc;
-    const tonicMidi2 = anchor2 + actTonicPc;
+    const tonicMidi1 = tonicMidiFor(anchor1, actTonicPc);
+    const tonicMidi2 = tonicMidiFor(anchor2, actTonicPc);
     // Scale picker beats the act's default; 'auto' falls back to per-act.
     const scale = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
     keySignatures.push({ bar: accumulatedBeats / beatsPerBar, fifths: keyFifths(actTonicPc, scale) });
@@ -492,7 +492,7 @@ function buildScaleEtudeSong(study, opts) {
   for (let i = 0; i < study.acts.length; i++) {
     const act = study.acts[i];
     const p = scaleParams(act.params, difficulty / 100);
-    const actTonic = anchor + ((keyPc + (act.keyShift || 0)) % 12);
+    const actTonic = tonicMidiFor(anchor, (keyPc + (act.keyShift || 0)) % 12);
     const scaleName = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
     keySignatures.push({ bar: accumulatedBeats / beatsPerBar, fifths: keyFifths((keyPc + (act.keyShift || 0)) % 12, scaleName) });
     const shape = SCALE_SHAPES[scaleName] || SCALE_SHAPES.major;
@@ -571,7 +571,7 @@ function buildSoloEtudeSong(study, opts) {
     const p = scaleParams(act.params, difficulty / 100);
     const rng = mulberry32(seed + i * 1000003);
 
-    const tonic = anchor + ((keyPc + (act.keyShift || 0)) % 12);
+    const tonic = tonicMidiFor(anchor, (keyPc + (act.keyShift || 0)) % 12);
     const scale = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
     keySignatures.push({ bar: accumulatedBeats / beatsPerBar, fifths: keyFifths((keyPc + (act.keyShift || 0)) % 12, scale) });
     const degrees = PROGRESSIONS[act.progression] || PROGRESSIONS.pop;
@@ -656,7 +656,7 @@ function buildModalVampSong(study, opts) {
     const p = scaleParams(act.params, difficulty / 100);
     const rng = mulberry32(seed + i * 1000003);
 
-    const tonic = anchor + ((keyPc + (act.keyShift || 0)) % 12);
+    const tonic = tonicMidiFor(anchor, (keyPc + (act.keyShift || 0)) % 12);
     const scale = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
     keySignatures.push({ bar: accumulatedBeats / beatsPerBar, fifths: keyFifths((keyPc + (act.keyShift || 0)) % 12, scale) });
     // Each vamp degree gets 2 bars; cycle through act.bars.

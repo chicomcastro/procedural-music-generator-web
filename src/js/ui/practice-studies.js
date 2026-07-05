@@ -168,6 +168,18 @@ export const SCALE_SHAPES = {
   blues:          [0, 3, 5, 6, 7, 10, 12],
 };
 
+// Lowest MIDI note at-or-above `anchorMidi` whose pitch class is `pc`.
+// This is how a clef's tessitura anchor turns a KEY (pitch class) into a
+// concrete tonic register. The old code did `anchor + pc`, which only
+// works when the anchor itself is a C (treble = 60). For bass (41 = F2)
+// and alto (53 = F3) it silently transposed everything up a fourth —
+// "key of C" generated F-rooted music against a C key signature.
+export function tonicMidiFor(anchorMidi, pc) {
+  const wanted = ((pc | 0) % 12 + 12) % 12;
+  const anchorPc = ((anchorMidi % 12) + 12) % 12;
+  return anchorMidi + ((wanted - anchorPc + 12) % 12);
+}
+
 // Octave-shift a midi number so it lands inside [low, high]. If the note
 // is below `low`, repeatedly raise by 12; if above `high`, drop by 12.
 // Falls back to the nearest range bound on degenerate ranges.
