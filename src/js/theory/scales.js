@@ -15,6 +15,45 @@ export const SCALES = {
   blues:           [0, 3, 5, 6, 7, 10],
 };
 
+// Interval (in semitones) from the RELATIVE MAJOR tonic up to each
+// scale's tonic — used to derive the conventional key signature.
+// E.g. natural minor sits a major sixth (9) above its relative major
+// (A minor ↔ C major); dorian a major second (D dorian ↔ C major).
+// Harmonic/melodic minor and blues conventionally take the natural-
+// minor signature; pentatonics take their major/minor parent's.
+const RELATIVE_MAJOR_OFFSET = {
+  major: 0,
+  lydian: 5,
+  mixolydian: 7,
+  dorian: 2,
+  phrygian: 4,
+  locrian: 11,
+  natural_minor: 9,
+  harmonic_minor: 9,
+  melodic_minor: 9,
+  pentatonic_major: 0,
+  pentatonic_minor: 9,
+  blues: 9,
+};
+
+/**
+ * Conventional key signature for a tonic pitch class + scale, as the
+ * MusicXML `<fifths>` value: positive = sharps, negative = flats.
+ * C major → 0, G major → 1, F major → -1, F natural_minor → -4,
+ * D dorian → 0. Range is normalised to [-5, 6] (F# major over Gb).
+ * @param {number} tonicPc 0–11 @param {string} scaleName
+ * @returns {number}
+ */
+export function keyFifths(tonicPc, scaleName) {
+  const offset = RELATIVE_MAJOR_OFFSET[scaleName] ?? 0;
+  const majorPc = (((tonicPc | 0) - offset) % 12 + 12) % 12;
+  // 7 is its own inverse mod 12, so this recovers the circle-of-fifths
+  // position from the pitch class.
+  let f = (majorPc * 7) % 12;
+  if (f > 6) f -= 12;
+  return f;
+}
+
 /** @param {string} scaleName @returns {number[]} interval pattern */
 export function getScale(scaleName) {
   const intervals = SCALES[scaleName];
