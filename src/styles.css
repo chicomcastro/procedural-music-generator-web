@@ -6458,6 +6458,48 @@ body.sidebar-open .practice-stage { padding-left: 240px; }
   font-size: 13px;
   color: var(--text-secondary);
 }
+
+/* ADR 0008 follow-up: the etude configuration bar. Sits where the act
+ * rail would, above the score — pattern/octaves/note value are the
+ * exercise's defining choices, so they get the prominent slot. */
+.practice-etude-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 18px;
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+.practice-etude-bar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+  flex: 0 1 220px;
+}
+.practice-etude-bar-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.practice-etude-bar .practice-select {
+  padding: 9px 10px;
+  font-size: 14px;
+  border-color: var(--border-hover);
+}
+.practice-etude-bar .practice-select:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+@media (max-width: 640px) {
+  .practice-etude-bar { gap: 10px; padding: 12px; }
+  .practice-etude-bar-group { flex: 1 1 100%; min-width: 0; }
+}
 /* ADR 0007: in 'exercises' mode the rail items are tabs — one drill
  * renders at a time. */
 button.practice-act-rail-tab {
