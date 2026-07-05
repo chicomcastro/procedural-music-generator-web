@@ -41,6 +41,7 @@ import { loadAll as loadSamples, getPlaybackFor } from '../audio/SampleLibrary.j
 import { createVoice } from '../audio/Voice.js';
 import { createSynthVoice } from '../audio/SynthVoice.js';
 import { chordFromDegree, PROGRESSIONS } from '../theory/chords.js';
+import { keyFifths } from '../theory/scales.js';
 import { songToMusicXML } from '../export/musicxml.js';
 import { t, onLangChange } from '../i18n/i18n.js';
 
@@ -227,6 +228,7 @@ function buildTwoVoiceSong(study, opts) {
   const events = [];
   const chordSymbols = [];     // one entry per bar; '' = no change shown
   const doubleBarsBefore = []; // bar indices where a double bar precedes the bar
+  const keySignatures = [];    // per-act { bar, fifths } (PR Q)
   let accumulatedBeats = 0;
   let actBpm = null;
 
@@ -260,6 +262,7 @@ function buildTwoVoiceSong(study, opts) {
     const tonicMidi2 = anchor2 + actTonicPc;
     // Scale picker beats the act's default; 'auto' falls back to per-act.
     const scale = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
+    keySignatures.push({ bar: accumulatedBeats / beatsPerBar, fifths: keyFifths(actTonicPc, scale) });
 
     // Build the progression: PROGRESSIONS[name] is a degree array. Anchor
     // chord roots to voice 1's tessitura so the harmonic context tracks
@@ -366,6 +369,7 @@ function buildTwoVoiceSong(study, opts) {
     events,
     chordSymbols,
     doubleBarsBefore,
+    keySignatures,
     bpm: actBpm,
   };
 }
@@ -379,6 +383,7 @@ function buildWalkingBassSong(study, opts) {
   const events = [];
   const chordSymbols = [];     // indexed by bar — one symbol per bar
   const doubleBarsBefore = []; // bar indices preceded by a double bar (act boundaries)
+  const keySignatures = [];    // per-act { bar, fifths } (PR Q)
   let accumulatedBeats = 0;
   let actBpm = null;
 
@@ -402,6 +407,7 @@ function buildWalkingBassSong(study, opts) {
     const slice = expanded.slice(0, act.bars);
 
     const wbScale = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'natural_minor');
+    keySignatures.push({ bar: accumulatedBeats / beatsPerBar, fifths: keyFifths(actTonicPc, wbScale) });
     const { notes } = generateWalkingBass({
       seed: seed + i * 7919,
       tonicPc: actTonicPc,
@@ -439,6 +445,7 @@ function buildWalkingBassSong(study, opts) {
     events,
     chordSymbols,
     doubleBarsBefore,
+    keySignatures,
     bpm: actBpm,
   };
 }
@@ -466,6 +473,7 @@ function buildScaleEtudeSong(study, opts) {
   const beatsPerBar = 4;
   const events = [];
   const doubleBarsBefore = [];
+  const keySignatures = [];    // per-act { bar, fifths } (PR Q)
   let accumulatedBeats = 0;
   let actBpm = null;
 
@@ -478,6 +486,7 @@ function buildScaleEtudeSong(study, opts) {
     const p = scaleParams(act.params, difficulty / 100);
     const actTonic = anchor + ((keyPc + (act.keyShift || 0)) % 12);
     const scaleName = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
+    keySignatures.push({ bar: accumulatedBeats / beatsPerBar, fifths: keyFifths((keyPc + (act.keyShift || 0)) % 12, scaleName) });
     const shape = SCALE_SHAPES[scaleName] || SCALE_SHAPES.major;
 
     // Combine the act's primary pattern with the optional secondary (used
@@ -517,6 +526,7 @@ function buildScaleEtudeSong(study, opts) {
     lengthBeats: accumulatedBeats,
     events,
     doubleBarsBefore,
+    keySignatures,
     bpm: actBpm,
   };
 }
@@ -539,6 +549,7 @@ function buildSoloEtudeSong(study, opts) {
   const events = [];
   const chordSymbols = [];
   const doubleBarsBefore = [];
+  const keySignatures = [];    // per-act { bar, fifths } (PR Q)
   let accumulatedBeats = 0;
   let actBpm = null;
 
@@ -554,6 +565,7 @@ function buildSoloEtudeSong(study, opts) {
 
     const tonic = anchor + ((keyPc + (act.keyShift || 0)) % 12);
     const scale = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
+    keySignatures.push({ bar: accumulatedBeats / beatsPerBar, fifths: keyFifths((keyPc + (act.keyShift || 0)) % 12, scale) });
     const degrees = PROGRESSIONS[act.progression] || PROGRESSIONS.pop;
     const beatsPerChord = (act.bars * beatsPerBar) / degrees.length;
     const progression = degrees.map((deg, idx) => ({
@@ -599,6 +611,7 @@ function buildSoloEtudeSong(study, opts) {
     events,
     chordSymbols,
     doubleBarsBefore,
+    keySignatures,
     bpm: actBpm,
   };
 }
@@ -621,6 +634,7 @@ function buildModalVampSong(study, opts) {
   const events = [];
   const chordSymbols = [];
   const doubleBarsBefore = [];
+  const keySignatures = [];    // per-act { bar, fifths } (PR Q)
   let accumulatedBeats = 0;
   let actBpm = null;
 
@@ -636,6 +650,7 @@ function buildModalVampSong(study, opts) {
 
     const tonic = anchor + ((keyPc + (act.keyShift || 0)) % 12);
     const scale = (scaleId && scaleId !== 'auto') ? scaleId : (act.params.scale || 'major');
+    keySignatures.push({ bar: accumulatedBeats / beatsPerBar, fifths: keyFifths((keyPc + (act.keyShift || 0)) % 12, scale) });
     // Each vamp degree gets 2 bars; cycle through act.bars.
     const vamp = act.vampDegrees || [1, 5];
     const beatsPerChord = beatsPerBar * 2;
@@ -685,6 +700,7 @@ function buildModalVampSong(study, opts) {
     events,
     chordSymbols,
     doubleBarsBefore,
+    keySignatures,
     bpm: actBpm,
   };
 }
@@ -1029,6 +1045,7 @@ async function regenerate() {
     clefOverrides,
     chordSymbols: song.chordSymbols,
     doubleBarsBefore: song.doubleBarsBefore,
+    keySignatures: song.keySignatures,
   });
   await renderSheet(xml);
 }

@@ -1,9 +1,16 @@
 import { harmonyTagFor } from './harmony.js';
+import { keyFifths } from '../theory/scales.js';
 
 const DIVISIONS = 4; // divisions per quarter note
 
-const STEP_MAP = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
-const ALTER_MAP = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
+// Two spellings per chromatic pitch class: sharp-wise for sharp keys
+// (fifths >= 0) and flat-wise for flat keys (fifths < 0). Spelling to
+// match the key signature is what lets in-key notes render without
+// accidental glyphs (e.g. Ab in F minor sits on the signature's Ab).
+const SHARP_STEP_MAP = ['C', 'C', 'D', 'D', 'E', 'F', 'F', 'G', 'G', 'A', 'A', 'B'];
+const SHARP_ALTER_MAP = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
+const FLAT_STEP_MAP = ['C', 'D', 'D', 'E', 'E', 'F', 'G', 'G', 'A', 'A', 'B', 'B'];
+const FLAT_ALTER_MAP = [0, -1, 0, -1, 0, 0, -1, 0, -1, 0, -1, 0];
 
 const DURATION_TYPE_MAP = {
   4:    { type: 'whole',    divisions: 16, dot: false },
@@ -32,11 +39,11 @@ function quantizeDuration(beats) {
   return best;
 }
 
-function midiToPitch(midi) {
+function midiToPitch(midi, useFlats = false) {
   const pc = ((midi % 12) + 12) % 12;
   const octave = Math.floor(midi / 12) - 1;
-  const step = STEP_MAP[pc];
-  const alter = ALTER_MAP[pc];
+  const step = useFlats ? FLAT_STEP_MAP[pc] : SHARP_STEP_MAP[pc];
+  const alter = useFlats ? FLAT_ALTER_MAP[pc] : SHARP_ALTER_MAP[pc];
   return { step, alter, octave };
 }
 
@@ -44,15 +51,15 @@ function escapeXml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function buildPitchXml(midi) {
-  const { step, alter, octave } = midiToPitch(midi);
+function buildPitchXml(midi, useFlats) {
+  const { step, alter, octave } = midiToPitch(midi, useFlats);
   let xml = `          <pitch>\n            <step>${step}</step>\n`;
   if (alter !== 0) xml += `            <alter>${alter}</alter>\n`;
   xml += `            <octave>${octave}</octave>\n          </pitch>`;
   return xml;
 }
 
-function buildNoteXml(midi, durationBeats, isChord, isRest, isDrum, beam) {
+function buildNoteXml(midi, durationBeats, isChord, isRest, isDrum, beam, useFlats = false) {
   const qDur = quantizeDuration(durationBeats);
   const info = DURATION_TYPE_MAP[qDur];
   if (!info) return '';
@@ -66,7 +73,7 @@ function buildNoteXml(midi, durationBeats, isChord, isRest, isDrum, beam) {
     const { step, octave } = midiToPitch(midi);
     xml += `          <unpitched>\n            <display-step>${step}</display-step>\n            <display-octave>${octave}</display-octave>\n          </unpitched>\n`;
   } else {
-    xml += buildPitchXml(midi) + '\n';
+    xml += buildPitchXml(midi, useFlats) + '\n';
   }
 
   xml += `          <duration>${info.divisions}</duration>\n`;
@@ -77,12 +84,12 @@ function buildNoteXml(midi, durationBeats, isChord, isRest, isDrum, beam) {
   return xml;
 }
 
-function buildMeasureAttributes(beatsPerBar, isDrum, clefSign) {
+function buildMeasureAttributes(beatsPerBar, isDrum, clefSign, fifths = 0) {
   const beatType = beatsPerBar === 6 ? 8 : 4;
   const beats = beatsPerBar;
   let xml = '        <attributes>\n';
   xml += `          <divisions>${DIVISIONS}</divisions>\n`;
-  xml += '          <key>\n            <fifths>0</fifths>\n          </key>\n';
+  xml += `          <key>\n            <fifths>${fifths}</fifths>\n          </key>\n`;
   xml += `          <time>\n            <beats>${beats}</beats>\n            <beat-type>${beatType}</beat-type>\n          </time>\n`;
   if (isDrum) {
     xml += '          <clef>\n            <sign>percussion</sign>\n          </clef>\n';
@@ -119,7 +126,7 @@ function snapToGrid(beat, grid) {
   return Math.round(beat / grid) * grid;
 }
 
-function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstPart, clefSign, chordSymbols, doubleBarsBefore) {
+function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstPart, clefSign, chordSymbols, doubleBarsBefore, barFifths) {
   const GRID = 0.25;
   let xml = '';
   // Bar indices at which we draw a "light-light" (double) barline at the
@@ -130,6 +137,8 @@ function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstP
     const barStart = bar * beatsPerBar;
     const barEnd = barStart + beatsPerBar;
     const drawDoubleLeft = doubleBars.has(bar);
+    const fifths = barFifths ? (barFifths[bar] ?? 0) : 0;
+    const useFlats = fifths < 0;
 
     const harmonyXml = (chordSymbols && chordSymbols[bar])
       ? harmonyTagFor(chordSymbols[bar])
@@ -147,10 +156,14 @@ function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstP
     xml += `      <measure number="${bar + 1}">\n`;
 
     if (bar === 0) {
-      xml += buildMeasureAttributes(beatsPerBar, isDrum, clefSign);
+      xml += buildMeasureAttributes(beatsPerBar, isDrum, clefSign, fifths);
       if (isFirstPart) {
         xml += buildTempoDirection(bpm);
       }
+    } else if (barFifths && barFifths[bar] !== barFifths[bar - 1]) {
+      // Mid-piece key change (Practice acts modulate) — emit a fresh
+      // key signature at the act boundary.
+      xml += `        <attributes>\n          <key>\n            <fifths>${fifths}</fifths>\n          </key>\n        </attributes>\n`;
     }
 
     // Double-bar at the left edge of this bar (i.e. the divider between
@@ -201,7 +214,7 @@ function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstP
 
         let isFirst = true;
         for (const ev of slot.notes) {
-          xml += buildNoteXml(ev.midi, finalDur, !isFirst, false, isDrum, isFirst ? beam : null);
+          xml += buildNoteXml(ev.midi, finalDur, !isFirst, false, isDrum, isFirst ? beam : null, useFlats);
           isFirst = false;
         }
 
@@ -272,7 +285,16 @@ function normaliseClef(sign) {
 // `chordSymbols` is an optional array of strings indexed by bar number;
 // when present, each non-empty entry adds a `<harmony>` tag to the first
 // part's measure so OSMD renders the chord name above the staff.
-export function songToMusicXML(song, { bpm = 120, tracks: trackFilter, clefOverrides, chordSymbols, doubleBarsBefore } = {}) {
+//
+// `keySignatures` is an optional array of `{ bar, fifths }` entries
+// (sorted or not) declaring the key signature from that bar onward —
+// Practice studies modulate between acts. When absent, a single
+// signature is derived from `song.tonic` (MIDI or pitch class) +
+// `song.scale` when the song carries them (the Generator does);
+// otherwise C (fifths 0) is assumed. Notes are spelled flat-wise in
+// flat keys and sharp-wise otherwise, so in-key notes render without
+// accidental glyphs.
+export function songToMusicXML(song, { bpm = 120, tracks: trackFilter, clefOverrides, chordSymbols, doubleBarsBefore, keySignatures } = {}) {
   const allPartDefs = [
     { id: 'P1', name: 'Melody',   type: 'melody',  drum: false },
     { id: 'P5', name: 'Melody 2', type: 'melody2', drum: false },
@@ -293,6 +315,27 @@ export function songToMusicXML(song, { bpm = 120, tracks: trackFilter, clefOverr
 
   const beatsPerBar = song.beatsPerBar || 4;
   const totalBars = song.bars || Math.ceil(song.lengthBeats / beatsPerBar);
+
+  // Resolve the active key signature for every bar.
+  let sigs = keySignatures;
+  if (!sigs || sigs.length === 0) {
+    if (typeof song.tonic === 'number' && typeof song.scale === 'string') {
+      sigs = [{ bar: 0, fifths: keyFifths(((song.tonic % 12) + 12) % 12, song.scale) }];
+    } else {
+      sigs = [{ bar: 0, fifths: 0 }];
+    }
+  }
+  const sorted = [...sigs].sort((a, b) => a.bar - b.bar);
+  const barFifths = new Array(totalBars);
+  let sigIdx = 0;
+  let current = 0;
+  for (let bar = 0; bar < totalBars; bar++) {
+    while (sigIdx < sorted.length && sorted[sigIdx].bar <= bar) {
+      current = sorted[sigIdx].fifths | 0;
+      sigIdx++;
+    }
+    barFifths[bar] = current;
+  }
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml += '<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n';
@@ -321,7 +364,7 @@ export function songToMusicXML(song, { bpm = 120, tracks: trackFilter, clefOverr
     xml += `  <part id="${part.id}">\n`;
     // Chord symbols only attach to the first part — OSMD draws them once above the system.
     const partChords = i === 0 ? chordSymbols : null;
-    xml += buildPartMeasures(partEvents, beatsPerBar, totalBars, part.drum, bpm, i === 0, clefSign, partChords, doubleBarsBefore);
+    xml += buildPartMeasures(partEvents, beatsPerBar, totalBars, part.drum, bpm, i === 0, clefSign, partChords, doubleBarsBefore, barFifths);
     xml += '  </part>\n';
   }
 
