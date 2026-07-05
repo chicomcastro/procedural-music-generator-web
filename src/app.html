@@ -1127,6 +1127,12 @@
                                 </label>
                                 <select id="practice-etude-rhythm" class="practice-select"></select>
                             </div>
+                            <div class="practice-etude-bar-group" id="practice-etude-start-field">
+                                <label class="practice-etude-bar-label" for="practice-etude-start">
+                                    <span data-i18n="practice.start_note">Start note</span>
+                                </label>
+                                <select id="practice-etude-start" class="practice-select"></select>
+                            </div>
                         </div>
 
                         <div id="practice-sheet" class="practice-sheet" aria-live="polite" aria-busy="false"></div>
@@ -1224,7 +1230,7 @@
                                     </label>
                                     <input id="practice-swing" type="range" min="0" max="100" step="5" value="0" />
                                 </div>
-                                <div class="practice-control">
+                                <div class="practice-control" id="practice-intensity-field">
                                     <label class="practice-control-label" for="practice-intensity">
                                         <span data-i18n="practice.intensity">Intensity</span>
                                         <em id="practice-intensity-display">100%</em>
@@ -1237,7 +1243,7 @@
                                     </label>
                                     <select id="practice-voice" class="practice-select"></select>
                                 </div>
-                                <div class="practice-control">
+                                <div class="practice-control" id="practice-seed-field">
                                     <label class="practice-control-label" for="practice-seed">
                                         <span data-i18n="practice.seed">Seed</span>
                                     </label>

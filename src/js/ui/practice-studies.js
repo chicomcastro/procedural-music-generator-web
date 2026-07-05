@@ -206,6 +206,27 @@ export const ETUDE_RHYTHMS = [
   { id: 'sixteenth', label: 'Sixteenth notes', beats: 0.25,  noteType: 's'  },
 ];
 
+// ADR 0009: lowest note the scale etude may start on, per clef — the
+// instrument's lowest open string. Lets a cellist begin the C drill on
+// the low open C (C2 = 36), not just C3.
+export const ETUDE_CLEF_FLOOR = { bass: 36, alto: 48, treble: 55 };
+
+// Scientific-pitch octave number of a MIDI note (middle C = C4 = 60).
+export function midiOctave(midi) { return Math.floor(midi / 12) - 1; }
+
+// Candidate start notes for the etude: every octave of the key's tonic
+// pitch class from the clef floor up through two octaves. Each entry is
+// { midi, octave } — the label (e.g. "C2") is composed by the caller
+// from tonicName(keyPc) + octave.
+export function etudeStartOptions(clef, keyPc) {
+  const floor = ETUDE_CLEF_FLOOR[clef] ?? 48;
+  const pc = ((keyPc % 12) + 12) % 12;
+  const first = floor + (((pc - (floor % 12)) % 12) + 12) % 12;
+  const opts = [];
+  for (let m = first; m <= floor + 24; m += 12) opts.push({ midi: m, octave: midiOctave(m) });
+  return opts;
+}
+
 // Scale shapes — semitone offsets from the tonic, ending on the octave.
 // Used by scale-etude when applying a pattern.
 export const SCALE_SHAPES = {
