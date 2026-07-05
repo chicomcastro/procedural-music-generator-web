@@ -1727,6 +1727,29 @@ label.compose-tool-btn:has(input:disabled) { cursor: not-allowed; opacity: 0.35;
 
 .exercise-nav-btn:active { transform: scale(0.94); }
 
+/* ADR 0005 bridge: "Practice this" pill in the exercise header. Wider
+   than the round icon buttons — it carries a label. */
+.exercise-practice-btn {
+  width: auto;
+  padding: 0 14px;
+  gap: 6px;
+  border-radius: 999px;
+  border-color: var(--accent);
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.exercise-practice-btn:hover {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+@media (max-width: 640px) {
+  .exercise-practice-btn span { display: none; }   /* icon-only on phones */
+  .exercise-practice-btn { width: 36px; padding: 0; }
+}
+
 .exercise-nav-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;

@@ -1393,6 +1393,14 @@ export function initPracticeView({ audioApi } = {}) {
     setTimeout(() => openStudy(sharedStudyId), 0);
   }
 
+  // ADR 0005 bridge: in-app navigation to a practice deep link (e.g. the
+  // Learn view's "Practice this" CTA) fires hashchange, not a page load —
+  // hydrate the params and open the study the same way a share URL would.
+  window.addEventListener('hashchange', () => {
+    const id = applyShareParams();
+    if (id) openStudy(id);
+  });
+
   onLangChange(() => {
     renderCatalog();
     renderFavorites();
