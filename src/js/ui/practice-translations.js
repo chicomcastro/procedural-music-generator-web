@@ -44,12 +44,12 @@ export const TR = {
   'scale-etude': {
     pt: {
       title: 'Estudo de Escala',
-      summary: 'Um exercício de técnica configurável: escolha a escala, o padrão (escala, pares, ternas, terças até sétimas quebradas), uma ou duas oitavas e a figura rítmica (incl. figuras compostas) — subida e descida numa passagem só.',
+      summary: 'Um exercício de técnica configurável: escolha a escala, o padrão (escala, grupos de 2 a 6, terças até sétimas quebradas), uma ou duas oitavas e a figura rítmica (incl. figuras compostas) — subida e descida numa passagem só.',
       eyebrow: 'Técnica · sandbox',
     },
     es: {
       title: 'Estudio de Escala',
-      summary: 'Un ejercicio de técnica configurable: elige la escala, el patrón (escala, pares, ternas, terceras hasta séptimas quebradas), una o dos octavas y la figura rítmica (incl. figuras compuestas) — subida y bajada en una sola pasada.',
+      summary: 'Un ejercicio de técnica configurable: elige la escala, el patrón (escala, grupos de 2 a 6, terceras hasta séptimas quebradas), una o dos octavas y la figura rítmica (incl. figuras compuestas) — subida y bajada en una sola pasada.',
       eyebrow: 'Técnica · sandbox',
     },
   },
@@ -94,11 +94,13 @@ const ETUDE_LABELS = {
   patterns: {
     pt: {
       scale: 'Escala (sobe + desce)', pairs: 'Pares — 2 a 2', threes: 'Ternas — 3 a 3',
+      fours: 'Grupos de 4', fives: 'Grupos de 5', sixes: 'Grupos de 6',
       thirds: 'Terças quebradas', fourths: 'Quartas quebradas', fifths: 'Quintas quebradas',
       sixths: 'Sextas quebradas', sevenths: 'Sétimas quebradas',
     },
     es: {
       scale: 'Escala (sube + baja)', pairs: 'Pares — 2 a 2', threes: 'Tríos — 3 a 3',
+      fours: 'Grupos de 4', fives: 'Grupos de 5', sixes: 'Grupos de 6',
       thirds: 'Terceras quebradas', fourths: 'Cuartas quebradas', fifths: 'Quintas quebradas',
       sixths: 'Sextas quebradas', sevenths: 'Séptimas quebradas',
     },

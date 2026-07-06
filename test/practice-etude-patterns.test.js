@@ -23,6 +23,20 @@ describe('ETUDE_PATTERNS — sequence construction', () => {
     expect(P.threes.build(4)).toEqual([0, 1, 2, 1, 2, 3, 3, 2, 1, 2, 1, 0]);
   });
 
+  it('fours / fives / sixes: k-note sliding window up, mirrored down', () => {
+    // n = 5, fours → (0,1,2,3)(1,2,3,4) up, (4,3,2,1)(3,2,1,0) down
+    expect(P.fours.build(5)).toEqual([0, 1, 2, 3, 1, 2, 3, 4, 4, 3, 2, 1, 3, 2, 1, 0]);
+    // n = 6, fives → (0..4)(1..5) up, mirrored down
+    expect(P.fives.build(6)).toEqual([0, 1, 2, 3, 4, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 4, 3, 2, 1, 0]);
+    // n = 7, sixes → (0..5)(1..6) up, mirrored down
+    expect(P.sixes.build(7)).toEqual([0, 1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 6, 6, 5, 4, 3, 2, 1, 5, 4, 3, 2, 1, 0]);
+  });
+
+  it('a run longer than the scale degrades to a single up+down group (still non-empty)', () => {
+    // sixes (k=6) on a 6-degree pentatonic: one ascending group, then its mirror.
+    expect(P.sixes.build(6)).toEqual([0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1, 0]);
+  });
+
   it('broken thirds: (i, i+2) up then (i, i-2) down', () => {
     // n = 5 up: (0,2)(1,3)(2,4)  down: (4,2)(3,1)(2,0)
     expect(P.thirds.build(5)).toEqual([0, 2, 1, 3, 2, 4, 4, 2, 3, 1, 2, 0]);
