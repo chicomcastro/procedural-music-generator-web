@@ -104,6 +104,34 @@ describe('buildSong — two-voice-invention', () => {
     const expected = study.acts.reduce((s, a) => s + a.bars, 0);
     expect(song.bars).toBe(expected);
   });
+
+  // ADR 0013 — resolved ending + prepared modulation.
+  it('keeps one key signature across all movements (no abrupt jump)', () => {
+    // Development is the relative minor, not a distant major, so every act
+    // shares the tonic key signature.
+    const song = buildSong(study, { keyPc: 0, seed: 3, difficulty: 50 });
+    const fifths = new Set(song.keySignatures.map(k => k.fifths));
+    expect(fifths.size).toBe(1);
+  });
+
+  it('resolves home: the final chord and last melody note are the tonic', () => {
+    for (const keyPc of [0, 2, 7]) {
+      const song = buildSong(study, { keyPc, seed: 5, difficulty: 50 });
+      const symbols = song.chordSymbols.filter(Boolean);
+      expect(symbols.at(-1)).toBe(tonicName(keyPc));   // authentic cadence lands on I
+      const mel = song.events.filter(e => e.type === 'melody').sort((a, b) => a.atBeat - b.atBeat);
+      expect(((mel.at(-1).midi % 12) + 12) % 12).toBe(keyPc);
+    }
+  });
+
+  it('dovetails the movements on a shared pivot chord at each seam', () => {
+    const song = buildSong(study, { keyPc: 0, seed: 5, difficulty: 50 });
+    // 8-bar acts → chord spans of 2 bars; the pivot is the chord that ends
+    // one act and opens the next (same symbol across the double bar).
+    const at = (bar) => song.chordSymbols[bar];
+    expect(at(6)).toBe(at(8));    // exposition's last chord == development's first
+    expect(at(14)).toBe(at(16));  // development's last chord == recap's first
+  });
 });
 
 describe('buildSong — walking-bass-workout', () => {
