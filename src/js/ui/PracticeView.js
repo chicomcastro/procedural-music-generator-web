@@ -301,7 +301,15 @@ function buildTwoVoiceSong(study, opts) {
     const progKey = (study.kind === 'duet-workshop' && progressionId && PROGRESSIONS[progressionId])
       ? progressionId
       : act.progression;
-    const degrees = PROGRESSIONS[progKey] || PROGRESSIONS.pop;
+    let degrees = PROGRESSIONS[progKey] || PROGRESSIONS.pop;
+    // ADR 0014: the duet workshop is a single movement, so resolve it home
+    // instead of stopping on the raw last chord of the loop. Land the final
+    // chord on the tonic (I); the melody already targets the tonic on its
+    // last note, so the whole texture cadences. (The invention manages its
+    // own cadence per act via its progressions, so scope this to the workshop.)
+    if (study.kind === 'duet-workshop' && degrees[degrees.length - 1] !== 1) {
+      degrees = [...degrees.slice(0, -1), 1];
+    }
     const beatsPerChord = (act.bars * beatsPerBar) / degrees.length;
     const progression = degrees.map((deg, idx) => {
       const notes = chordFromDegree(tonicMidi1, scale, deg);

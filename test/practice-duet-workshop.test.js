@@ -201,6 +201,22 @@ describe('Duet Workshop — buildSong + part-view filter', () => {
     expect(song.events.some(e => e.type === 'melody2')).toBe(true);
   });
 
+  it('resolves home: every progression ends on the tonic chord (ADR 0014)', async () => {
+    const { __test } = await import('../src/js/ui/PracticeView.js');
+    const { tonicName } = await import('../src/js/ui/practice-studies.js');
+    const study = STUDIES.find(s => s.id === 'duet-workshop');
+    for (const progressionId of ['pop', 'fifties', 'pachelbel', 'minor_loop', 'jazz_ii_V_I']) {
+      for (const keyPc of [0, 5]) {
+        const song = __test.buildSong(study, {
+          keyPc, seed: 5, difficulty: 50, clefVoices: ['bass', 'bass'],
+          duetStyleId: 'free', rhythmVocab: ['quarter', 'half'], progressionId,
+        });
+        const symbols = song.chordSymbols.filter(Boolean);
+        expect(symbols.at(-1)).toBe(tonicName(keyPc));
+      }
+    }
+  });
+
   it('progression override changes the harmonic content for the same seed', async () => {
     const { __test } = await import('../src/js/ui/PracticeView.js');
     const study = STUDIES.find(s => s.id === 'duet-workshop');
