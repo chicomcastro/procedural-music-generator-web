@@ -105,7 +105,7 @@ export function generateCounterpoint(rng, {
   }
 
   if (mode === 'call_response') {
-    return generateCallResponse(rng, melody, tonic, scale, candidates, beatsPerBar);
+    return generateCallAndResponse(rng, { melody, tonic, scale, bars, beatsPerBar }).response;
   }
 
   // 'free' or 'contrary' — independent rhythm + weighted pitch selection
@@ -119,22 +119,86 @@ export function generateCounterpoint(rng, {
   return generateIndependentCounterpoint(rng, melody, rhythm2, candidates, tonic, scale, contraryBias, blend);
 }
 
-function generateCallResponse(rng, melody, tonic, scale, candidates, beatsPerBar) {
-  const events = [];
-  const halfBar = beatsPerBar / 2;
-  for (const m of melody) {
-    const posInBar = m.atBeat % beatsPerBar;
-    if (posInBar < halfBar) continue;
-    const shifted = shiftByScaleDegrees(m.midi, tonic, scale, 2);
-    const target = candidates.includes(shifted) ? shifted : findClosest(candidates, shifted);
-    events.push({
-      midi: target,
-      atBeat: m.atBeat,
-      durationBeats: m.durationBeats,
-      velocity: m.velocity * 0.8,
-    });
+/**
+ * True call-and-response: the two voices trade the melody in alternating
+ * phrases. Voice 1 (the "call") plays a phrase and then rests; voice 2 (the
+ * "answer") echoes that phrase transposed into its lower register, then
+ * rests while voice 1 asks again. Phrase lengths vary between 1 and 2 bars,
+ * and an answer occasionally enters early (stretto/imitation) so the two
+ * voices briefly overlap.
+ *
+ * @returns {{ call: Object[], response: Object[] }} the upper (call) and
+ *   lower (answer) voice events; the caller renders `call` as voice 1 and
+ *   `response` as voice 2.
+ */
+export function generateCallAndResponse(rng, { melody, tonic, scale, bars = 4, beatsPerBar = 4 }) {
+  if (!melody || melody.length === 0) return { call: [], response: [] };
+
+  const melMin = Math.min(...melody.map(m => m.midi));
+  const candidates = scaleNotesInRange(tonic, scale, melMin - 19, melMin + 2);
+  const lower = (midi) => (candidates.length ? findClosest(candidates, midi - 12) : midi - 12);
+
+  // Partition the act into call→answer PAIRS. Each pair picks a length of
+  // 1 or 2 bars; the answer mirrors the call's length so the echo fills the
+  // phrase exactly (no dead bars). A leftover bar at the end becomes a final
+  // unanswered call.
+  const phrases = [];
+  let bar = 0;
+  while (bar < bars) {
+    let len = rng() < 0.5 ? 1 : 2;
+    if (bar + len > bars) len = bars - bar;
+    phrases.push({ startBar: bar, len, voice: 0 });   // call
+    bar += len;
+    if (bar >= bars) break;
+    let alen = len;
+    if (bar + alen > bars) alen = bars - bar;
+    phrases.push({ startBar: bar, len: alen, voice: 1 });   // answer
+    bar += alen;
   }
-  return events;
+
+  const notesInBars = (startBar, endBar) => melody.filter(m => {
+    const b = Math.floor(m.atBeat / beatsPerBar);
+    return b >= startBar && b < endBar;
+  });
+
+  const call = [];
+  const response = [];
+  let material = null; // the most recent call's notes, for the answer to echo
+
+  for (const ph of phrases) {
+    const startBeat = ph.startBar * beatsPerBar;
+    const endBeat = startBeat + ph.len * beatsPerBar;
+
+    if (ph.voice === 0) {
+      const notes = notesInBars(ph.startBar, ph.startBar + ph.len);
+      for (const m of notes) call.push({ ...m });
+      if (notes.length) material = notes;
+      continue;
+    }
+
+    // Answer: replay the previous call's contour, transposed down, shifted
+    // to this phrase. Fall back to this phrase's own melody if there's no
+    // prior call (can't happen for phrase 0, but keeps it safe).
+    const src = (material && material.length) ? material : notesInBars(ph.startBar, ph.startBar + ph.len);
+    if (!src.length) continue;
+    const srcStart = src[0].atBeat;
+    const overlap = rng() < 0.3 ? Math.min(2, startBeat) : 0;   // occasional stretto
+    const offset = (startBeat - overlap) - srcStart;
+
+    for (const m of src) {
+      const at = m.atBeat + offset;
+      if (at < startBeat - overlap - 1e-9) continue;
+      if (at >= endBeat - 1e-9) break;
+      response.push({
+        midi: lower(m.midi),
+        atBeat: at,
+        durationBeats: Math.min(m.durationBeats, endBeat - at),
+        velocity: (m.velocity ?? 0.8) * 0.85,
+      });
+    }
+  }
+
+  return { call, response };
 }
 
 /**
