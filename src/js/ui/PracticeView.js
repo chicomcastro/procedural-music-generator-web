@@ -12,10 +12,11 @@
 // stylesheet (no per-act overrides yet — those land in PR 2).
 
 import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, SCALE_SHAPES, VOICE_OPTIONS, clampMidiToRange, tonicMidiFor, ETUDE_PATTERNS, ETUDE_OCTAVE_OPTIONS, ETUDE_RHYTHMS, extendShapeOctaves, etudeStartOptions, RHYTHM_VOCAB, RHYTHM_VOCAB_DEFAULTS, PROGRESSION_OPTIONS, PART_VIEW_OPTIONS } from './practice-studies.js';
-import { getStudyField, etudeLabel } from './practice-translations.js';
+import { getStudyField, etudeLabel, modLabel } from './practice-translations.js';
 import { mulberry32, randomSeed } from '../generate/rng.js';
 import { generateMelody } from '../generate/melody.js';
 import { generateCounterpoint, generateCallAndResponse } from '../generate/counterpoint.js';
+import { generateModulationDrill, MODULATION_TARGETS, MODULATION_STRATEGIES } from '../generate/modulation.js';
 import { generateRhythm } from '../generate/rhythm.js';
 import { generateWalkingBass, progressionToChords, chordSymbolFor } from '../generate/walking-bass.js';
 
@@ -113,6 +114,9 @@ function getStudyPrefs(studyId) {
       etudeOctaves: study?.kind === 'scale-etude' ? 1 : null,
       etudeRhythm: study?.kind === 'scale-etude' ? 'eighth' : null,
       etudeStartMidi: null,   // ADR 0009: null = default register
+      // ADR 0016: modulation drill.
+      modTargetId: study?.kind === 'modulation-drill' ? 'dominant' : null,
+      modStrategyId: study?.kind === 'modulation-drill' ? 'pivot' : null,
     };
   }
   // Backfill new fields for users who already have a saved prefs blob from a
@@ -143,6 +147,10 @@ function getStudyPrefs(studyId) {
     if (!Array.isArray(p.rhythmVocab) || p.rhythmVocab.length === 0) p.rhythmVocab = [...RHYTHM_VOCAB_DEFAULTS];
     if (!p.progressionId) p.progressionId = 'pop';
     if (!p.partView) p.partView = 'both';
+  }
+  if (study?.kind === 'modulation-drill') {   // ADR 0016 backfill
+    if (!MODULATION_TARGETS.find(t => t.id === p.modTargetId)) p.modTargetId = 'dominant';
+    if (!MODULATION_STRATEGIES.find(s => s.id === p.modStrategyId)) p.modStrategyId = 'pivot';
   }
   return p;
 }
@@ -513,6 +521,7 @@ function buildSong(study, opts) {
   if (study.kind === 'duet-workshop')          return buildTwoVoiceSong(study, opts);
   if (study.kind === 'walking-bass-workout') return buildWalkingBassSong(study, opts);
   if (study.kind === 'scale-etude') return buildScaleEtudeSong(study, opts);
+  if (study.kind === 'modulation-drill') return buildModulationDrillSong(study, opts);
   if (study.kind === 'solo-etude') return buildSoloEtudeSong(study, opts);
   if (study.kind === 'modal-vamp') return buildModalVampSong(study, opts);
   throw new Error(`Unknown study kind: ${study.kind}`);
@@ -600,6 +609,50 @@ function buildScaleEtudeSong(study, opts) {
     doubleBarsBefore: [],
     keySignatures: [{ bar: 0, fifths: keyFifths(((keyPc % 12) + 12) % 12, scaleName) }],
     bpm: p.tempo || 80,
+  };
+}
+
+// =============================================================================
+// Generation — modulation drill (ADR 0016)
+
+function buildModulationDrillSong(study, opts) {
+  const { keyPc, clefVoices, modTargetId, modStrategyId, intensity: intensityPct } = opts;
+  const velocityScale = (intensityPct ?? 100) / 100;
+  const beatsPerBar = 4;
+  const act = study.acts[0];
+
+  const [clef1, clef2 = clef1] = clefVoices || ['bass', 'bass'];
+  const anchor1 = CLEF_ANCHORS[clef1] ?? 60;
+  const range1 = CLEF_RANGES[clef1] || [36, 84];
+  const range2 = CLEF_RANGES[clef2] || [36, 84];
+
+  const startPc = ((keyPc % 12) + 12) % 12;
+  const drill = generateModulationDrill(mulberry32(opts.seed ?? 0), {
+    startPc,
+    targetId: modTargetId,
+    strategyId: modStrategyId,
+    clefAnchor: anchor1,
+    beatsPerBar,
+  });
+
+  const events = drill.events.map(ev => ({
+    type: ev.type,
+    midi: clampMidiToRange(ev.midi, ev.type === 'melody2' ? range2 : range1),
+    atBeat: ev.atBeat,
+    durationBeats: ev.durationBeats,
+    velocity: Math.min(1, (ev.velocity ?? 0.7) * velocityScale),
+  }));
+
+  return {
+    bars: drill.bars,
+    beatsPerBar,
+    lengthBeats: drill.bars * beatsPerBar,
+    events,
+    chordSymbols: drill.chordSymbols,
+    // A double bar marks the moment of modulation.
+    doubleBarsBefore: drill.modulationBar > 0 ? [drill.modulationBar] : [],
+    keySignatures: drill.keySignatures,
+    bpm: act.params.tempo || 84,
   };
 }
 
@@ -1027,11 +1080,39 @@ function populateControls() {
     }
   }
 
-  // The etude's Key + Scale live in the bar above the score, so hide the
-  // duplicate Adjust-panel rows for this study (other studies keep them).
+  // ADR 0016: modulation-drill dropdowns — Key / Destination / Strategy in a
+  // bar above the score, mirroring the etude bar.
+  const modBar = document.getElementById('practice-modulation-bar');
+  const isModDrill = activeStudy.kind === 'modulation-drill';
+  if (modBar) modBar.style.display = isModDrill ? '' : 'none';
+  const modIds = [
+    ['practice-mod-key', 'practice-mod-key-field', activeStudy.keyOptions.map(pc => ({ id: String(pc), label: tonicName(pc) })), String(studyPrefs.keyPc)],
+    ['practice-mod-target', 'practice-mod-target-field', MODULATION_TARGETS.map(t => ({ id: t.id, label: modLabel('targets', t.id, t.label) })), studyPrefs.modTargetId],
+    ['practice-mod-strategy', 'practice-mod-strategy-field', MODULATION_STRATEGIES.map(s => ({ id: s.id, label: modLabel('strategies', s.id, s.label) })), studyPrefs.modStrategyId],
+  ];
+  for (const [selId, fieldId, options, current] of modIds) {
+    const sel = document.getElementById(selId);
+    const field = document.getElementById(fieldId);
+    if (sel && isModDrill) {
+      sel.innerHTML = '';
+      for (const opt of options) {
+        const o = document.createElement('option');
+        o.value = opt.id;
+        o.textContent = opt.label;
+        if (opt.id === current) o.selected = true;
+        sel.appendChild(o);
+      }
+      if (field) field.style.display = '';
+    } else if (field) {
+      field.style.display = 'none';
+    }
+  }
+
+  // The etude's / drill's Key + Scale live in the bar above the score, so
+  // hide the duplicate Adjust-panel rows for those studies.
   const adjustKeyField = document.getElementById('practice-key-field');
   const adjustScaleField = document.getElementById('practice-scale-field');
-  const hideAdjustKeyScale = activeStudy.kind === 'scale-etude';
+  const hideAdjustKeyScale = activeStudy.kind === 'scale-etude' || isModDrill;
   if (adjustKeyField) adjustKeyField.style.display = hideAdjustKeyScale ? 'none' : '';
   if (adjustScaleField) adjustScaleField.style.display = hideAdjustKeyScale ? 'none' : '';
 
@@ -1140,9 +1221,10 @@ function renderActRail() {
   if (!activeStudy) return;
   const rail = document.getElementById('practice-act-rail');
   rail.innerHTML = '';
-  // Scale etude: the etude bar replaces the rail slot entirely.
-  rail.style.display = activeStudy.kind === 'scale-etude' ? 'none' : '';
-  if (activeStudy.kind === 'scale-etude') return;
+  // Scale etude / modulation drill: the params bar replaces the rail slot.
+  const noRail = activeStudy.kind === 'scale-etude' || activeStudy.kind === 'modulation-drill';
+  rail.style.display = noRail ? 'none' : '';
+  if (noRail) return;
   // ADR 0007: 'exercises' mode renders the rail as tabs — one drill at a
   // time. 'movements' mode keeps the passive rail (the score is one piece).
   const isTabs = activeStudy.actMode === 'exercises';
@@ -1959,6 +2041,29 @@ export function initPracticeView({ audioApi } = {}) {
     sp.etudeStartMidi = null;   // register options shift with the key — reset to default
     savePrefs();
     populateControls();         // rebuild the start-note options for the new key
+    regenerate();
+  });
+
+  // ADR 0016: modulation-drill dropdowns.
+  document.getElementById('practice-mod-key')?.addEventListener('change', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'modulation-drill') return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.keyPc = Number(e.target.value);
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-mod-target')?.addEventListener('change', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'modulation-drill') return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.modTargetId = e.target.value;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-mod-strategy')?.addEventListener('change', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'modulation-drill') return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.modStrategyId = e.target.value;
+    savePrefs();
     regenerate();
   });
   document.getElementById('practice-etude-start')?.addEventListener('change', (e) => {

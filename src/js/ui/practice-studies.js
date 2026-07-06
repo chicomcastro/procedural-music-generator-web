@@ -418,6 +418,32 @@ export const STUDIES = [
     ],
   },
   {
+    id: 'modulation-drill',
+    kind: 'modulation-drill',
+    category: 'counterpoint',
+    // ADR 0016: single-act sandbox — Key / Destination / Strategy dropdowns
+    // above the score generate a short passage that modulates on purpose.
+    title: 'Modulation Drill',
+    summary: 'Train changing key on purpose: pick a start key, a destination (by relationship — dominant, relative minor, up a step…) and a strategy (pivot chord, applied dominant, direct). Get a short two-voice passage that establishes the home key, modulates, and cadences in the new one.',
+    eyebrow: 'Harmony · sandbox',
+    clefPresets: [
+      { id: 'bass-bass',     label: 'Bass + Bass (cello duo)',     voices: ['bass', 'bass'] },
+      { id: 'treble-bass',   label: 'Treble + Bass',               voices: ['treble', 'bass'] },
+      { id: 'treble-treble', label: 'Treble + Treble',             voices: ['treble', 'treble'] },
+      { id: 'alto-bass',     label: 'Alto + Bass (viola + cello)', voices: ['alto', 'bass'] },
+    ],
+    keyOptions: [0, 2, 5, 7, 9],
+    acts: [
+      {
+        id: 'drill',
+        title: 'Drill',
+        keyShift: 0,
+        // bars are DERIVED from the modulation plan (ADR 0016).
+        params: { tempo: 84 },
+      },
+    ],
+  },
+  {
     id: 'walking-bass-workout',
     kind: 'walking-bass-workout',
     category: 'bass',

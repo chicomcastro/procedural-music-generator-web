@@ -1135,6 +1135,28 @@
                             </div>
                         </div>
 
+                        <!-- ADR 0016: modulation-drill params — Key / Destination / Strategy. -->
+                        <div id="practice-modulation-bar" class="practice-etude-bar" style="display:none" aria-label="Modulation configuration">
+                            <div class="practice-etude-bar-group" id="practice-mod-key-field">
+                                <label class="practice-etude-bar-label" for="practice-mod-key">
+                                    <span data-i18n="practice.key">Key</span>
+                                </label>
+                                <select id="practice-mod-key" class="practice-select"></select>
+                            </div>
+                            <div class="practice-etude-bar-group" id="practice-mod-target-field">
+                                <label class="practice-etude-bar-label" for="practice-mod-target">
+                                    <span data-i18n="practice.destination">Destination</span>
+                                </label>
+                                <select id="practice-mod-target" class="practice-select"></select>
+                            </div>
+                            <div class="practice-etude-bar-group" id="practice-mod-strategy-field">
+                                <label class="practice-etude-bar-label" for="practice-mod-strategy">
+                                    <span data-i18n="practice.strategy">Strategy</span>
+                                </label>
+                                <select id="practice-mod-strategy" class="practice-select"></select>
+                            </div>
+                        </div>
+
                         <div id="practice-sheet" class="practice-sheet" aria-live="polite" aria-busy="false"></div>
 
                         <!-- ADR 0006: music-stand mode toolbar. Hidden unless
