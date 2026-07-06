@@ -337,8 +337,10 @@ export const STUDIES = [
         id: 'exposition',
         title: 'I — Exposition',
         bars: 8,
-        keyShift: 0,            // relative to study key
-        progression: 'pop',     // PROGRESSIONS.pop → I-V-vi-IV
+        keyShift: 0,            // relative to study key (the tonic major)
+        // I–IV–V–vi: the closing vi IS the relative-minor tonic, so it
+        // dovetails straight into the development (ADR 0013).
+        progression: 'inv_exposition',
         params: {
           density: 0.5,
           chromaticPct: 0,
@@ -351,14 +353,18 @@ export const STUDIES = [
         id: 'development',
         title: 'II — Development',
         bars: 8,
-        keyShift: 9,            // jump to the relative minor
-        progression: 'minor_loop',
+        keyShift: 9,            // the relative minor (shares the key signature)
+        // i–VI–VII–III: the closing III is the tonic major, pivoting home.
+        // params.scale = natural_minor makes this the true relative minor —
+        // it was defaulting to major (= a distant A-major jump, +3 sharps).
+        progression: 'inv_development',
         params: {
           density: 0.7,
           chromaticPct: 0.15,
           tempo: 90,
           contour: 'wave',
           independence: 0.6,
+          scale: 'natural_minor',
         },
       },
       {
@@ -366,7 +372,8 @@ export const STUDIES = [
         title: 'III — Recapitulation',
         bars: 8,
         keyShift: 0,
-        progression: 'fifties',  // I-vi-IV-V
+        // I–IV–V–I: authentic cadence — the piece resolves home.
+        progression: 'inv_recapitulation',
         params: {
           density: 0.55,
           chromaticPct: 0.05,

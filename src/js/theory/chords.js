@@ -61,6 +61,17 @@ export const PROGRESSIONS = {
   jazz_ii_V_I:[2, 5, 1],
   minor_loop: [1, 6, 3, 7],
   twelve_bar: [1, 1, 1, 1, 4, 4, 1, 1, 5, 4, 1, 5],
+
+  // Two-voice invention (ADR 0013): each movement lands on the NEXT
+  // movement's tonic so the key change dovetails on a shared (pivot)
+  // chord instead of jumping, and the finale closes with an authentic
+  // cadence on I. These rely on the relative-key plan below:
+  //   Exposition (I major) → ends on vi = the relative-minor tonic
+  //   Development (relative minor) → ends on III = the tonic major
+  //   Recapitulation (I major) → …V → I
+  inv_exposition:    [1, 4, 5, 6],   // I–IV–V–vi  (vi pivots into the development)
+  inv_development:   [1, 6, 7, 3],   // i–VI–VII–III (III pivots back to the tonic)
+  inv_recapitulation:[1, 4, 5, 1],   // I–IV–V–I  authentic cadence
 };
 
 /** @param {number} tonicMidi @param {string} scaleName @param {number[]} degrees @returns {number[][]} */
