@@ -85,3 +85,49 @@ export function getStudyField(study, field) {
   if (lang === 'en') return study[field];
   return TR[study.id]?.[lang]?.[field] ?? study[field];
 }
+
+// Scale-etude dropdown option labels (pattern / octaves / note-value).
+// English is the source of truth on each option in practice-studies.js;
+// PT/ES overrides are keyed by option id under a group. Music terms use
+// the standard Latin note names players expect (semínima, colcheia…).
+const ETUDE_LABELS = {
+  patterns: {
+    pt: {
+      scale: 'Escala (sobe + desce)', pairs: 'Pares — 2 a 2', threes: 'Ternas — 3 a 3',
+      thirds: 'Terças quebradas', fourths: 'Quartas quebradas', fifths: 'Quintas quebradas',
+      sixths: 'Sextas quebradas', sevenths: 'Sétimas quebradas',
+    },
+    es: {
+      scale: 'Escala (sube + baja)', pairs: 'Pares — 2 a 2', threes: 'Tríos — 3 a 3',
+      thirds: 'Terceras quebradas', fourths: 'Cuartas quebradas', fifths: 'Quintas quebradas',
+      sixths: 'Sextas quebradas', sevenths: 'Séptimas quebradas',
+    },
+  },
+  octaves: {
+    pt: { 1: '1 oitava', 2: '2 oitavas' },
+    es: { 1: '1 octava', 2: '2 octavas' },
+  },
+  rhythms: {
+    pt: {
+      quarter: 'Semínimas', eighth: 'Colcheias', triplet: 'Tercinas de colcheia', sixteenth: 'Semicolcheias',
+      'dotted8-16': 'Colcheia pontuada + semicolcheia',
+      '16-8-16': 'Semicolcheia + colcheia + semicolcheia',
+      '16-16-8': 'Semicolcheia + semicolcheia + colcheia',
+      '8-16-16': 'Colcheia + semicolcheia + semicolcheia',
+    },
+    es: {
+      quarter: 'Negras', eighth: 'Corcheas', triplet: 'Tresillos de corchea', sixteenth: 'Semicorcheas',
+      'dotted8-16': 'Corchea con puntillo + semicorchea',
+      '16-8-16': 'Semicorchea + corchea + semicorchea',
+      '16-16-8': 'Semicorchea + semicorchea + corchea',
+      '8-16-16': 'Corchea + semicorchea + semicorchea',
+    },
+  },
+};
+
+// Localize a scale-etude option label with EN fallback.
+export function etudeLabel(group, id, fallback) {
+  const lang = getLang();
+  if (lang === 'en') return fallback;
+  return ETUDE_LABELS[group]?.[lang]?.[id] ?? fallback;
+}

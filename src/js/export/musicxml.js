@@ -59,7 +59,10 @@ function buildPitchXml(midi, useFlats) {
   return xml;
 }
 
-function buildNoteXml(midi, durationBeats, isChord, isRest, isDrum, beam, useFlats = false) {
+// `beams` is either null (no beam), a legacy single beam-role string
+// (e.g. 'begin'), or an array of { number, type } for multi-level beams —
+// a level-1 primary beam plus level-2 secondary beams / hooks for 16ths.
+function buildNoteXml(midi, durationBeats, isChord, isRest, isDrum, beams, useFlats = false) {
   const qDur = quantizeDuration(durationBeats);
   const info = DURATION_TYPE_MAP[qDur];
   if (!info) return '';
@@ -79,7 +82,12 @@ function buildNoteXml(midi, durationBeats, isChord, isRest, isDrum, beam, useFla
   xml += `          <duration>${info.divisions}</duration>\n`;
   xml += `          <type>${info.type}</type>\n`;
   if (info.dot) xml += '          <dot/>\n';
-  if (beam) xml += `          <beam number="1">${beam}</beam>\n`;
+  const beamList = typeof beams === 'string' ? [{ number: 1, type: beams }] : beams;
+  if (Array.isArray(beamList)) {
+    for (const b of beamList) {
+      xml += `          <beam number="${b.number}">${b.type}</beam>\n`;
+    }
+  }
   xml += '        </note>\n';
   return xml;
 }
@@ -179,7 +187,6 @@ function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstP
       xml += `          <duration>${beatsPerBar * DIVISIONS}</duration>\n`;
       xml += '        </note>\n';
     } else {
-      let usedBeats = 0;
       const beatPositions = [...new Set(barEvents.map(ev => ev.localBeat))].sort((a, b) => a - b);
 
       const slots = [];
@@ -189,41 +196,78 @@ function buildPartMeasures(events, beatsPerBar, totalBars, isDrum, bpm, isFirstP
         slots.push({ beatPos, notes: notesAtBeat, dur: noteDur });
       }
 
-      const beamable = (dur) => dur <= 0.5;
-      for (let si = 0; si < slots.length; si++) {
-        const slot = slots[si];
+      // Pass 1: resolve each slot's final position + duration and the rest
+      // gap that precedes it, in a single forward walk over the beat.
+      const items = [];
+      let usedBeats = 0;
+      for (const slot of slots) {
+        let restBefore = 0;
         if (slot.beatPos > usedBeats + 0.001) {
-          xml += fillRestGap(slot.beatPos - usedBeats);
+          restBefore = slot.beatPos - usedBeats;
           usedBeats = slot.beatPos;
         }
-
         const cappedDur = Math.min(slot.dur, beatsPerBar - usedBeats);
         const finalDur = quantizeDuration(cappedDur);
-        const beatGroup = Math.floor(slot.beatPos);
-
-        let beam = null;
-        if (beamable(finalDur) && !isDrum) {
-          const prevAdj = si > 0 && Math.abs(slots[si - 1].beatPos + quantizeDuration(Math.min(slots[si - 1].dur, beatsPerBar)) - slot.beatPos) < 0.001;
-          const prevBeamable = prevAdj && beamable(slots[si - 1].dur) && Math.floor(slots[si - 1].beatPos) === beatGroup;
-          const nextAdj = si < slots.length - 1 && Math.abs(slot.beatPos + finalDur - slots[si + 1].beatPos) < 0.001;
-          const nextBeamable = nextAdj && beamable(slots[si + 1].dur) && Math.floor(slots[si + 1].beatPos) === beatGroup;
-          if (prevBeamable && nextBeamable) beam = 'continue';
-          else if (!prevBeamable && nextBeamable) beam = 'begin';
-          else if (prevBeamable && !nextBeamable) beam = 'end';
-        }
-
-        let isFirst = true;
-        for (const ev of slot.notes) {
-          xml += buildNoteXml(ev.midi, finalDur, !isFirst, false, isDrum, isFirst ? beam : null, useFlats);
-          isFirst = false;
-        }
-
+        items.push({ beatPos: slot.beatPos, finalDur, notes: slot.notes, restBefore });
         usedBeats += finalDur;
       }
+      const trailingRest = usedBeats < beatsPerBar - 0.001 ? beatsPerBar - usedBeats : 0;
 
-      if (usedBeats < beatsPerBar - 0.001) {
-        xml += fillRestGap(beatsPerBar - usedBeats);
+      // Pass 2: assign multi-level beams. Notes beam together when they are
+      // contiguous, sit in the same quarter-note beat, and aren't split by a
+      // rest. Level 1 is the primary beam (every 8th/16th carries it); level
+      // 2 the secondary beam only 16ths carry. A level-2 beam with no level-2
+      // neighbour becomes a forward/backward hook — that hook is exactly the
+      // "bandeirinha" the 16th in a dotted-8th + 16th figure was missing.
+      const beamLevels = (dur) => (dur === 0.25 ? 2 : (dur === 0.5 || dur === 0.75) ? 1 : 0);
+      const beamsFor = items.map(() => null);
+      if (!isDrum) {
+        let g = 0;
+        while (g < items.length) {
+          if (beamLevels(items[g].finalDur) === 0) { g++; continue; }
+          let end = g;
+          while (end + 1 < items.length) {
+            const cur = items[end];
+            const nxt = items[end + 1];
+            const contiguous = Math.abs(cur.beatPos + cur.finalDur - nxt.beatPos) < 0.001;
+            const sameBeat = Math.floor(cur.beatPos) === Math.floor(nxt.beatPos);
+            if (beamLevels(nxt.finalDur) > 0 && contiguous && sameBeat && nxt.restBefore < 0.001) end++;
+            else break;
+          }
+          if (end > g) {
+            const group = items.slice(g, end + 1);
+            const maxLevel = Math.max(...group.map(it => beamLevels(it.finalDur)));
+            for (let gi = 0; gi < group.length; gi++) {
+              const beams = [];
+              for (let lvl = 1; lvl <= maxLevel; lvl++) {
+                if (beamLevels(group[gi].finalDur) < lvl) continue;
+                const hasPrev = gi > 0 && beamLevels(group[gi - 1].finalDur) >= lvl;
+                const hasNext = gi < group.length - 1 && beamLevels(group[gi + 1].finalDur) >= lvl;
+                let type;
+                if (hasPrev && hasNext) type = 'continue';
+                else if (!hasPrev && hasNext) type = 'begin';
+                else if (hasPrev && !hasNext) type = 'end';
+                else type = gi === 0 ? 'forward hook' : 'backward hook';
+                beams.push({ number: lvl, type });
+              }
+              beamsFor[g + gi] = beams;
+            }
+          }
+          g = end + 1;
+        }
       }
+
+      // Emit interleaved rests + notes in order.
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (it.restBefore > 0.001) xml += fillRestGap(it.restBefore);
+        let isFirst = true;
+        for (const ev of it.notes) {
+          xml += buildNoteXml(ev.midi, it.finalDur, !isFirst, false, isDrum, isFirst ? beamsFor[i] : null, useFlats);
+          isFirst = false;
+        }
+      }
+      if (trailingRest > 0.001) xml += fillRestGap(trailingRest);
     }
 
     xml += '      </measure>\n';
