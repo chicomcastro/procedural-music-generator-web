@@ -153,6 +153,19 @@ function brokenInterval(k) {
   };
 }
 
+// Groups of `k` consecutive degrees sliding by one — the method-book
+// "sequences": 1234 2345 3456 … up, then the mirror coming down. k=2 is
+// pairs, k=3 threes, and so on. A shape shorter than k degrades to a
+// single group (still a valid ascending/descending run).
+function runOf(k) {
+  return (n) => {
+    const seq = [];
+    for (let i = 0; i + (k - 1) < n; i++) for (let j = 0; j < k; j++) seq.push(i + j);
+    for (let i = n - 1; i - (k - 1) >= 0; i--) for (let j = 0; j < k; j++) seq.push(i - j);
+    return seq;
+  };
+}
+
 export const ETUDE_PATTERNS = [
   {
     id: 'scale',
@@ -162,26 +175,11 @@ export const ETUDE_PATTERNS = [
       return [...up, ...up.slice(0, -1).reverse()];   // top note not repeated
     },
   },
-  {
-    id: 'pairs',
-    label: 'Pairs — 2 by 2',
-    build: (n) => {
-      const seq = [];
-      for (let i = 0; i + 1 < n; i++) seq.push(i, i + 1);
-      for (let i = n - 1; i - 1 >= 0; i--) seq.push(i, i - 1);
-      return seq;
-    },
-  },
-  {
-    id: 'threes',
-    label: 'Threes — 3 by 3',
-    build: (n) => {
-      const seq = [];
-      for (let i = 0; i + 2 < n; i++) seq.push(i, i + 1, i + 2);
-      for (let i = n - 1; i - 2 >= 0; i--) seq.push(i, i - 1, i - 2);
-      return seq;
-    },
-  },
+  { id: 'pairs',  label: 'Pairs — 2 by 2',  build: runOf(2) },
+  { id: 'threes', label: 'Threes — 3 by 3', build: runOf(3) },
+  { id: 'fours',  label: 'Fours — 4 by 4',  build: runOf(4) },
+  { id: 'fives',  label: 'Fives — 5 by 5',  build: runOf(5) },
+  { id: 'sixes',  label: 'Sixes — 6 by 6',  build: runOf(6) },
   { id: 'thirds',   label: 'Broken thirds',   build: brokenInterval(2) },
   { id: 'fourths',  label: 'Broken fourths',  build: brokenInterval(3) },
   { id: 'fifths',   label: 'Broken fifths',   build: brokenInterval(4) },
@@ -298,7 +296,7 @@ export const STUDIES = [
     // ADR 0008: single-act sandbox — the Pattern / Octaves / Note value
     // dropdowns replaced the fixed exercise tabs.
     title: 'Scale Etude',
-    summary: 'One configurable technique drill: pick the scale, the pattern (scale, pairs, threes, broken thirds through sevenths), one or two octaves, and the note value (incl. composite figures) — up and down in a single pass.',
+    summary: 'One configurable technique drill: pick the scale, the pattern (scale, groups of 2 through 6, broken thirds through sevenths), one or two octaves, and the note value (incl. composite figures) — up and down in a single pass.',
     eyebrow: 'Technique · sandbox',
     clefPresets: [
       { id: 'bass',   label: 'Bass clef (cello / bass)',  voices: ['bass'] },

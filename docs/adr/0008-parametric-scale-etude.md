@@ -87,3 +87,12 @@ selection the tabs used to).
   `cells[j % cells.length]`. Simple values are one-cell. New composite
   figures, each summing to one beat so they stay bar-aligned:
   dotted-8th + 16th, 16th+8th+16th, 16th+16th+8th, 8th+16th+16th.
+
+## Amendment (2026-07-06) — longer sequence runs
+
+- **Patterns**: the grouping family (pairs = 2, threes = 3) extends to
+  **fours / fives / sixes** via a shared `runOf(k)` helper — groups of *k*
+  consecutive degrees sliding by one (the method-book "sequences"),
+  ascending then mirrored descending. `pairs`/`threes` were refactored
+  onto the same helper. A run longer than the scale degrades to a single
+  up-and-down group (never empty).
