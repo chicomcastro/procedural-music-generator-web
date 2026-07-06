@@ -6786,7 +6786,11 @@ body.practice-stand-mode #practice-sheet {
   box-shadow: none;
   background: #fff;
   overflow: hidden;               /* page turning steps scrollTop */
-  padding: 28px 40px 72px;        /* bottom clearance for the toolbar */
+  /* No horizontal padding — like the inline .practice-sheet, OSMD sizes its
+     SVG to clientWidth (which counts padding) but lays it inside the content
+     box, so side padding pushes the score off the right edge (clipped by
+     overflow:hidden). The inset comes from OSMD's own page margins. */
+  padding: 28px 0 72px;           /* bottom clearance for the toolbar */
   cursor: pointer;                /* tap zones turn pages */
 }
 
