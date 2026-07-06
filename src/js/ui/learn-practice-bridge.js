@@ -40,6 +40,9 @@ const GROUP_LINKS = {
   'Scales':       'study=scale-etude',
   'Chords':       'study=duet-workshop',
   'Progressions': 'study=duet-workshop',
+  // Modulation → the two-voice invention, whose three movements modulate
+  // to the relative minor and resolve home (ADR 0013) — hear it in context.
+  'Modulation':   'study=two-voice-invention',
   'Walking Bass': 'study=walking-bass-workout',
   'Reading':      'study=duet-workshop',
   'Duets':        'study=duet-workshop',

@@ -2368,6 +2368,118 @@ export const MODULES = [
       },
     ],
   },
+
+  // ================= MODULATION =================
+  {
+    id: 'modulation',
+    group: 'Modulation',
+    tag: 'Theory · Modulation',
+    title: 'Modulation — Changing Key',
+    summary: 'Move from one key to another on purpose: pivot chords, applied dominants, the pop key-change, and how to match the strategy to the size of the jump.',
+    steps: [
+      {
+        type: 'theory',
+        title: 'What modulation is (and why prepare it)',
+        text: `<strong>Modulation</strong> is moving the tonal centre — the note that feels like "home" — from one key to another mid-piece. It's what gives longer forms their sense of journey. The trick is that keys are not all equally far apart: C major and G major share six of seven notes (<em>closely related</em>), while C major and F# major share almost none (<em>distant</em>). The closer the target key, the more chords the two keys have in common, and the smoother you can slide between them. The rest of this module is really one idea: <strong>match the strategy to the size of the jump.</strong> First hear the shift — a C major scale, then the same shape in G.`,
+        audio: [60, 62, 64, 65, 67, 69, 71, 72, 67, 69, 71, 72, 74, 76, 78, 79],
+        references: [
+          'Most Bach preludes — tonic → dominant and back',
+          'Countless pop bridges that lift the final chorus up a step',
+        ],
+      },
+      {
+        type: 'theory',
+        title: 'The pivot chord — modulating to the dominant (C → G)',
+        text: `The smoothest way to change key is a <strong>pivot (common) chord</strong>: a chord that lives in <em>both</em> keys. You arrive on it hearing the old key, then leave it hearing the new one. Going C → G, the <strong>Am</strong> chord is vi in C but ii in G — a perfect hinge. After it, a <strong>D7 → G</strong> (V7 → I of the new key) locks the new home in. The listener never feels a bump, only that the ground has quietly shifted. Roots of the pivot progression:`,
+        audio: [60, 69, 62, 66, 69, 67, 71, 74],
+        references: ['Classical expositions almost always modulate to the dominant this way'],
+      },
+      {
+        type: 'exercise',
+        title: 'Pivot to the dominant (C → G)',
+        description: 'C (I) → Am (the pivot: vi in C, ii in G) → D7 (V7 of G) → G (the new home). The Am is the hinge; the D7→G seals the new key.',
+        notes: [
+          [60, 64, 67],       // C
+          [69, 72, 76],       // Am — pivot
+          [62, 66, 69, 72],   // D7 (of G)
+          [67, 71, 74],       // G
+        ],
+        style: 'progression',
+      },
+      {
+        type: 'exercise',
+        title: 'Play the modulation as a line (C → G)',
+        description: 'A single line that outlines the same journey — C-major footing, then arpeggiating D7 into a G that now feels like home. Feel the F♯ arrive: that is the new key announcing itself.',
+        notes: [60, 64, 67, 69, 72, 66, 69, 74, 71, 74, 67],
+        style: 'melody',
+      },
+      {
+        type: 'theory',
+        title: 'To the relative minor (C → Am)',
+        text: `The <strong>relative minor</strong> shares your exact key signature, so it's the gentlest destination of all — no new sharps or flats. From C major, <strong>F</strong> is the pivot (IV in C = VI in A minor). What actually confirms the new key is its dominant: <strong>E7 → Am</strong>. That G♯ inside the E7 is the one note outside the shared signature, and it's exactly what pulls your ear to A as the new tonic.`,
+        audio: [60, 65, 64, 68, 71, 69, 72, 76],
+        references: ['The classic move from a major theme into its shadow'],
+      },
+      {
+        type: 'exercise',
+        title: 'Pivot to the relative minor (C → Am)',
+        description: 'C (I) → F (pivot: IV in C, VI in Am) → E7 (V7 of A minor — note the G♯) → Am (the new home).',
+        notes: [
+          [60, 64, 67],       // C
+          [65, 69, 72],       // F — pivot
+          [64, 68, 71, 74],   // E7 (of Am)
+          [69, 72, 76],       // Am
+        ],
+        style: 'progression',
+      },
+      {
+        type: 'theory',
+        title: 'Direct modulation — the "pop key change"',
+        text: `Sometimes you don't prepare anything: you finish a phrase, then simply restate it a step higher in a new key. No pivot, no shared chord — the sheer lift does the work. This <strong>direct</strong> (or phrase) modulation is the "truck-driver's gear change" of the final pop chorus, usually up a whole step (C → D) or a semitone. It's bold rather than subtle, and it only works at a clean phrase boundary.`,
+        audio: [60, 64, 67, 72, 62, 66, 69, 74],
+        references: ['"Love On Top" (Beyoncé) — several key changes up', 'Countless last choruses'],
+      },
+      {
+        type: 'exercise',
+        title: 'Repeat the phrase a step higher (C → D)',
+        description: 'The same four-note phrase, first in C, then lifted a whole step into D. Nothing connects them but the jump — that is the point.',
+        notes: [60, 64, 67, 64, null, 62, 66, 69, 66],
+        style: 'melody',
+      },
+      {
+        type: 'theory',
+        title: 'Applied (secondary) dominants',
+        text: `Every chord can be approached by its own dominant — a <strong>V7 borrowed from the target's key</strong> (written V7/x). String them together and you can travel: C → <strong>A7</strong> (V7 of Dm) → Dm → <strong>D7</strong> (V7 of G) → G. Each seventh chord's chromatic note leans hard into the next root, tugging you around the circle of fifths a step at a time. This is how jazz reharmonises its way into a new key.`,
+        audio: [60, 69, 73, 62, 62, 66, 67, 71],
+        references: ['Ragtime and jazz turnarounds thrive on chains of these'],
+      },
+      {
+        type: 'exercise',
+        title: 'Modulate by applied dominants (C → G)',
+        description: 'C → A7 (V7/ii) → Dm (ii) → D7 (V7/V — the F♯ leans into G) → G. Each dominant pulls to the next chord until G is the new home.',
+        notes: [
+          [60, 64, 67],       // C
+          [69, 73, 76, 79],   // A7  (V7/ii)
+          [62, 65, 69],       // Dm
+          [62, 66, 69, 72],   // D7  (V7/V)
+          [67, 71, 74],       // G
+        ],
+        style: 'progression',
+      },
+      {
+        type: 'theory',
+        title: 'Distant keys — enharmonic & common-tone pivots',
+        text: `For a big leap (a tritone, a minor third) the two keys share almost no chords, so you reach for a chord that can mean many things. The <strong>diminished 7th</strong> is symmetric — B°7 (B-D-F-A♭) can resolve into several keys depending on how you spell it, an <em>enharmonic pivot</em>. Or hold a single <strong>common tone</strong> and rebuild a distant chord under it (a C shared between C major and A♭ major). These are the "teleport" moves — powerful, and best used sparingly. Hear a C-major arpeggio, a diminished 7th, then landing in the distant key of E♭:`,
+        audio: [60, 64, 67, 71, 74, 77, 63, 67, 70],
+        references: ['Late-Romantic harmony (Liszt, Wagner) lives on enharmonic pivots'],
+      },
+      {
+        type: 'theory',
+        title: 'Cheat sheet — strategy by distance',
+        text: `Pick the tool that fits the jump:<br><br>• <strong>Up/down a fifth</strong> (C↔G, C↔F) — <em>pivot chord</em>; the keys share masses of chords.<br>• <strong>Relative minor/major</strong> (C↔Am) — <em>pivot chord</em>; same key signature, confirm with the target's V.<br>• <strong>Up a step or semitone</strong> (C→D, C→D♭) — <em>direct/phrase</em> modulation at a section boundary, or a ♭VII pivot.<br>• <strong>Anywhere, smoothly</strong> — a chain of <em>applied dominants</em> around the circle of fifths.<br>• <strong>Distant / tritone / minor third</strong> — <em>enharmonic</em> (diminished-7th) or <em>common-tone</em> pivot.<br><br>The closer the key, the more the harmony can hide the seam; the further it is, the more you either prepare carefully or commit to a bold jump.`,
+      },
+    ],
+  },
 ];
 
-export const GROUPS = ['Scales', 'Chords', 'Progressions', 'Walking Bass', 'Reading', 'Duets', 'Counterpoint'];
+export const GROUPS = ['Scales', 'Chords', 'Progressions', 'Walking Bass', 'Reading', 'Duets', 'Counterpoint', 'Modulation'];

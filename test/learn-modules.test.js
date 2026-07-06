@@ -89,8 +89,8 @@ describe('Learn curriculum data', () => {
     }
   });
 
-  it('all 7 expected groups exist', () => {
-    const expected = ['Scales', 'Chords', 'Progressions', 'Walking Bass', 'Reading', 'Duets', 'Counterpoint'];
+  it('all expected groups exist in order', () => {
+    const expected = ['Scales', 'Chords', 'Progressions', 'Walking Bass', 'Reading', 'Duets', 'Counterpoint', 'Modulation'];
     expect(GROUPS).toEqual(expected);
   });
 
@@ -127,6 +127,21 @@ describe('Learn curriculum data', () => {
       'counterpoint-imitation',
       'counterpoint-free',
     ]);
+  });
+
+  it('Modulation group teaches the key-change strategies', () => {
+    const mods = MODULES.filter(m => m.group === 'Modulation');
+    expect(mods.length).toBe(1);
+    const mod = mods[0];
+    expect(mod.id).toBe('modulation');
+    // Covers the core strategies, one theory step each.
+    const titles = mod.steps.map(s => s.title.toLowerCase()).join(' | ');
+    for (const kw of ['pivot', 'relative minor', 'direct', 'applied', 'distant', 'cheat sheet']) {
+      expect(titles, `missing a step about "${kw}"`).toContain(kw);
+    }
+    // Playable both as chord progressions and as lines.
+    expect(mod.steps.some(s => s.type === 'exercise' && s.style === 'progression')).toBe(true);
+    expect(mod.steps.filter(s => s.type === 'exercise' && s.style === 'melody').length).toBeGreaterThanOrEqual(2);
   });
 
   it('beginner scale modules carry the method-book pattern exercises', () => {
