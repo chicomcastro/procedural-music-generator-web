@@ -216,11 +216,13 @@ async function renderSheet(xml) {
       });
       // Trim OSMD's generous page margins — the default PageLeftMargin
       // (~5 staff-space units) reads as dead space on the left of a
-      // single-line etude. Keep a hair so the clef isn't clipped.
+      // single-line etude. A small symmetric inset keeps the clef and the
+      // last note off the edges (the .practice-sheet element carries no
+      // horizontal padding, so this margin is the score's only inset).
       const rules = practiceOSMD.EngravingRules;
       if (rules) {
-        rules.PageLeftMargin = 0.5;
-        rules.PageRightMargin = 0.5;
+        rules.PageLeftMargin = 1.5;
+        rules.PageRightMargin = 1.5;
       }
       practiceOSMD.container = container;
     }
@@ -973,14 +975,17 @@ function populateControls() {
     partField.style.display = 'none';
   }
 
-  // ADR 0008: parametric scale-etude dropdowns — the bar sits above the
-  // score (the pattern IS the exercise, not a fine-tuning knob).
+  // ADR 0008 / 0011: parametric scale-etude dropdowns. The *musical* choices
+  // (pattern / scale / key / note-value) sit in the bar above the score; the
+  // register knobs (octaves / start-note) live down in Adjust.
   const etudeBar = document.getElementById('practice-etude-bar');
   if (etudeBar) etudeBar.style.display = activeStudy.kind === 'scale-etude' ? '' : 'none';
   const etudeIds = [
     ['practice-etude-pattern', 'practice-etude-pattern-field', ETUDE_PATTERNS.map(pt => ({ id: pt.id, label: etudeLabel('patterns', pt.id, pt.label) })), studyPrefs.etudePatternId],
-    ['practice-etude-octaves', 'practice-etude-octaves-field', ETUDE_OCTAVE_OPTIONS.map(o => ({ id: String(o), label: etudeLabel('octaves', o, o === 1 ? '1 octave' : `${o} octaves`) })), String(studyPrefs.etudeOctaves)],
+    ['practice-etude-scale', 'practice-etude-scale-field', SCALE_OPTIONS.map(o => ({ id: o.id, label: o.label })), studyPrefs.scaleId],
+    ['practice-etude-key', 'practice-etude-key-field', activeStudy.keyOptions.map(pc => ({ id: String(pc), label: tonicName(pc) })), String(studyPrefs.keyPc)],
     ['practice-etude-rhythm', 'practice-etude-rhythm-field', ETUDE_RHYTHMS.map(r => ({ id: r.id, label: etudeLabel('rhythms', r.id, r.label) })), studyPrefs.etudeRhythm],
+    ['practice-etude-octaves', 'practice-etude-octaves-field', ETUDE_OCTAVE_OPTIONS.map(o => ({ id: String(o), label: etudeLabel('octaves', o, o === 1 ? '1 octave' : `${o} octaves`) })), String(studyPrefs.etudeOctaves)],
   ];
   for (const [selId, fieldId, options, current] of etudeIds) {
     const sel = document.getElementById(selId);
@@ -999,6 +1004,14 @@ function populateControls() {
       field.style.display = 'none';
     }
   }
+
+  // The etude's Key + Scale live in the bar above the score, so hide the
+  // duplicate Adjust-panel rows for this study (other studies keep them).
+  const adjustKeyField = document.getElementById('practice-key-field');
+  const adjustScaleField = document.getElementById('practice-scale-field');
+  const hideAdjustKeyScale = activeStudy.kind === 'scale-etude';
+  if (adjustKeyField) adjustKeyField.style.display = hideAdjustKeyScale ? 'none' : '';
+  if (adjustScaleField) adjustScaleField.style.display = hideAdjustKeyScale ? 'none' : '';
 
   // ADR 0009: start-note dropdown — options depend on key + clef, so it
   // rebuilds every render. The stored midi selects when still valid;
@@ -1901,6 +1914,23 @@ export function initPracticeView({ audioApi } = {}) {
     const sp = getStudyPrefs(activeStudy.id);
     sp.etudeRhythm = e.target.value;
     savePrefs();
+    regenerate();
+  });
+  // ADR 0011: scale + key promoted into the etude bar above the score.
+  document.getElementById('practice-etude-scale')?.addEventListener('change', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'scale-etude') return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.scaleId = e.target.value;
+    savePrefs();
+    regenerate();
+  });
+  document.getElementById('practice-etude-key')?.addEventListener('change', (e) => {
+    if (!activeStudy || activeStudy.kind !== 'scale-etude') return;
+    const sp = getStudyPrefs(activeStudy.id);
+    sp.keyPc = Number(e.target.value);
+    sp.etudeStartMidi = null;   // register options shift with the key — reset to default
+    savePrefs();
+    populateControls();         // rebuild the start-note options for the new key
     regenerate();
   });
   document.getElementById('practice-etude-start')?.addEventListener('change', (e) => {

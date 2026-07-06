@@ -45,8 +45,10 @@ describe('Mobile layout', () => {
     cy.get('.sidebar-link[data-view="practice"]').click({ force: true });
     cy.get('.practice-card[data-id="walking-bass-workout"]').click();
     cy.get('#practice-controls').then(($details) => $details[0].open = true);
-    // First two fields (key + difficulty) should sit on the same row on mobile.
-    cy.get('.practice-control').then(($fields) => {
+    // The first two *visible* fields should sit on the same row on mobile
+    // (hidden .practice-control fields drop out of the grid flow entirely,
+    // so filter them out before comparing row positions).
+    cy.get('.practice-control').filter(':visible').then(($fields) => {
       const a = $fields[0].getBoundingClientRect();
       const b = $fields[1].getBoundingClientRect();
       expect(Math.abs(a.top - b.top)).to.be.lte(2);

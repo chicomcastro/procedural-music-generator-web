@@ -6544,7 +6544,12 @@ button.practice-act-rail-tab.is-active .practice-act-rail-dot {
   background: #fff;
   border-radius: 12px;
   min-height: 220px;
-  padding: 14px;
+  /* No horizontal padding: OSMD sizes its SVG to the element's clientWidth
+     (which counts padding) but lays it out inside the content box, so any
+     left/right padding pushes the SVG off the right edge (clipped by
+     overflow:hidden). The score's inset comes from OSMD's own page margins
+     (EngravingRules.Page{Left,Right}Margin) instead. */
+  padding: 14px 0;
   overflow: hidden;
 }
 .practice-sheet-fallback {

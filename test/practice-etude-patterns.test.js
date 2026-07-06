@@ -205,17 +205,19 @@ describe('Scale etude UI — dropdowns', () => {
         <div id="practice-stand-toolbar"></div>
         <details id="practice-controls">
           <summary><span id="practice-controls-info"></span></summary>
-          <select id="practice-key"></select>
+          <div id="practice-key-field"><select id="practice-key"></select></div>
           <div id="practice-clef-field"><select id="practice-clef"></select></div>
           <div id="practice-rhythm-field"><select id="practice-rhythm"></select></div>
           <div id="practice-duet-field"><select id="practice-duet"></select></div>
           <div id="practice-scale-field"><select id="practice-scale"></select></div>
           <div id="practice-contour-field"><select id="practice-contour"></select></div>
+          <div id="practice-etude-octaves-field" style="display:none"><select id="practice-etude-octaves"></select></div>
+          <div id="practice-etude-start-field" style="display:none"><select id="practice-etude-start"></select></div>
           <div id="practice-etude-bar" style="display:none">
             <div id="practice-etude-pattern-field"><select id="practice-etude-pattern"></select></div>
-            <div id="practice-etude-octaves-field"><select id="practice-etude-octaves"></select></div>
+            <div id="practice-etude-scale-field"><select id="practice-etude-scale"></select></div>
+            <div id="practice-etude-key-field"><select id="practice-etude-key"></select></div>
             <div id="practice-etude-rhythm-field"><select id="practice-etude-rhythm"></select></div>
-            <div id="practice-etude-start-field"><select id="practice-etude-start"></select></div>
           </div>
           <div id="practice-rhythm-vocab-field" style="display:none"><div id="practice-rhythm-vocab-chips"></div></div>
           <div id="practice-progression-field" style="display:none"><select id="practice-progression"></select></div>
@@ -298,12 +300,53 @@ describe('Scale etude UI — dropdowns', () => {
     const start = document.getElementById('practice-etude-start');
     start.value = '36';
     start.dispatchEvent(new Event('change', { bubbles: true }));
-    // Change key — C2 is no longer a valid tonic for the new key.
-    const key = document.getElementById('practice-key');
+    // Change key via the params-bar Key control — C2 is no longer a valid
+    // tonic for the new key, so the start note resets to default.
+    const key = document.getElementById('practice-etude-key');
     key.value = String(key.options[1]?.value ?? '2');
     key.dispatchEvent(new Event('change', { bubbles: true }));
     const prefs = JSON.parse(localStorage.getItem('seedsong-practice-prefs-v1'));
     expect(prefs.byStudy['scale-etude'].etudeStartMidi).toBeNull();
+  });
+
+  it('promotes scale + key to the bar and demotes octaves + start to Adjust (ADR 0011)', async () => {
+    const { initPracticeView } = await import('../src/js/ui/PracticeView.js');
+    initPracticeView({ audioApi: audioMock() });
+    document.querySelector('.practice-card[data-id="scale-etude"]').click();
+    // Bar: pattern / scale / key / rhythm all shown + populated.
+    expect(document.getElementById('practice-etude-scale-field').style.display).toBe('');
+    expect(document.getElementById('practice-etude-key-field').style.display).toBe('');
+    expect(document.querySelectorAll('#practice-etude-scale option').length).toBeGreaterThan(0);
+    expect(document.querySelectorAll('#practice-etude-key option').length).toBeGreaterThan(0);
+    // Register knobs relocated to Adjust, still populated.
+    expect(document.getElementById('practice-etude-octaves-field').style.display).toBe('');
+    expect(document.getElementById('practice-etude-start-field').style.display).toBe('');
+    expect(document.getElementById('practice-etude-octaves').value).toBe('1');
+    // Duplicate Adjust Key + Scale rows hidden for the etude.
+    expect(document.getElementById('practice-key-field').style.display).toBe('none');
+    expect(document.getElementById('practice-scale-field').style.display).toBe('none');
+    // Other studies keep the Adjust Key + Scale rows and hide the etude bar.
+    document.getElementById('practice-study-close').click();
+    document.querySelector('.practice-card[data-id="two-voice-invention"]').click();
+    expect(document.getElementById('practice-key-field').style.display).toBe('');
+    expect(document.getElementById('practice-scale-field').style.display).toBe('');
+    expect(document.getElementById('practice-etude-octaves-field').style.display).toBe('none');
+  });
+
+  it('changing scale or key in the bar persists to prefs', async () => {
+    const { initPracticeView } = await import('../src/js/ui/PracticeView.js');
+    initPracticeView({ audioApi: audioMock() });
+    document.querySelector('.practice-card[data-id="scale-etude"]').click();
+    const scale = document.getElementById('practice-etude-scale');
+    scale.value = 'dorian';
+    scale.dispatchEvent(new Event('change', { bubbles: true }));
+    const key = document.getElementById('practice-etude-key');
+    const newKey = key.options[1]?.value ?? '2';
+    key.value = newKey;
+    key.dispatchEvent(new Event('change', { bubbles: true }));
+    const prefs = JSON.parse(localStorage.getItem('seedsong-practice-prefs-v1'));
+    expect(prefs.byStudy['scale-etude'].scaleId).toBe('dorian');
+    expect(prefs.byStudy['scale-etude'].keyPc).toBe(Number(newKey));
   });
 
   it('the etude bar takes the rail slot: bar shown, act rail hidden', async () => {
