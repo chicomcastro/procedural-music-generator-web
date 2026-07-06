@@ -12,7 +12,7 @@
 // stylesheet (no per-act overrides yet — those land in PR 2).
 
 import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRESETS, DUET_STYLES, SCALE_OPTIONS, CONTOUR_OPTIONS, SCALE_SHAPES, VOICE_OPTIONS, clampMidiToRange, tonicMidiFor, ETUDE_PATTERNS, ETUDE_OCTAVE_OPTIONS, ETUDE_RHYTHMS, extendShapeOctaves, etudeStartOptions, RHYTHM_VOCAB, RHYTHM_VOCAB_DEFAULTS, PROGRESSION_OPTIONS, PART_VIEW_OPTIONS } from './practice-studies.js';
-import { getStudyField } from './practice-translations.js';
+import { getStudyField, etudeLabel } from './practice-translations.js';
 import { mulberry32, randomSeed } from '../generate/rng.js';
 import { generateMelody } from '../generate/melody.js';
 import { generateCounterpoint } from '../generate/counterpoint.js';
@@ -214,6 +214,14 @@ async function renderSheet(xml) {
         backend: 'svg',
         renderSingleHorizontalStaffline: false,
       });
+      // Trim OSMD's generous page margins — the default PageLeftMargin
+      // (~5 staff-space units) reads as dead space on the left of a
+      // single-line etude. Keep a hair so the clef isn't clipped.
+      const rules = practiceOSMD.EngravingRules;
+      if (rules) {
+        rules.PageLeftMargin = 0.5;
+        rules.PageRightMargin = 0.5;
+      }
       practiceOSMD.container = container;
     }
     await practiceOSMD.load(xml);
@@ -970,9 +978,9 @@ function populateControls() {
   const etudeBar = document.getElementById('practice-etude-bar');
   if (etudeBar) etudeBar.style.display = activeStudy.kind === 'scale-etude' ? '' : 'none';
   const etudeIds = [
-    ['practice-etude-pattern', 'practice-etude-pattern-field', ETUDE_PATTERNS.map(pt => ({ id: pt.id, label: pt.label })), studyPrefs.etudePatternId],
-    ['practice-etude-octaves', 'practice-etude-octaves-field', ETUDE_OCTAVE_OPTIONS.map(o => ({ id: String(o), label: o === 1 ? '1 octave' : `${o} octaves` })), String(studyPrefs.etudeOctaves)],
-    ['practice-etude-rhythm', 'practice-etude-rhythm-field', ETUDE_RHYTHMS.map(r => ({ id: r.id, label: r.label })), studyPrefs.etudeRhythm],
+    ['practice-etude-pattern', 'practice-etude-pattern-field', ETUDE_PATTERNS.map(pt => ({ id: pt.id, label: etudeLabel('patterns', pt.id, pt.label) })), studyPrefs.etudePatternId],
+    ['practice-etude-octaves', 'practice-etude-octaves-field', ETUDE_OCTAVE_OPTIONS.map(o => ({ id: String(o), label: etudeLabel('octaves', o, o === 1 ? '1 octave' : `${o} octaves`) })), String(studyPrefs.etudeOctaves)],
+    ['practice-etude-rhythm', 'practice-etude-rhythm-field', ETUDE_RHYTHMS.map(r => ({ id: r.id, label: etudeLabel('rhythms', r.id, r.label) })), studyPrefs.etudeRhythm],
   ];
   for (const [selId, fieldId, options, current] of etudeIds) {
     const sel = document.getElementById(selId);

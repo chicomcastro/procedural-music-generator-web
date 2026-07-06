@@ -140,6 +140,81 @@ describe('songToMusicXML', () => {
     expect(xmlEmpty).not.toMatch(/<bar-style>light-light/);
   });
 
+  // Pull the <note> blocks of the first part, with a compact beam summary.
+  const notesOf = (xml) => {
+    const part = xml.match(/<part id="[^"]+">[\s\S]*?<\/part>/)[0];
+    return (part.match(/<note>[\s\S]*?<\/note>/g) || []).map((n) => ({
+      type: (n.match(/<type>(\w+)<\/type>/) || [])[1],
+      dot: /<dot\/>/.test(n),
+      rest: /<rest/.test(n),
+      beams: (n.match(/<beam number="(\d+)">([^<]+)<\/beam>/g) || []).map((b) => {
+        const m = b.match(/number="(\d+)">([^<]+)</);
+        return { number: Number(m[1]), type: m[2] };
+      }),
+    }));
+  };
+
+  it('beams a dotted-8th + 16th with a primary beam and a secondary hook', () => {
+    const xml = songToMusicXML({
+      bars: 1, beatsPerBar: 4, lengthBeats: 4,
+      events: [
+        { type: 'melody', midi: 60, atBeat: 0, durationBeats: 0.75, velocity: 0.8 },
+        { type: 'melody', midi: 62, atBeat: 0.75, durationBeats: 0.25, velocity: 0.8 },
+      ],
+    }, { tracks: ['melody'] });
+    const notes = notesOf(xml);
+    // Dotted eighth: primary beam begins.
+    expect(notes[0]).toMatchObject({ type: 'eighth', dot: true, beams: [{ number: 1, type: 'begin' }] });
+    // Sixteenth: primary beam ends + a lone secondary beam drawn as a hook.
+    expect(notes[1].beams).toEqual([
+      { number: 1, type: 'end' },
+      { number: 2, type: 'backward hook' },
+    ]);
+  });
+
+  it('beams four 16ths in a beat with a full double beam', () => {
+    const xml = songToMusicXML({
+      bars: 1, beatsPerBar: 4, lengthBeats: 4,
+      events: [0, 0.25, 0.5, 0.75].map((at, i) => ({
+        type: 'melody', midi: 60 + i, atBeat: at, durationBeats: 0.25, velocity: 0.8,
+      })),
+    }, { tracks: ['melody'] });
+    const notes = notesOf(xml).filter((n) => !n.rest);
+    expect(notes.map((n) => n.beams)).toEqual([
+      [{ number: 1, type: 'begin' }, { number: 2, type: 'begin' }],
+      [{ number: 1, type: 'continue' }, { number: 2, type: 'continue' }],
+      [{ number: 1, type: 'continue' }, { number: 2, type: 'continue' }],
+      [{ number: 1, type: 'end' }, { number: 2, type: 'end' }],
+    ]);
+  });
+
+  it('does not beam across the quarter-note beat boundary', () => {
+    const xml = songToMusicXML({
+      bars: 1, beatsPerBar: 4, lengthBeats: 4,
+      events: [
+        // last 8th of beat 0 and first 8th of beat 1 are contiguous but
+        // belong to different beats — they must not share a beam.
+        { type: 'melody', midi: 60, atBeat: 0.5, durationBeats: 0.5, velocity: 0.8 },
+        { type: 'melody', midi: 62, atBeat: 1, durationBeats: 0.5, velocity: 0.8 },
+      ],
+    }, { tracks: ['melody'] });
+    const eighths = notesOf(xml).filter((n) => n.type === 'eighth' && !n.rest);
+    // Each stands alone in its beat, so neither carries a beam.
+    expect(eighths.every((n) => n.beams.length === 0)).toBe(true);
+  });
+
+  it('does not beam drum (unpitched) notes', () => {
+    const xml = songToMusicXML({
+      bars: 1, beatsPerBar: 4, lengthBeats: 4,
+      events: [
+        { type: 'drum', midi: 36, atBeat: 0, durationBeats: 0.25, velocity: 0.9 },
+        { type: 'drum', midi: 38, atBeat: 0.25, durationBeats: 0.25, velocity: 0.9 },
+      ],
+    }, { tracks: ['drum'] });
+    const notes = notesOf(xml).filter((n) => !n.rest);
+    expect(notes.every((n) => n.beams.length === 0)).toBe(true);
+  });
+
   it('places double barlines per-part (each staff shows the divider)', () => {
     const xml = songToMusicXML(makeSong({ bars: 4, lengthBeats: 16 }), {
       tracks: ['melody', 'bass'],
