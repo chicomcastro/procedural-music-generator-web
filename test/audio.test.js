@@ -104,6 +104,49 @@ describe('createVoice', () => {
     // After release, source.stop should be called.
     expect(ctx.sources[0].stop).toHaveBeenCalled();
   });
+
+  it('release() cuts a duration-scheduled note short (the pause bug)', async () => {
+    // Regression: a voice spawned WITH a duration used to flag itself
+    // `stopped`, making release() a no-op — so paused playback kept sounding.
+    const { createVoice } = await import('../src/js/audio/Voice.js');
+    const ctx = fakeContext();
+    ctx.currentTime = 1.0;
+    const buffer = ctx.createBuffer(1, 8, 44100);
+    const v = createVoice(ctx, ctx.destination, { buffer, when: 0.5, duration: 4, velocity: 0.7 });
+    const stop = ctx.sources[0].stop;
+    const callsBefore = stop.mock.calls.length;
+    v.release(0.1);
+    // release must reschedule an earlier stop (≤ now + release tail), not
+    // leave the note running to its full 4-beat duration.
+    expect(stop.mock.calls.length).toBeGreaterThan(callsBefore);
+    const lastStopTime = stop.mock.calls.at(-1)[0];
+    expect(lastStopTime).toBeLessThanOrEqual(1.0 + 0.1 + 0.05 + 1e-9);
+  });
+
+  it('release() silences a not-yet-started future note before it sounds', async () => {
+    const { createVoice } = await import('../src/js/audio/Voice.js');
+    const ctx = fakeContext();
+    ctx.currentTime = 0;
+    const buffer = ctx.createBuffer(1, 8, 44100);
+    const v = createVoice(ctx, ctx.destination, { buffer, when: 5, duration: 1, velocity: 0.7 });
+    v.release(0.1);
+    // A future note (when=5 > now=0) is stopped at `now`, so it never plays.
+    expect(ctx.sources[0].stop.mock.calls.at(-1)[0]).toBe(0);
+  });
+
+  it('createSynthVoice release() also cuts a duration-scheduled note short', async () => {
+    const { createSynthVoice } = await import('../src/js/audio/SynthVoice.js');
+    const ctx = fakeContext();
+    ctx.currentTime = 0;
+    const oscStops = [];
+    const origOsc = ctx.createOscillator.bind(ctx);
+    ctx.createOscillator = () => { const o = origOsc(); oscStops.push(o.stop); return o; };
+    const v = createSynthVoice(ctx, ctx.destination, { midi: 60, when: 3, duration: 4, preset: 'pluck' });
+    v.release(0.1);
+    // Every oscillator gets stopped at `now` (future note), not at when+dur.
+    expect(oscStops.length).toBeGreaterThan(0);
+    for (const s of oscStops) expect(s.mock.calls.at(-1)[0]).toBe(0);
+  });
 });
 
 describe('createSynthVoice', () => {

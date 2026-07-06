@@ -1253,7 +1253,10 @@ async function playSong() {
   const gen = ++playGeneration;         // this run's token
   isPlaying = true;
   const playBtn = document.getElementById('practice-play');
-  if (playBtn) playBtn.classList.add('is-playing');   // responsive UI while samples load
+  if (playBtn) {
+    playBtn.classList.add('is-playing');   // responsive UI while samples load
+    playBtn.setAttribute('aria-label', 'Pause');
+  }
 
   await audioApiRef.ensureInit();
   if (gen !== playGeneration) return;   // paused / superseded during init
@@ -1327,7 +1330,10 @@ function stopPlayback() {
   }
   scheduledVoices = [];
   const playBtn = document.getElementById('practice-play');
-  if (playBtn) playBtn.classList.remove('is-playing');
+  if (playBtn) {
+    playBtn.classList.remove('is-playing');
+    playBtn.setAttribute('aria-label', 'Play study');
+  }
   try { practiceOSMD?.cursor?.hide(); } catch { /* ignore */ }
   const t = document.getElementById('practice-playback-time');
   if (t) t.textContent = '0:00';

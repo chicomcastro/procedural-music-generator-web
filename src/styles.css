@@ -6703,6 +6703,10 @@ button.practice-act-rail-tab.is-active .practice-act-rail-dot {
 }
 .practice-play-btn:hover { transform: scale(1.04); }
 .practice-play-btn.is-playing { background: var(--warning, #e2a93b); }
+/* Swap play ↔ pause glyph with the playing state. */
+.practice-play-btn .practice-icon-pause { display: none; }
+.practice-play-btn.is-playing .practice-icon-play { display: none; }
+.practice-play-btn.is-playing .practice-icon-pause { display: inline-flex; }
 .practice-playback-time {
   font-family: monospace;
   font-size: 14px;

@@ -42,17 +42,28 @@ export function createVoice(ctx, destination, opts) {
     gain.gain.linearRampToValueAtTime(0, releaseStart + releaseTime);
     source.stop(releaseStart + releaseTime + 0.05);
     source.onended = disconnect;
-    stopped = true;
   }
 
+  // Cut the note short — used to stop playback. Must work even for a voice
+  // that was spawned with a fixed duration (the previous code flagged those
+  // as `stopped` and made release a no-op, so paused playback kept sounding).
+  // `stopped` here only guards against a double release.
   function release(rt = releaseTime) {
     if (stopped) return;
     stopped = true;
     const t = ctx.currentTime;
-    gain.gain.cancelScheduledValues(t);
-    gain.gain.setValueAtTime(gain.gain.value, t);
-    gain.gain.linearRampToValueAtTime(0, t + rt);
-    source.stop(t + rt + 0.05);
+    try {
+      gain.gain.cancelScheduledValues(t);
+      if (when > t) {
+        // Note hasn't started yet — silence it and stop before it sounds.
+        gain.gain.setValueAtTime(0, t);
+        source.stop(t);
+      } else {
+        gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), t);
+        gain.gain.linearRampToValueAtTime(0, t + rt);
+        source.stop(t + rt + 0.05);
+      }
+    } catch { /* stop() throws if the source already ended */ }
     source.onended = disconnect;
   }
 

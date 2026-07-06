@@ -169,11 +169,22 @@ describe('SynthVoice — createSynthVoice', () => {
     expect(ctx._filters[0].frequency.exponentialRampToValueAtTime).not.toHaveBeenCalled();
   });
 
-  it('release after a duration-scheduled note is a no-op', () => {
+  it('release cuts a duration-scheduled note short (stops the oscillators early)', () => {
+    // Previously this was a no-op, which is why pausing playback left the
+    // scheduled notes ringing. release() must now reschedule an earlier stop.
     const ctx = makeCtx();
-    const v = createSynthVoice(ctx, { connect: vi.fn() }, { midi: 60, preset: 'pluck', duration: 0.1 });
+    const v = createSynthVoice(ctx, { connect: vi.fn() }, { midi: 60, preset: 'pluck', duration: 4, when: 0 });
     const before = ctx._oscillators[0].stop.mock.calls.length;
-    v.release();
-    expect(ctx._oscillators[0].stop.mock.calls.length).toBe(before);
+    v.release(0.1);
+    expect(ctx._oscillators[0].stop.mock.calls.length).toBeGreaterThan(before);
+  });
+
+  it('release is idempotent (a second call does nothing)', () => {
+    const ctx = makeCtx();
+    const v = createSynthVoice(ctx, { connect: vi.fn() }, { midi: 60, preset: 'pluck', duration: 4, when: 0 });
+    v.release(0.1);
+    const after = ctx._oscillators[0].stop.mock.calls.length;
+    v.release(0.1);
+    expect(ctx._oscillators[0].stop.mock.calls.length).toBe(after);
   });
 });

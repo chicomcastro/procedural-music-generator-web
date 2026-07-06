@@ -193,19 +193,29 @@ export function createSynthVoice(ctx, destination, opts) {
     oscs.forEach(o => o.stop(stopTime));
     if (lfo) lfo.stop(stopTime);
     oscs[0].onended = disconnect;
-    stopped = true;
   }
 
+  // Cut the note short — used to stop playback. Works even for a voice
+  // spawned with a fixed duration; `stopped` only guards a double release.
   function release(rt = releaseTime) {
     if (stopped) return;
     stopped = true;
     const t = ctx.currentTime;
-    gain.gain.cancelScheduledValues(t);
-    gain.gain.setValueAtTime(gain.gain.value, t);
-    gain.gain.linearRampToValueAtTime(0, t + rt);
-    const stopTime = t + rt + 0.05;
-    oscs.forEach(o => o.stop(stopTime));
-    if (lfo) lfo.stop(stopTime);
+    try {
+      gain.gain.cancelScheduledValues(t);
+      if (when > t) {
+        // Not yet started — kill it before it sounds.
+        gain.gain.setValueAtTime(0, t);
+        oscs.forEach(o => { try { o.stop(t); } catch { /* already stopped */ } });
+        if (lfo) { try { lfo.stop(t); } catch { /* already stopped */ } }
+      } else {
+        gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), t);
+        gain.gain.linearRampToValueAtTime(0, t + rt);
+        const stopTime = t + rt + 0.05;
+        oscs.forEach(o => { try { o.stop(stopTime); } catch { /* already stopped */ } });
+        if (lfo) { try { lfo.stop(stopTime); } catch { /* already stopped */ } }
+      }
+    } catch { /* ignore */ }
     oscs[0].onended = disconnect;
   }
 
