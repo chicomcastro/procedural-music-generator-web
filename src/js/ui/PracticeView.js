@@ -15,7 +15,7 @@ import { STUDIES, scaleParams, tonicName, CLEF_ANCHORS, CLEF_RANGES, RHYTHM_PRES
 import { getStudyField, etudeLabel } from './practice-translations.js';
 import { mulberry32, randomSeed } from '../generate/rng.js';
 import { generateMelody } from '../generate/melody.js';
-import { generateCounterpoint } from '../generate/counterpoint.js';
+import { generateCounterpoint, generateCallAndResponse } from '../generate/counterpoint.js';
 import { generateRhythm } from '../generate/rhythm.js';
 import { generateWalkingBass, progressionToChords, chordSymbolFor } from '../generate/walking-bass.js';
 
@@ -343,18 +343,32 @@ function buildTwoVoiceSong(study, opts) {
     const independence = duetStyle.mode === 'free'
       ? (p.independence ?? duetStyle.independence)
       : duetStyle.independence;
-    const v2 = generateCounterpoint(rng, {
-      melody: v1,
-      scale,
-      tonic: tonicMidi2,
-      mode: duetStyle.mode,
-      independence,
-      bars: act.bars,
-      beatsPerBar,
-      density: rhythmDensity,
-    });
 
-    for (const ev of v1) {
+    // Call-and-response trades the melody between the voices, so it produces
+    // BOTH voices (voice 1 rests while voice 2 answers). Every other mode
+    // keeps voice 1 as the full melody and derives voice 2 from it.
+    let voice1 = v1;
+    let voice2;
+    if (duetStyle.mode === 'call_response') {
+      const cr = generateCallAndResponse(rng, {
+        melody: v1, scale, tonic: tonicMidi2, bars: act.bars, beatsPerBar,
+      });
+      voice1 = cr.call;
+      voice2 = cr.response;
+    } else {
+      voice2 = generateCounterpoint(rng, {
+        melody: v1,
+        scale,
+        tonic: tonicMidi2,
+        mode: duetStyle.mode,
+        independence,
+        bars: act.bars,
+        beatsPerBar,
+        density: rhythmDensity,
+      });
+    }
+
+    for (const ev of voice1) {
       events.push({
         type: 'melody',
         midi: clampMidiToRange(ev.midi, range1),
@@ -363,7 +377,7 @@ function buildTwoVoiceSong(study, opts) {
         velocity: Math.min(1, (ev.velocity ?? 0.7) * velocityScale),
       });
     }
-    for (const ev of v2) {
+    for (const ev of voice2) {
       events.push({
         type: 'melody2',
         midi: clampMidiToRange(ev.midi, range2),
