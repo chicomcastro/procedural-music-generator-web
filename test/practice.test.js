@@ -13,7 +13,7 @@ describe('practice-studies catalog', () => {
   it('every study has a non-empty acts array and a recognised kind', () => {
     for (const s of STUDIES) {
       expect(s.acts.length).toBeGreaterThan(0);
-      expect(['two-voice-counterpoint', 'duet-workshop', 'walking-bass-workout', 'scale-etude', 'solo-etude', 'modal-vamp']).toContain(s.kind);
+      expect(['two-voice-counterpoint', 'duet-workshop', 'walking-bass-workout', 'scale-etude', 'modulation-drill', 'solo-etude', 'modal-vamp']).toContain(s.kind);
     }
   });
 });
@@ -595,6 +595,13 @@ describe('chord symbols + double bars on Practice studies', () => {
   it('movements studies mark act boundaries; exercises render one act, no dividers (ADR 0007)', () => {
     for (const study of STUDIES) {
       const song = buildSong(study, { keyPc: 0, seed: 1, difficulty: 50, clefVoices: study.clefPresets[0].voices });
+      if (study.kind === 'modulation-drill') {
+        // ADR 0016: the divider marks the modulation point, not an act edge.
+        expect(song.doubleBarsBefore).toHaveLength(1);
+        expect(song.doubleBarsBefore[0]).toBeGreaterThan(0);
+        expect(song.doubleBarsBefore[0]).toBeLessThan(song.bars);
+        continue;
+      }
       if (study.actMode === 'exercises') {
         // One drill at a time → no act dividers in the score.
         expect(song.doubleBarsBefore).toHaveLength(0);

@@ -33,6 +33,9 @@ const MODULE_LINKS = {
 
   // Counterpoint — imitation maps to the call & response duet style.
   'counterpoint-imitation': 'study=duet-workshop&duet=call_response',
+
+  // Modulation — the dedicated drill (ADR 0016).
+  'modulation': 'study=modulation-drill',
 };
 
 // Group-level fallbacks for modules without a specific override.
@@ -40,9 +43,8 @@ const GROUP_LINKS = {
   'Scales':       'study=scale-etude',
   'Chords':       'study=duet-workshop',
   'Progressions': 'study=duet-workshop',
-  // Modulation → the two-voice invention, whose three movements modulate
-  // to the relative minor and resolve home (ADR 0013) — hear it in context.
-  'Modulation':   'study=two-voice-invention',
+  // Modulation → the dedicated modulation drill (ADR 0016).
+  'Modulation':   'study=modulation-drill',
   'Walking Bass': 'study=walking-bass-workout',
   'Reading':      'study=duet-workshop',
   'Duets':        'study=duet-workshop',

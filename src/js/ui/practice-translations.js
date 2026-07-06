@@ -53,6 +53,18 @@ export const TR = {
       eyebrow: 'Técnica · sandbox',
     },
   },
+  'modulation-drill': {
+    pt: {
+      title: 'Treino de Modulação',
+      summary: 'Treine mudar de tom de propósito: escolha o tom de partida, o destino (por relação — dominante, relativa menor, um tom acima…) e a estratégia (acorde-pivô, dominante secundária, direta). Sai uma passagem curta a duas vozes que estabelece o tom de casa, modula e cadencia no novo.',
+      eyebrow: 'Harmonia · sandbox',
+    },
+    es: {
+      title: 'Entrenamiento de Modulación',
+      summary: 'Entrena cambiar de tono a propósito: elige el tono de partida, el destino (por relación — dominante, relativa menor, un tono arriba…) y la estrategia (acorde pivote, dominante secundaria, directa). Genera un pasaje corto a dos voces que establece el tono de casa, modula y cadencia en el nuevo.',
+      eyebrow: 'Armonía · sandbox',
+    },
+  },
   'solo-etude': {
     pt: {
       title: 'Estudo Solo',
@@ -132,4 +144,30 @@ export function etudeLabel(group, id, fallback) {
   const lang = getLang();
   if (lang === 'en') return fallback;
   return ETUDE_LABELS[group]?.[lang]?.[id] ?? fallback;
+}
+
+// Modulation-drill dropdown option labels (destination relationship /
+// strategy). English lives on the option in modulation.js; PT/ES here.
+const MOD_LABELS = {
+  targets: {
+    pt: {
+      dominant: 'Dominante (V)', subdominant: 'Subdominante (IV)', relative_minor: 'Relativa menor (vi)',
+      up_step: 'Um tom acima', down_step: 'Um tom abaixo',
+    },
+    es: {
+      dominant: 'Dominante (V)', subdominant: 'Subdominante (IV)', relative_minor: 'Relativa menor (vi)',
+      up_step: 'Un tono arriba', down_step: 'Un tono abajo',
+    },
+  },
+  strategies: {
+    pt: { pivot: 'Acorde-pivô', applied: 'Dominante secundária', direct: 'Direta (frase)' },
+    es: { pivot: 'Acorde pivote', applied: 'Dominante secundaria', direct: 'Directa (frase)' },
+  },
+};
+
+// Localize a modulation-drill option label with EN fallback.
+export function modLabel(group, id, fallback) {
+  const lang = getLang();
+  if (lang === 'en') return fallback;
+  return MOD_LABELS[group]?.[lang]?.[id] ?? fallback;
 }
