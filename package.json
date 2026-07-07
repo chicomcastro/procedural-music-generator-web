@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.5",
-    "cypress": "^13.15.0",
+    "cypress": "^15.15.0",
     "eslint": "^9.0.0",
     "http-server": "^14.1.1",
     "jsdom": "^26.0.0",
